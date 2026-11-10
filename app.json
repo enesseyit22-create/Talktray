@@ -19,6 +19,8 @@
     },
     "ios": {
       "bundleIdentifier": "com.talktray.app",
+      "appleTeamId": "5B7448U5F6",
+      "usesAppleSignIn": true,
       "supportsTablet": true,
       "entitlements": {
         "com.apple.security.application-groups": ["group.com.talktray.app"]

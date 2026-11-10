@@ -76,7 +76,7 @@ npx eas-cli build --profile development --platform ios
 npx eas-cli build --profile development --platform android
 ```
 
-Set `ios.appleTeamId` in `app.json` before an iOS build. Find it in Xcode under Signing & Capabilities, or in your Apple Developer account.
+`ios.appleTeamId` is `5B7448U5F6`, and `ios.usesAppleSignIn` is on so the `expo-apple-authentication` plugin can add Sign in with Apple.
 
 ## Over-the-air updates
 
@@ -100,7 +100,7 @@ Expo Go and `npm run web` do not apply these updates. The Profile row says so.
 
 1. **Create a Supabase project.** In the SQL editor, run `supabase/migrations/20261110160000_init.sql`. It creates tables, RLS, the signup profile trigger (in the private schema), the quota functions (service role only), and the private `recordings` storage bucket.
 
-2. **Auth providers.** Enable Email. Enable Apple and Google, and add the redirect `talktray://auth-callback`. Put the project URL and the publishable (or anon) key in `.env`:
+2. **Auth providers.** Apple (`com.talktray.app`) and Google (web and iOS client IDs) are already enabled. Keep Email on, and keep the redirect `talktray://auth-callback`. Put the project URL and the publishable (or anon) key in `.env`:
 
    ```bash
    cp .env.example .env
@@ -182,7 +182,7 @@ Aynı işi GitHub’dan yapmak için depo sırlarına şunları ekle (Settings �
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 - `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`
 - `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`
-- İsteğe bağlı: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+- `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` ve `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` isteğe bağlıdır. Sırlar boşsa `.env.example` içindeki genel istemci kimlikleri kullanılır.
 
 `main` dalına her push, production kanalına bir OTA güncellemesi gönderir. El ile çalıştırmak için Actions → EAS Update → Run workflow (kanal: production veya preview). Mağaza derlemesi için Actions → EAS Build.
 
