@@ -9,7 +9,6 @@ import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal';
-import { YEARLY_PRICE } from '../../shared/parse/quota';
 import { loadStoreOffers, type StoreOffer } from '@/services/purchases';
 import { fallbackOffers } from '@/services/billing-shared';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -100,11 +99,13 @@ export function PaywallScreen() {
                   <AppText size={12} color={colors.muted}>
                     {offer.id === 'yearly' ? t('paywall.billedYearly') : t('paywall.billedMonthly')}
                   </AppText>
-                  {offer.id === 'yearly' ? (
+                  {offer.id === 'yearly' && offer.perMonth ? (
                     <AppText size={12} color={colors.muted}>
-                      {t('paywall.equiv', { price: '$4.17' })}
+                      {t('paywall.equiv', { price: offer.perMonth })}
                     </AppText>
-                  ) : null}
+                  ) : (
+                    <AppText size={12}> </AppText>
+                  )}
                 </GlassCard>
               </Pressable>
             );
@@ -120,7 +121,7 @@ export function PaywallScreen() {
         </GlassCard>
         {message ? <AppText color={colors.primary}>{message}</AppText> : null}
         {!app.usage.isPro ? (
-          <PrimaryButton label={`${t('paywall.cta')} · ${selected?.price ?? YEARLY_PRICE}`} onPress={() => void buy()} loading={loading} />
+          <PrimaryButton label={`${t('paywall.cta')} · ${selected?.price ?? ''}`} onPress={() => void buy()} loading={loading} />
         ) : null}
         {!available && app.mode === 'demo' ? (
           <PrimaryButton
