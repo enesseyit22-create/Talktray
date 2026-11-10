@@ -19,6 +19,9 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_RgzWQMZehRfiafWyReOAOBMlTgD",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_PBSMDAoJJABsIyxqmhhcXSCorNT"
@@ -26,7 +29,11 @@
     },
     "production": {
       "autoIncrement": true,
+      "distribution": "store",
       "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_RgzWQMZehRfiafWyReOAOBMlTgD",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_PBSMDAoJJABsIyxqmhhcXSCorNT"

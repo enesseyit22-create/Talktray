@@ -209,6 +209,8 @@ export function Chip({
         {
           backgroundColor: active ? colors.primary : colors.glassStrong,
           borderColor: active ? 'transparent' : colors.glassBorder,
+          minHeight: 40,
+          justifyContent: 'center',
         },
       ]}
     >

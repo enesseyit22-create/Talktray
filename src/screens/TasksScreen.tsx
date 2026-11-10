@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { EditSheet } from '@/components/EditSheet';
@@ -11,13 +12,14 @@ import { useI18n } from '@/i18n';
 
 export function TasksScreen() {
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const { items, profile, toggleComplete, updateItem, deleteItem } = useApp();
   const [done, setDone] = useState(false);
   const [editing, setEditing] = useState<InboxItem | null>(null);
   const list = items.filter((item) => item.type === 'task' && Boolean(item.completedAt) === done);
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 64, paddingBottom: 130, gap: 14 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: 130, gap: 14 }}>
         <AppText size={32} weight="extrabold">
           {t('tabs.tasks')}
         </AppText>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { Logo } from '@/components/Brand';
@@ -13,6 +14,7 @@ export function SignInScreen() {
   const { t } = useI18n();
   const { colors } = useTheme();
   const { configured, signIn, signUp, signInApple, signInGoogle, enterDemo } = useApp();
+  const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'in' | 'up'>('in');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -70,7 +72,10 @@ export function SignInScreen() {
   return (
     <Aurora>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 72, gap: 18, paddingBottom: 40 }}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: 24, paddingTop: Math.max(insets.top, 16) + 16, gap: 18, paddingBottom: 40 }}
+        >
           <Logo />
           <View style={{ gap: 6 }}>
             <AppText size={34} weight="extrabold">
@@ -93,7 +98,9 @@ export function SignInScreen() {
               </AppText>
             </Pressable>
           </GlassCard>
-          <PrimaryButton label={t('auth.apple')} tone="glass" onPress={() => void oauth('apple')} />
+          {Platform.OS === 'ios' ? (
+            <PrimaryButton label={t('auth.apple')} tone="glass" onPress={() => void oauth('apple')} />
+          ) : null}
           <PrimaryButton label={t('auth.google')} tone="glass" onPress={() => void oauth('google')} />
           {!configured ? (
             <GlassCard style={{ gap: 10 }}>
@@ -101,7 +108,10 @@ export function SignInScreen() {
               <PrimaryButton
                 label={t('auth.demoCta')}
                 onPress={() => {
-                  void enterDemo(name || email.split('@')[0] || 'Enes', email).then(() => router.replace('/home'));
+                  setError(null);
+                  void enterDemo(name || email.split('@')[0] || 'Enes', email)
+                    .then(() => router.replace('/home'))
+                    .catch(() => setError(t('errors.generic')));
                 }}
               />
             </GlassCard>

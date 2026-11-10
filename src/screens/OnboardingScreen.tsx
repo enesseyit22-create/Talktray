@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { Logo } from '@/components/Brand';
@@ -16,6 +17,7 @@ export function OnboardingScreen() {
   const { t } = useI18n();
   const { colors } = useTheme();
   const { finishOnboarding } = useApp();
+  const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
   const last = index === SLIDES.length - 1;
   const busy = useRef(false);
@@ -27,16 +29,31 @@ export function OnboardingScreen() {
     }
     if (busy.current) return;
     busy.current = true;
-    await finishOnboarding();
-    router.replace('/sign-in');
+    try {
+      await finishOnboarding();
+      router.replace('/sign-in');
+    } finally {
+      busy.current = false;
+    }
   };
 
   return (
     <Aurora>
-      <View style={{ flex: 1, padding: 24, paddingTop: 72, justifyContent: 'space-between' }}>
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          padding: 24,
+          paddingTop: Math.max(insets.top, 16) + 8,
+          paddingBottom: Math.max(insets.bottom, 16),
+          justifyContent: 'space-between',
+          gap: 24,
+        }}
+      >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Logo />
           <Pressable
+            hitSlop={8}
+            style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
             onPress={async () => {
               await finishOnboarding();
               router.replace('/sign-in');
@@ -48,21 +65,20 @@ export function OnboardingScreen() {
           </Pressable>
         </View>
         <View style={{ alignItems: 'center', gap: 28 }}>
-          {index === 0 ? <RecordOrb size={220} /> : null}
+          {index === 0 ? <RecordOrb size={200} /> : null}
           {index === 1 ? (
-            <View style={{ width: '100%', gap: 12 }}>
-              {(['task', 'shopping', 'note'] as const).map((type) => (
+            <View style={{ width: '100%', gap: 10 }}>
+              {(['task', 'reminder', 'note'] as const).map((type) => (
                 <GlassCard key={type}>
                   <AppText weight="bold">{t(`types.${type}`)}</AppText>
-                  <AppText color={colors.muted}>{t(`onboarding.s2Body`)}</AppText>
                 </GlassCard>
               ))}
             </View>
           ) : null}
           {index === 2 ? (
-            <GlassCard style={{ width: '100%', gap: 10 }}>
-              <AppText weight="bold">{t('filters.today')}</AppText>
-              <AppText color={colors.muted}>{t('onboarding.s3Body')}</AppText>
+            <GlassCard style={{ width: '100%', gap: 8 }}>
+              <AppText weight="bold">{t('comingUp')}</AppText>
+              <AppText color={colors.muted}>{t('greet.subtitle')}</AppText>
             </GlassCard>
           ) : null}
           <View style={{ gap: 8, alignItems: 'center' }}>
@@ -90,7 +106,7 @@ export function OnboardingScreen() {
           </View>
           <PrimaryButton label={last ? t('onboarding.start') : t('onboarding.next')} onPress={() => void next()} />
         </View>
-      </View>
+      </ScrollView>
     </Aurora>
   );
 }

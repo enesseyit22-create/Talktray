@@ -1,12 +1,14 @@
 import { Check, Sparkles } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
+import { PRIVACY_URL, TERMS_URL } from '@/lib/legal';
 import { YEARLY_PRICE } from '../../shared/parse/quota';
 import { loadStoreOffers, type StoreOffer } from '@/services/purchases';
 import { fallbackOffers } from '@/services/billing-shared';
@@ -16,6 +18,7 @@ export function PaywallScreen() {
   const { t } = useI18n();
   const { colors } = useTheme();
   const app = useApp();
+  const insets = useSafeAreaInsets();
   const [offers, setOffers] = useState<StoreOffer[]>(fallbackOffers);
   const [available, setAvailable] = useState(false);
   const [plan, setPlan] = useState<'monthly' | 'yearly'>('yearly');
@@ -45,8 +48,8 @@ export function PaywallScreen() {
 
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 22, paddingTop: 36, paddingBottom: 48, gap: 14 }}>
-        <Pressable onPress={() => router.back()}>
+      <ScrollView contentContainerStyle={{ padding: 22, paddingTop: Math.max(insets.top, 12) + 8, paddingBottom: 48, gap: 14 }}>
+        <Pressable onPress={() => router.back()} hitSlop={8} style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}>
           <AppText color={colors.muted}>{t('close')}</AppText>
         </Pressable>
         <View style={{ alignItems: 'center', gap: 8 }}>
@@ -94,6 +97,9 @@ export function PaywallScreen() {
                   <AppText size={26} weight="extrabold">
                     {offer.price}
                   </AppText>
+                  <AppText size={12} color={colors.muted}>
+                    {offer.id === 'yearly' ? t('paywall.billedYearly') : t('paywall.billedMonthly')}
+                  </AppText>
                   {offer.id === 'yearly' ? (
                     <AppText size={12} color={colors.muted}>
                       {t('paywall.equiv', { price: '$4.17' })}
@@ -133,6 +139,18 @@ export function PaywallScreen() {
         <AppText size={12} color={colors.soft} style={{ textAlign: 'center' }}>
           {t('paywall.legal')}
         </AppText>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 18, flexWrap: 'wrap' }}>
+          <Pressable onPress={() => void Linking.openURL(TERMS_URL)} style={{ minHeight: 44, justifyContent: 'center' }}>
+            <AppText size={13} weight="semibold" color={colors.primary}>
+              {t('paywall.terms')}
+            </AppText>
+          </Pressable>
+          <Pressable onPress={() => void Linking.openURL(PRIVACY_URL)} style={{ minHeight: 44, justifyContent: 'center' }}>
+            <AppText size={13} weight="semibold" color={colors.primary}>
+              {t('paywall.privacy')}
+            </AppText>
+          </Pressable>
+        </View>
       </ScrollView>
     </Aurora>
   );

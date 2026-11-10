@@ -8,6 +8,7 @@ import {
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { RecordOrb } from '@/components/RecordOrb';
@@ -20,6 +21,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 export function RecordScreen() {
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { usage, processThought, openSample } = useApp();
   const params = useLocalSearchParams<{ autostart?: string }>();
@@ -78,7 +80,7 @@ export function RecordScreen() {
 
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 72, paddingBottom: 140, alignItems: 'center', gap: 18 }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingTop: Math.max(insets.top, 16) + 12, paddingBottom: 140, alignItems: 'center', gap: 18 }}>
         <AppText size={32} weight="extrabold" style={{ textAlign: 'center' }}>
           {t('record.title')}
         </AppText>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { EditSheet } from '@/components/EditSheet';
@@ -11,12 +12,13 @@ import { useI18n } from '@/i18n';
 
 export function NotesScreen() {
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const { items, profile, updateItem, deleteItem } = useApp();
   const [editing, setEditing] = useState<InboxItem | null>(null);
   const notes = items.filter((item) => item.type === 'note');
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 64, paddingBottom: 130, gap: 14 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: 130, gap: 14 }}>
         <AppText size={32} weight="extrabold">
           {t('tabs.notes')}
         </AppText>

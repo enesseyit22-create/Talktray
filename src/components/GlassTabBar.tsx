@@ -53,7 +53,7 @@ export function GlassTabBar({ state, navigation }: TabBarProps) {
                 <View style={[styles.record, { backgroundColor: colors.primary, borderColor: colors.glassBorder }]}>
                   <Mic color={colors.onPrimary} size={26} strokeWidth={2.4} />
                 </View>
-                <AppText size={11} weight="semibold" color={focused ? colors.tabActive : colors.tab}>
+                <AppText size={11} weight="semibold" numberOfLines={1} color={focused ? colors.tabActive : colors.tab} style={{ textAlign: 'center' }}>
                   {label}
                 </AppText>
               </Pressable>
@@ -62,7 +62,7 @@ export function GlassTabBar({ state, navigation }: TabBarProps) {
           return (
             <Pressable key={route.key} onPress={onPress} style={styles.slot}>
               <Icon color={focused ? colors.tabActive : colors.tab} size={22} strokeWidth={focused ? 2.5 : 2.1} />
-              <AppText size={11} weight="semibold" color={focused ? colors.tabActive : colors.tab}>
+              <AppText size={11} weight="semibold" numberOfLines={1} color={focused ? colors.tabActive : colors.tab} style={{ textAlign: 'center' }}>
                 {label}
               </AppText>
             </Pressable>

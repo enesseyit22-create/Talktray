@@ -20,6 +20,7 @@ export function ReviewScreen() {
   const [editing, setEditing] = useState<DraftItem | null>(null);
   const [exportCalendar, setExportCalendar] = useState(app.profile.exportToCalendar);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const draft = app.draft;
 
   if (!draft) {
@@ -63,7 +64,7 @@ export function ReviewScreen() {
                   </AppText>
                 ) : null}
               </View>
-              <Pressable onPress={() => app.removeDraftItem(item.localId)}>
+              <Pressable hitSlop={10} style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => app.removeDraftItem(item.localId)}>
                 <Trash2 color={colors.danger} size={18} />
               </Pressable>
             </View>
@@ -83,12 +84,15 @@ export function ReviewScreen() {
           loading={saving}
           onPress={() => {
             setSaving(true);
+            setSaveError(null);
             void app
               .saveDraft(exportCalendar)
               .then(() => router.replace('/'))
+              .catch(() => setSaveError(t('errors.generic')))
               .finally(() => setSaving(false));
           }}
         />
+        {saveError ? <AppText color={colors.danger}>{saveError}</AppText> : null}
         <PrimaryButton
           tone="glass"
           label={t('cancel')}

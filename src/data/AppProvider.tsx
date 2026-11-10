@@ -5,7 +5,7 @@ import { getCalendars } from 'expo-localization';
 import { buildSeed } from '@/data/seed';
 import { loadDemo, loadPrefs, saveDemo, savePrefs, type DemoState } from '@/data/storage';
 import type { Draft, DraftItem, InboxItem, Profile, Recording, SessionUser, Usage } from '@/domain/types';
-import { asLocale, deviceLocale, useI18n, type Locale } from '@/i18n';
+import { asLocale, deviceLocale, translate, useI18n, type Locale } from '@/i18n';
 import { isSupabaseConfigured } from '@/lib/config';
 import { createId } from '@/lib/id';
 import { supabase } from '@/lib/supabase';
@@ -51,6 +51,7 @@ type AppValue = {
   signInGoogle: () => Promise<void>;
   enterDemo: (name: string, email?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   updateProfile: (patch: Partial<Profile>) => Promise<void>;
   processThought: (input: { audioUri?: string | null; durationMs: number; transcript?: string }) => Promise<'review' | 'quota'>;
   updateDraftItem: (localId: string, patch: Partial<DraftItem>) => void;
@@ -205,7 +206,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       if (isSupabaseConfigured) {
         const { data } = await supabase.auth.getSession();
-        if (data.session?.user) await loadRemote(data.session.user);
+        if (data.session?.user) {
+          try {
+            await loadRemote(data.session.user);
+          } catch {
+            if (!active) return;
+            setUser({ id: data.session.user.id, email: data.session.user.email ?? '' });
+            setAppMode('supabase');
+            setBanner(translate(savedLocale, 'errors.network'));
+          }
+        }
       } else {
         const demo = await loadDemo();
         if (demo) {
@@ -399,6 +409,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setItems([]);
         setRecordings([]);
         setDraft(null);
+        setAppMode('signedOut');
+        refreshUsage(0, false, monthPeriod(new Date(), profile.timezone));
+      },
+      deleteAccount: async () => {
+        if (mode === 'supabase') {
+          const { error } = await supabase.rpc('delete_own_account');
+          if (error) throw error;
+          await supabase.auth.signOut();
+        }
+        await logOutPurchases();
+        await saveDemo(null);
+        setUser(null);
+        setItems([]);
+        setRecordings([]);
+        setDraft(null);
+        setBanner(null);
         setAppMode('signedOut');
         refreshUsage(0, false, monthPeriod(new Date(), profile.timezone));
       },

@@ -1,0 +1,41 @@
+:root {
+  color-scheme: light;
+  --ink: #2a2452;
+  --muted: #6f6a8a;
+  --bg: #f7f2ff;
+  --card: #ffffff;
+  --line: #e4dcf6;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  background:
+    radial-gradient(900px 420px at 10% -10%, #e7dcff 0%, transparent 60%),
+    radial-gradient(700px 380px at 100% 0%, #ffe4d8 0%, transparent 55%),
+    var(--bg);
+  color: var(--ink);
+}
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 24px 96px;
+}
+.mark {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+}
+h1 { font-size: 48px; line-height: 1.05; margin: 8px 0 16px; }
+h2 { margin-top: 32px; font-size: 22px; }
+.lead, p, li { font-size: 18px; line-height: 1.55; }
+a { color: #5c4ed6; }
+nav { display: flex; gap: 20px; margin-top: 28px; font-family: ui-sans-serif, system-ui, sans-serif; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 8px 28px 28px;
+}

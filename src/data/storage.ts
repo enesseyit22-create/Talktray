@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { InboxItem, Profile, Recording, SessionUser } from '@/domain/types';
 import type { ThemeMode } from '@/theme/ThemeProvider';
-import type { Locale } from '@/i18n';
+import { asLocale, deviceLocale, type Locale } from '@/i18n';
 
 const PREFS = 'talktray.prefs';
 const DEMO = 'talktray.demo';
@@ -31,8 +31,17 @@ const defaultPrefs: Prefs = {
 
 export async function loadPrefs(): Promise<Prefs> {
   const raw = await AsyncStorage.getItem(PREFS);
-  if (!raw) return defaultPrefs;
-  return { ...defaultPrefs, ...(JSON.parse(raw) as Partial<Prefs>) };
+  if (!raw) return { ...defaultPrefs, locale: deviceLocale() };
+  try {
+    const parsed = JSON.parse(raw) as Partial<Prefs>;
+    return {
+      ...defaultPrefs,
+      ...parsed,
+      locale: asLocale(parsed.locale ?? deviceLocale()),
+    };
+  } catch {
+    return { ...defaultPrefs, locale: deviceLocale() };
+  }
 }
 
 export async function savePrefs(prefs: Prefs) {

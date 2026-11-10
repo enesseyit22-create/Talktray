@@ -2,6 +2,7 @@ import { Bell } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { Logo } from '@/components/Brand';
@@ -22,6 +23,7 @@ export function InboxScreen() {
   const { t, locale } = useI18n();
   const { colors } = useTheme();
   const { profile, items, recordings, updateItem, deleteItem, toggleComplete } = useApp();
+  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<Filter>('today');
   const [editing, setEditing] = useState<InboxItem | null>(null);
   const [bell, setBell] = useState(false);
@@ -40,7 +42,7 @@ export function InboxScreen() {
 
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 64, paddingBottom: 130, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: 130, gap: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Logo />
           <Pressable
@@ -71,7 +73,12 @@ export function InboxScreen() {
         <View style={{ alignItems: 'center', marginVertical: 4 }}>
           <RecordOrb size={176} onPress={() => router.push('/record')} />
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: -20 }}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
+        >
           {(['today', 'reminders', 'calendar', 'shopping', 'all'] as Filter[]).map((key) => (
             <Chip key={key} label={t(`filters.${key}`)} active={filter === key} onPress={() => setFilter(key)} />
           ))}
@@ -147,13 +154,14 @@ function Stat({
   label: string;
   tint: { tile: string; icon: string };
 }) {
+  const { colors } = useTheme();
   return (
-    <GlassCard padding={12} style={{ flex: 1, gap: 2 }}>
+    <GlassCard padding={12} style={{ flex: 1, gap: 2, alignItems: 'flex-start' }}>
       <View style={{ width: 28, height: 28, borderRadius: 10, backgroundColor: tint.tile }} />
       <AppText size={20} weight="extrabold" color={tint.icon}>
         {value}
       </AppText>
-      <AppText size={11} color="#8E89A8">
+      <AppText size={11} color={colors.muted} numberOfLines={2}>
         {label}
       </AppText>
     </GlassCard>

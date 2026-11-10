@@ -1,9 +1,11 @@
-import { ScrollView, Switch, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, Switch, View } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { WidgetPreview } from '@/components/Brand';
-import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
+import { AppText, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { LOCALES, LOCALE_LABELS, useI18n } from '@/i18n';
 import { useTheme, type ThemeMode } from '@/theme/ThemeProvider';
@@ -15,13 +17,17 @@ export function ProfileScreen() {
   const { colors } = useTheme();
   const app = useApp();
   const updates = useUpdates();
+  const insets = useSafeAreaInsets();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const todayCount = app.recordings.filter((recording) =>
     isSameZonedDay(new Date(recording.createdAt), new Date(), app.profile.timezone),
   ).length;
 
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 64, paddingBottom: 140, gap: 14 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 12, paddingBottom: 140, gap: 14 }}>
         <AppText size={32} weight="extrabold">
           {t('profile.title')}
         </AppText>
@@ -68,15 +74,14 @@ export function ProfileScreen() {
             ))}
           </View>
           <AppText weight="bold">{t('profile.theme')}</AppText>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {(['system', 'light', 'dark'] as ThemeMode[]).map((mode) => (
-              <View key={mode} style={{ flex: 1 }}>
-                <PrimaryButton
-                  tone={app.profile.theme === mode ? 'solid' : 'glass'}
-                  label={t(`profile.${mode}`)}
-                  onPress={() => void app.updateProfile({ theme: mode })}
-                />
-              </View>
+              <PrimaryButton
+                key={mode}
+                tone={app.profile.theme === mode ? 'solid' : 'glass'}
+                label={t(`profile.${mode}`)}
+                onPress={() => void app.updateProfile({ theme: mode })}
+              />
             ))}
           </View>
           <AppText color={colors.muted}>
@@ -133,7 +138,42 @@ export function ProfileScreen() {
           <PrimaryButton tone="glass" label={t('profile.clearSamples')} onPress={() => void app.clearSamples()} />
         ) : null}
         <PrimaryButton tone="glass" label={t('signOut')} onPress={() => void app.signOut().then(() => router.replace('/sign-in'))} />
+        <Pressable
+          onPress={() => {
+            setDeleteError(null);
+            setConfirmDelete(true);
+          }}
+          style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <AppText weight="semibold" color={colors.danger}>
+            {t('account.delete')}
+          </AppText>
+        </Pressable>
+        {deleteError ? <AppText color={colors.danger}>{deleteError}</AppText> : null}
       </ScrollView>
+      <Sheet visible={confirmDelete} onClose={() => setConfirmDelete(false)}>
+        <AppText size={20} weight="extrabold">
+          {t('account.title')}
+        </AppText>
+        <AppText color={colors.muted}>{t('account.body')}</AppText>
+        <PrimaryButton
+          label={t('account.confirm')}
+          loading={deleting}
+          onPress={() => {
+            setDeleting(true);
+            setDeleteError(null);
+            void app
+              .deleteAccount()
+              .then(() => {
+                setConfirmDelete(false);
+                router.replace('/sign-in');
+              })
+              .catch(() => setDeleteError(t('account.failed')))
+              .finally(() => setDeleting(false));
+          }}
+        />
+        <PrimaryButton tone="glass" label={t('cancel')} onPress={() => setConfirmDelete(false)} />
+      </Sheet>
     </Aurora>
   );
 }
