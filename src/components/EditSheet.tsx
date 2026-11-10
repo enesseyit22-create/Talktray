@@ -7,6 +7,14 @@ import { resolveRelativeDate } from '../../shared/parse/dates';
 import type { ItemType } from '../../shared/parse/types';
 
 const TYPES: ItemType[] = ['task', 'reminder', 'event', 'shopping', 'note'];
+const PRESETS = [0, 5, 10, 15, 30, 60, 1440];
+
+function offsetLabel(t: (key: string, params?: Record<string, string | number>) => string, minutes: number) {
+  if (minutes === 0) return t('remind.at');
+  if (minutes === 60) return t('remind.hour');
+  if (minutes === 1440) return t('remind.day');
+  return t('remind.minutes', { minutes });
+}
 
 export type EditableItem = {
   type: ItemType;
@@ -15,12 +23,14 @@ export type EditableItem = {
   dueAt: string | null;
   allDay: boolean;
   listName: string | null;
+  reminderOffsets: number[] | null;
 };
 
 export function EditSheet({
   visible,
   item,
   timeZone,
+  defaultOffsets,
   onClose,
   onChange,
   onDelete,
@@ -28,6 +38,7 @@ export function EditSheet({
   visible: boolean;
   item: EditableItem | null;
   timeZone: string;
+  defaultOffsets: number[];
   onClose: () => void;
   onChange: (patch: Partial<EditableItem>) => void;
   onDelete?: () => void;
@@ -74,6 +85,33 @@ export function EditSheet({
           autoCapitalize="words"
         />
       ) : null}
+      <AppText size={13} weight="semibold">
+        {t('remind.title')}
+      </AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <Chip
+          label={t('remind.useDefault')}
+          active={item.reminderOffsets == null}
+          onPress={() => onChange({ reminderOffsets: null })}
+        />
+        {[...new Set([...PRESETS, ...(item.reminderOffsets ?? [])])].sort((a, b) => a - b).map((offset) => {
+          const selected = (item.reminderOffsets ?? defaultOffsets).includes(offset);
+          return (
+            <Chip
+              key={offset}
+              label={offsetLabel(t, offset)}
+              active={item.reminderOffsets != null && selected}
+              onPress={() => {
+                const base = item.reminderOffsets ?? [...defaultOffsets];
+                const next = base.includes(offset)
+                  ? base.filter((value) => value !== offset)
+                  : [...base, offset].sort((a, b) => a - b);
+                onChange({ reminderOffsets: next.length > 0 ? next : [0] });
+              }}
+            />
+          );
+        })}
+      </View>
       <AppText size={13} weight="semibold">
         {t('edit.due')}
       </AppText>

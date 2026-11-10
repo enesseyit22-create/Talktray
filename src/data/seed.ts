@@ -75,6 +75,7 @@ function item(
     dueAt,
     allDay,
     listName,
+    reminderOffsets: null,
     completedAt: null,
     calendarEventId: null,
     notificationId: null,

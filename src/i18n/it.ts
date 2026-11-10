@@ -108,6 +108,13 @@ export const it: Dictionary = {
   notifications: {
     reminder: 'Promemoria di Talktray',
     channel: 'Promemoria',
+    now: 'Ora: {title}',
+    inMinutes: 'Tra {minutes} minuti: {title}',
+    inHour: 'Tra 1 ora: {title}',
+    inDay: 'Tra 1 giorno: {title}',
+    testTitle: 'Talktray',
+    testBody: 'Le notifiche funzionano.',
+    testSent: 'Notifica di prova inviata',
   },
   review: {
     title: 'Va bene così?',
@@ -222,6 +229,14 @@ export const it: Dictionary = {
     transcription: 'La registrazione non si è potuta trascrivere. Riprova tra un momento.',
     analysis: 'La trascrizione non si è potuta dividere in elementi. Riprova.',
   },
+  remind: {
+    title: 'Ricordami',
+    at: 'All’ora',
+    minutes: '{minutes} min prima',
+    hour: '1 ora prima',
+    day: '1 giorno prima',
+    useDefault: 'Predefinito',
+  },
   settings: {
     title: 'Impostazioni',
     account: 'Account',
@@ -238,6 +253,7 @@ export const it: Dictionary = {
     providerEmail: 'Email',
     providerApple: 'Apple',
     providerGoogle: 'Google',
+    testNotification: 'Invia notifica di prova',
     providerDemo: 'Demo su questo dispositivo',
     subscription: 'Abbonamento',
     manage: 'Gestisci abbonamento',

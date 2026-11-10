@@ -23,6 +23,7 @@ describe('normalizeExtraction', () => {
     const due = zonedParts(new Date(items[0]?.dueAt ?? ''), 'Europe/Istanbul');
     expect(due).toMatchObject({ day: 12, hour: 9 });
     expect(items[1]).toMatchObject({ type: 'note', title: 'Logo', dueAt: null, allDay: false });
+    expect(items[0]?.reminderOffsets).toBeNull();
   });
 });
 
@@ -52,6 +53,7 @@ describe('prompt and links', () => {
     expect(system).toContain('Turkish');
     expect(system).toContain('Never translate');
     expect(system).toContain('"type"');
+    expect(system).toContain('reminder_offsets');
   });
 
   it('asks other locales to phrase inbox text in the user language', () => {

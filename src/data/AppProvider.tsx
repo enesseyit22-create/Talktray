@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { getCalendars } from 'expo-localization';
+import { AppState } from 'react-native';
 
 import { buildSeed } from '@/data/seed';
 import { loadDemo, loadPrefs, saveDemo, savePrefs, type DemoState } from '@/data/storage';
@@ -13,7 +14,7 @@ import { createId } from '@/lib/id';
 import { supabase } from '@/lib/supabase';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
 import { exportItemToDevice } from '@/services/calendar';
-import { cancelItemNotification, scheduleItemNotification } from '@/services/notifications';
+import { ensureReminderChannel, requestReminderPermission, syncItemNotifications } from '@/services/notifications';
 import {
   configurePurchases,
   loadStoreOffers,
@@ -86,6 +87,7 @@ function defaultProfile(locale: Locale, timeZone: string): Profile {
     theme: 'system',
     exportToCalendar: false,
     notificationsEnabled: true,
+    reminderOffsets: [0],
   };
 }
 
@@ -168,6 +170,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         theme: profileRow?.theme === 'light' || profileRow?.theme === 'dark' ? profileRow.theme : 'system',
         exportToCalendar: Boolean(profileRow?.export_to_calendar),
         notificationsEnabled: profileRow?.notifications_enabled !== false,
+        reminderOffsets: readReminderOffsets(profileRow?.reminder_offsets),
       };
       const deviceZone = phoneTimeZone();
       if (profileRow?.timezone === 'UTC' && deviceZone !== 'UTC' && nextProfile.timezone === deviceZone) {
@@ -281,6 +284,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     syncWidgets({ todayCount, openTasks });
   }, [items, recordings, user, profile.timezone]);
 
+  useEffect(() => {
+    void ensureReminderChannel(profile.locale);
+  }, [profile.locale]);
+
+  useEffect(() => {
+    if (!user) return;
+    const run = () => {
+      void syncItemNotifications(profile.notificationsEnabled ? items : [], profile.locale, profile.reminderOffsets);
+    };
+    run();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') run();
+    });
+    return () => sub.remove();
+  }, [user, items, profile.notificationsEnabled, profile.locale, profile.reminderOffsets]);
+
   const snapshotDemo = useCallback(
     async (overrides: Partial<DemoState> = {}) => {
       if (!user) return;
@@ -356,6 +375,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               theme: next.theme,
               export_to_calendar: next.exportToCalendar,
               notifications_enabled: next.notificationsEnabled,
+              reminder_offsets: next.reminderOffsets,
             })
             .eq('id', user.id);
           if (error) {
@@ -374,6 +394,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           displayName: name.trim() || seeded?.profile.displayName || 'Enes',
           timezone: timeZone,
           locale,
+          reminderOffsets: seeded?.profile.reminderOffsets?.length ? seeded.profile.reminderOffsets : [0],
         };
         const nextUser = seeded?.user ?? { id: createId(), email: email?.trim() || 'demo@talktray.app' };
         const seed = seeded ? null : buildSeed(new Date(), timeZone, locale === 'tr' ? 'tr' : 'en');
@@ -619,7 +640,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 ...current,
                 items: [
                   ...current.items,
-                  { localId: createId(), type: 'task', title: '', notes: null, dueAt: null, allDay: false, listName: null },
+                  { localId: createId(), type: 'task', title: '', notes: null, dueAt: null, allDay: false, listName: null, reminderOffsets: null },
                 ],
               }
             : current,
@@ -652,21 +673,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dueAt: entry.dueAt,
             allDay: entry.allDay,
             listName: entry.listName,
+            reminderOffsets: entry.reminderOffsets,
             completedAt: null,
             calendarEventId: null,
             notificationId: null,
             createdAt: now,
             updatedAt: now,
           };
-          if (profile.notificationsEnabled && next.dueAt) {
-            next.notificationId = await scheduleItemNotification(next, profile.locale);
-          }
           if (exportCalendar && next.dueAt) {
             next.calendarEventId = await exportItemToDevice(next, profile.timezone).catch(() => null);
           }
           saved.push(next);
         }
         const nextItems = [...saved, ...items];
+        if (profile.notificationsEnabled && saved.some((item) => item.dueAt)) {
+          await requestReminderPermission();
+        }
         if (mode === 'supabase') {
           if (saved.length) {
             const { error } = await supabase.from('items').insert(
@@ -680,6 +702,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 due_at: item.dueAt,
                 all_day: item.allDay,
                 list_name: item.listName,
+                reminder_offsets: item.reminderOffsets,
                 notification_id: item.notificationId,
                 calendar_event_id: item.calendarEventId,
               })),
@@ -706,7 +729,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const current = items.find((item) => item.id === id);
         if (!current) return;
         const completedAt = current.completedAt ? null : new Date().toISOString();
-        if (completedAt && current.notificationId) await cancelItemNotification(current.notificationId);
         const nextItems = items.map((item) =>
           item.id === id ? { ...item, completedAt, updatedAt: new Date().toISOString() } : item,
         );
@@ -731,13 +753,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         );
         setItems(nextItems);
         const updated = nextItems.find((item) => item.id === id);
-        if (updated && profile.notificationsEnabled) {
-          await cancelItemNotification(updated.notificationId);
-          const notificationId = updated.dueAt && !updated.completedAt
-            ? await scheduleItemNotification(updated, profile.locale)
-            : null;
-          updated.notificationId = notificationId;
-          setItems(nextItems.map((item) => (item.id === id ? { ...updated } : item)));
+        if (updated && profile.notificationsEnabled && updated.dueAt && !updated.completedAt) {
+          await requestReminderPermission();
         }
         if (mode === 'supabase' && updated) {
           await supabase
@@ -749,6 +766,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               due_at: updated.dueAt,
               all_day: updated.allDay,
               list_name: updated.listName,
+              reminder_offsets: updated.reminderOffsets,
               notification_id: updated.notificationId,
             })
             .eq('id', id);
@@ -757,8 +775,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       },
       deleteItem: async (id) => {
-        const current = items.find((item) => item.id === id);
-        if (current) await cancelItemNotification(current.notificationId);
         const nextItems = items.filter((item) => item.id !== id);
         setItems(nextItems);
         if (mode === 'supabase') await supabase.from('items').delete().eq('id', id);
@@ -847,12 +863,23 @@ function mapItem(row: Record<string, unknown>): InboxItem {
     dueAt: (row.due_at as string | null) ?? null,
     allDay: Boolean(row.all_day),
     listName: (row.list_name as string | null) ?? null,
+    reminderOffsets: Array.isArray(row.reminder_offsets) ? row.reminder_offsets.map((value) => Number(value)) : null,
     completedAt: (row.completed_at as string | null) ?? null,
     calendarEventId: (row.calendar_event_id as string | null) ?? null,
     notificationId: (row.notification_id as string | null) ?? null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
+}
+
+const PRESET_OFFSETS = [0, 5, 10, 15, 30, 60, 1440];
+
+function readReminderOffsets(value: unknown): number[] {
+  if (!Array.isArray(value)) return [0];
+  const offsets = [...new Set(value.map((entry) => Number(entry)).filter((entry) => PRESET_OFFSETS.includes(entry)))].sort(
+    (a, b) => a - b,
+  );
+  return offsets.length > 0 ? offsets : [0];
 }
 
 function mapRecording(row: Record<string, unknown>): Recording {

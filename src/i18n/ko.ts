@@ -108,6 +108,13 @@ export const ko: Dictionary = {
   notifications: {
     reminder: 'Talktray 알림',
     channel: '알림',
+    now: '지금: {title}',
+    inMinutes: '{minutes}분 후: {title}',
+    inHour: '1시간 후: {title}',
+    inDay: '1일 후: {title}',
+    testTitle: 'Talktray',
+    testBody: '알림이 정상입니다.',
+    testSent: '테스트 알림을 보냈습니다',
   },
   review: {
     title: '이대로 괜찮을까요?',
@@ -222,6 +229,14 @@ export const ko: Dictionary = {
     transcription: '녹음을 받아쓰지 못했습니다. 잠시 후 다시 시도하세요.',
     analysis: '받아쓰기를 항목으로 나누지 못했습니다. 다시 시도하세요.',
   },
+  remind: {
+    title: '알림',
+    at: '정각',
+    minutes: '{minutes}분 전',
+    hour: '1시간 전',
+    day: '1일 전',
+    useDefault: '기본값',
+  },
   settings: {
     title: '설정',
     account: '계정',
@@ -238,6 +253,7 @@ export const ko: Dictionary = {
     providerEmail: '이메일',
     providerApple: 'Apple',
     providerGoogle: 'Google',
+    testNotification: '테스트 알림 보내기',
     providerDemo: '이 기기의 데모',
     subscription: '구독',
     manage: '구독 관리',

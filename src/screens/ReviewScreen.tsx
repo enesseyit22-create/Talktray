@@ -115,6 +115,7 @@ export function ReviewScreen() {
         visible={Boolean(editing)}
         item={editing}
         timeZone={app.profile.timezone}
+        defaultOffsets={app.profile.reminderOffsets}
         onClose={() => setEditing(null)}
         onChange={(patch) => {
           if (!editing) return;

@@ -20,11 +20,12 @@ Preferred locale: ${locale}
 Resolve relative dates (yarın, bugün, öbür gün, haftaya, gelecek pazartesi, bu akşam, tomorrow, next Friday, in 3 days, this evening) to ISO 8601 datetimes with a numeric offset in this timezone. If only a calendar day is known, set all_day true and use 09:00 local. If no date is mentioned, due_at is null.
 
 Return ONLY JSON with this shape:
-{"items":[{"type":"task"|"reminder"|"event"|"shopping"|"note","title":"string","due_at":"string or null","all_day":false,"list_name":"string or null","notes":"string or null"}]}
+{"items":[{"type":"task"|"reminder"|"event"|"shopping"|"note","title":"string","due_at":"string or null","all_day":false,"list_name":"string or null","notes":"string or null","reminder_offsets":"array of minutes or null"}]}
 
 Rules:
 - shopping: one object per product. Set list_name to the list the speaker names. If they only mention a generic shop, use Shopping for en, Alışveriş for tr, and the natural word for a shopping list in any other locale.
 - reminder: a ping at a time, such as a call or "hatırlat / remind me".
+- reminder_offsets: minutes before due_at. 0 means at the time. "10 dakika kala" and "remind me 15 minutes before" are [10] and [15]. "1 saat önce ve tam zamanında" is [0, 60]. If the speaker names no lead time, null.
 - event: appointments, meetings, reservations.
 - task: actionable work. It may have a due date.
 - note: ideas and freeform thoughts.

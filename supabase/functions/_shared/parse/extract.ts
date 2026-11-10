@@ -1,4 +1,5 @@
 import { fold, resolveRelativeDate } from './dates.ts';
+import { parseReminderOffsets } from './reminders.ts';
 import type { ExtractContext, ItemType, ParsedItem } from './types.ts';
 
 export const SAMPLE_TRANSCRIPTS = {
@@ -106,6 +107,11 @@ function shoppingItems(original: string): { titles: string[]; listName: string }
   return { titles, listName };
 }
 
+function offsetsFor(segment: string): number[] | null {
+  const offsets = parseReminderOffsets(segment);
+  return offsets.length > 0 ? offsets : null;
+}
+
 function dueFor(segment: string, ctx: ExtractContext): { dueAt: string | null; allDay: boolean } {
   const resolved = resolveRelativeDate(segment, ctx);
   if (!resolved) return { dueAt: null, allDay: false };
@@ -130,6 +136,7 @@ export function extractItems(transcript: string, ctx: ExtractContext): ParsedIte
           dueAt: due.dueAt,
           allDay: due.dueAt ? due.allDay : false,
           listName,
+          reminderOffsets: offsetsFor(segment),
         });
       }
       continue;
@@ -150,6 +157,7 @@ export function extractItems(transcript: string, ctx: ExtractContext): ParsedIte
       dueAt: due.dueAt,
       allDay: due.dueAt ? due.allDay : false,
       listName: null,
+      reminderOffsets: offsetsFor(segment),
     });
   }
   return items;

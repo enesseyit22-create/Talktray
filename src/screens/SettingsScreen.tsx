@@ -8,13 +8,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { WidgetPreview } from '@/components/Brand';
-import { AppText, Field, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
+import { AppText, Chip, Field, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { LOCALES, LOCALE_LABELS, useI18n } from '@/i18n';
 import { errorText } from '@/lib/errors';
 import { PRIVACY_URL, SITE_ORIGIN, TERMS_URL } from '@/lib/legal';
 import { supabase } from '@/lib/supabase';
 import { normalizeUsername, usernameProblem } from '@/lib/username';
+import { sendTestNotification } from '@/services/notifications';
 import { useTheme, type ThemeMode } from '@/theme/ThemeProvider';
 import { useUpdates } from '@/updates/UpdateProvider';
 import { isSameZonedDay } from '../../shared/parse/time';
@@ -60,6 +61,7 @@ export function SettingsScreen() {
   const [licenses, setLicenses] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [testNote, setTestNote] = useState<string | null>(null);
 
   const remoteMessage =
     availability?.name === normalizedUsername && availability.state === 'error' ? availability.message ?? null : null;
@@ -288,7 +290,38 @@ export function SettingsScreen() {
             label={t('settings.timezoneDevice')}
             onPress={() => void saveZone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')}
           />
+          <AppText weight="bold">{t('remind.title')}</AppText>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {[0, 5, 10, 15, 30, 60, 1440].map((offset) => {
+              const selected = app.profile.reminderOffsets.includes(offset);
+              const label = offset === 0 ? t('remind.at') : offset === 60 ? t('remind.hour') : offset === 1440 ? t('remind.day') : t('remind.minutes', { minutes: offset });
+              return (
+                <Chip
+                  key={offset}
+                  label={label}
+                  active={selected}
+                  onPress={() => {
+                    const next = selected
+                      ? app.profile.reminderOffsets.filter((value) => value !== offset)
+                      : [...app.profile.reminderOffsets, offset].sort((a, b) => a - b);
+                    if (!next.length) return;
+                    void app.updateProfile({ reminderOffsets: next });
+                  }}
+                />
+              );
+            })}
+          </View>
           <Toggle label={t('profile.notifications')} value={app.profile.notificationsEnabled} onChange={(value) => void toggleNotifications(value)} />
+          <PrimaryButton
+            tone="glass"
+            label={t('settings.testNotification')}
+            onPress={() =>
+              void sendTestNotification(locale).then((sent) => {
+                setTestNote(sent ? t('notifications.testSent') : t('settings.notificationsDenied'));
+              })
+            }
+          />
+          {testNote ? <AppText size={13} color={colors.muted}>{testNote}</AppText> : null}
           {notice === 'denied' ? (
             <Row label={t('settings.notificationsDenied')} onPress={() => void Linking.openSettings()} />
           ) : null}

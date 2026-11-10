@@ -1,5 +1,16 @@
 import { resolveRelativeDate } from './dates.ts';
+import { parseReminderOffsets } from './reminders.ts';
 import { ITEM_TYPES, type ExtractContext, type ItemType, type ParsedItem } from './types.ts';
+
+function readOffsets(record: Record<string, unknown>, text: string): number[] | null {
+  const raw = record.reminder_offsets ?? record.reminderOffsets;
+  const fromModel = Array.isArray(raw)
+    ? raw.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value >= 0 && value <= 10080)
+    : [];
+  const spoken = parseReminderOffsets(text);
+  const merged = [...new Set([...fromModel, ...spoken])].sort((a, b) => a - b);
+  return merged.length > 0 ? merged : null;
+}
 
 function stringOrNull(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -55,13 +66,15 @@ export function normalizeExtraction(payload: unknown, ctx: ExtractContext): Pars
         }
       }
     }
+    const notes = stringOrNull(record.notes);
     out.push({
       type: type as ItemType,
       title,
-      notes: stringOrNull(record.notes),
+      notes,
       dueAt,
       allDay: dueAt ? allDay : false,
       listName: stringOrNull(record.list_name ?? record.listName),
+      reminderOffsets: readOffsets(record, `${title} ${notes ?? ''}`),
     });
   }
   return out;

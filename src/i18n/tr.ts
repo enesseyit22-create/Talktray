@@ -108,6 +108,13 @@ export const tr: Dictionary = {
   notifications: {
     reminder: 'Talktray hatırlatması',
     channel: 'Hatırlatmalar',
+    now: 'Şimdi: {title}',
+    inMinutes: '{minutes} dakika içinde: {title}',
+    inHour: '1 saat içinde: {title}',
+    inDay: '1 gün içinde: {title}',
+    testTitle: 'Talktray',
+    testBody: 'Bildirimler çalışıyor.',
+    testSent: 'Deneme bildirimi gönderildi',
   },
   review: {
     title: 'Böyle mi olsun?',
@@ -222,6 +229,14 @@ export const tr: Dictionary = {
     transcription: 'Kayıt yazıya dökülemedi. Biraz sonra yeniden dene.',
     analysis: 'Metin öğelere ayrılamadı. Yeniden dene.',
   },
+  remind: {
+    title: 'Hatırlat',
+    at: 'Zamanında',
+    minutes: '{minutes} dk önce',
+    hour: '1 saat önce',
+    day: '1 gün önce',
+    useDefault: 'Varsayılan',
+  },
   settings: {
     title: 'Ayarlar',
     account: 'Hesap',
@@ -238,6 +253,7 @@ export const tr: Dictionary = {
     providerEmail: 'E-posta',
     providerApple: 'Apple',
     providerGoogle: 'Google',
+    testNotification: 'Deneme bildirimi gönder',
     providerDemo: 'Bu cihazda demo',
     subscription: 'Abonelik',
     manage: 'Aboneliği yönet',

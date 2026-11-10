@@ -108,6 +108,13 @@ export const de: Dictionary = {
   notifications: {
     reminder: 'Talktray-Erinnerung',
     channel: 'Erinnerungen',
+    now: 'Jetzt: {title}',
+    inMinutes: 'In {minutes} Minuten: {title}',
+    inHour: 'In 1 Stunde: {title}',
+    inDay: 'In 1 Tag: {title}',
+    testTitle: 'Talktray',
+    testBody: 'Benachrichtigungen funktionieren.',
+    testSent: 'Testbenachrichtigung gesendet',
   },
   review: {
     title: 'Passt das so?',
@@ -222,6 +229,14 @@ export const de: Dictionary = {
     transcription: 'Die Aufnahme konnte nicht transkribiert werden. Versuch es gleich noch einmal.',
     analysis: 'Das Transkript konnte nicht in Einträge geteilt werden. Versuch es noch einmal.',
   },
+  remind: {
+    title: 'Erinnern',
+    at: 'Zur Zeit',
+    minutes: '{minutes} Min. vorher',
+    hour: '1 Stunde vorher',
+    day: '1 Tag vorher',
+    useDefault: 'Standard',
+  },
   settings: {
     title: 'Einstellungen',
     account: 'Konto',
@@ -238,6 +253,7 @@ export const de: Dictionary = {
     providerEmail: 'E-Mail',
     providerApple: 'Apple',
     providerGoogle: 'Google',
+    testNotification: 'Testbenachrichtigung senden',
     providerDemo: 'Demo auf diesem Gerät',
     subscription: 'Abo',
     manage: 'Abo verwalten',

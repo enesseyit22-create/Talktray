@@ -108,6 +108,13 @@ export const id: Dictionary = {
   notifications: {
     reminder: 'Pengingat Talktray',
     channel: 'Pengingat',
+    now: 'Sekarang: {title}',
+    inMinutes: 'Dalam {minutes} menit: {title}',
+    inHour: 'Dalam 1 jam: {title}',
+    inDay: 'Dalam 1 hari: {title}',
+    testTitle: 'Talktray',
+    testBody: 'Notifikasi berfungsi.',
+    testSent: 'Notifikasi uji terkirim',
   },
   review: {
     title: 'Sudah pas?',
@@ -222,6 +229,14 @@ export const id: Dictionary = {
     transcription: 'Rekaman tidak bisa ditranskrip. Coba lagi sebentar lagi.',
     analysis: 'Transkrip tidak bisa diubah menjadi item. Coba lagi.',
   },
+  remind: {
+    title: 'Ingatkan',
+    at: 'Tepat waktu',
+    minutes: '{minutes} menit sebelumnya',
+    hour: '1 jam sebelumnya',
+    day: '1 hari sebelumnya',
+    useDefault: 'Pakai bawaan',
+  },
   settings: {
     title: 'Pengaturan',
     account: 'Akun',
@@ -238,6 +253,7 @@ export const id: Dictionary = {
     providerEmail: 'Email',
     providerApple: 'Apple',
     providerGoogle: 'Google',
+    testNotification: 'Kirim notifikasi uji',
     providerDemo: 'Demo di perangkat ini',
     subscription: 'Langganan',
     manage: 'Kelola langganan',

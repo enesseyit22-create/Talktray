@@ -31,6 +31,7 @@ export function NotesScreen() {
         visible={Boolean(editing)}
         item={editing}
         timeZone={profile.timezone}
+        defaultOffsets={profile.reminderOffsets}
         onClose={() => setEditing(null)}
         onChange={(patch) => {
           if (!editing) return;

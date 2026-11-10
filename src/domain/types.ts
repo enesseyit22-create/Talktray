@@ -9,6 +9,7 @@ export type Profile = {
   theme: 'system' | 'light' | 'dark';
   exportToCalendar: boolean;
   notificationsEnabled: boolean;
+  reminderOffsets: number[];
 };
 
 export type InboxItem = ParsedItem & {

@@ -1,7 +1,7 @@
 import { Bell } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
@@ -24,8 +24,12 @@ export function InboxScreen() {
   const { colors } = useTheme();
   const { profile, items, recordings, updateItem, deleteItem, toggleComplete } = useApp();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ item?: string | string[] }>();
+  const linkedId = Array.isArray(params.item) ? params.item[0] : params.item;
   const [filter, setFilter] = useState<Filter>('today');
-  const [editing, setEditing] = useState<InboxItem | null>(null);
+  const [picked, setPicked] = useState<InboxItem | null>(null);
+  const linked = linkedId ? items.find((item) => item.id === linkedId) ?? null : null;
+  const editing = picked ?? linked;
   const [bell, setBell] = useState(false);
   const now = new Date();
   const visible = filterItems(items, filter, now, profile.timezone);
@@ -91,7 +95,7 @@ export function InboxScreen() {
               key={item.id}
               item={item}
               timeZone={profile.timezone}
-              onPress={() => setEditing(item)}
+              onPress={() => setPicked(item)}
               onToggle={() => void toggleComplete(item.id)}
             />
           ))
@@ -119,17 +123,22 @@ export function InboxScreen() {
         visible={Boolean(editing)}
         item={editing}
         timeZone={profile.timezone}
-        onClose={() => setEditing(null)}
+        defaultOffsets={profile.reminderOffsets}
+        onClose={() => {
+          setPicked(null);
+          if (linkedId) router.setParams({ item: '' });
+        }}
         onChange={(patch) => {
           if (!editing) return;
           const next = { ...editing, ...patch };
-          setEditing(next);
+          setPicked(next);
           void updateItem(editing.id, patch);
         }}
         onDelete={() => {
           if (!editing) return;
           void deleteItem(editing.id);
-          setEditing(null);
+          setPicked(null);
+          if (linkedId) router.setParams({ item: '' });
         }}
       />
       <Sheet visible={bell} onClose={() => setBell(false)}>

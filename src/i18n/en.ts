@@ -106,6 +106,13 @@ export const en = {
   notifications: {
     reminder: 'Talktray reminder',
     channel: 'Reminders',
+    now: 'Now: {title}',
+    inMinutes: 'In {minutes} minutes: {title}',
+    inHour: 'In 1 hour: {title}',
+    inDay: 'In 1 day: {title}',
+    testTitle: 'Talktray',
+    testBody: 'Notifications are working.',
+    testSent: 'Test notification sent',
   },
   review: {
     title: 'Does this look right?',
@@ -220,6 +227,14 @@ export const en = {
     transcription: 'The recording could not be transcribed. Try again in a moment.',
     analysis: 'The transcript could not be turned into items. Try again.',
   },
+  remind: {
+    title: 'Remind me',
+    at: 'At time',
+    minutes: '{minutes} min before',
+    hour: '1 hour before',
+    day: '1 day before',
+    useDefault: 'Use default',
+  },
   settings: {
     title: 'Settings',
     account: 'Account',
@@ -236,6 +251,7 @@ export const en = {
     providerEmail: 'Email',
     providerApple: 'Apple',
     providerGoogle: 'Google',
+    testNotification: 'Send test notification',
     providerDemo: 'Demo on this device',
     subscription: 'Subscription',
     manage: 'Manage subscription',

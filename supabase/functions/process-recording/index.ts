@@ -3,6 +3,7 @@ import {
   buildExtractionMessages,
   extractItems,
   localTimestamp,
+  mergeSpokenOffsets,
   monthPeriod,
   normalizeExtraction,
   safeTimeZone,
@@ -229,5 +230,6 @@ async function extractWithModel(transcript: string, now: Date, timeZone: string,
   const content = payload.choices?.[0]?.message?.content ?? '{}';
   const parsed = JSON.parse(content.replace(/^```(?:json)?/i, '').replace(/```$/, ''));
   const normalized = normalizeExtraction(parsed, { now, timeZone, locale });
-  return normalized.length > 0 ? normalized : extractItems(transcript, { now, timeZone, locale });
+  const items = normalized.length > 0 ? normalized : extractItems(transcript, { now, timeZone, locale });
+  return mergeSpokenOffsets(items, transcript);
 }

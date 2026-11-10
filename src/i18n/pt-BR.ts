@@ -108,6 +108,13 @@ export const ptBR: Dictionary = {
   notifications: {
     reminder: 'Lembrete do Talktray',
     channel: 'Lembretes',
+    now: 'Agora: {title}',
+    inMinutes: 'Em {minutes} minutos: {title}',
+    inHour: 'Em 1 hora: {title}',
+    inDay: 'Em 1 dia: {title}',
+    testTitle: 'Talktray',
+    testBody: 'As notificações funcionam.',
+    testSent: 'Notificação de teste enviada',
   },
   review: {
     title: 'Ficou certo?',
@@ -222,6 +229,14 @@ export const ptBR: Dictionary = {
     transcription: 'Não foi possível transcrever a gravação. Tente de novo daqui a pouco.',
     analysis: 'Não foi possível transformar a transcrição em itens. Tente de novo.',
   },
+  remind: {
+    title: 'Lembrar',
+    at: 'No horário',
+    minutes: '{minutes} min antes',
+    hour: '1 hora antes',
+    day: '1 dia antes',
+    useDefault: 'Usar padrão',
+  },
   settings: {
     title: 'Ajustes',
     account: 'Conta',
@@ -238,6 +253,7 @@ export const ptBR: Dictionary = {
     providerEmail: 'E-mail',
     providerApple: 'Apple',
     providerGoogle: 'Google',
+    testNotification: 'Enviar notificação de teste',
     providerDemo: 'Demo neste aparelho',
     subscription: 'Assinatura',
     manage: 'Gerenciar assinatura',

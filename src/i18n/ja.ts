@@ -108,6 +108,13 @@ export const ja: Dictionary = {
   notifications: {
     reminder: 'Talktrayのリマインダー',
     channel: 'リマインダー',
+    now: '今: {title}',
+    inMinutes: '{minutes}分後: {title}',
+    inHour: '1時間後: {title}',
+    inDay: '1日後: {title}',
+    testTitle: 'Talktray',
+    testBody: '通知は動作しています。',
+    testSent: 'テスト通知を送りました。',
   },
   review: {
     title: 'この内容でよいですか？',
@@ -222,6 +229,14 @@ export const ja: Dictionary = {
     transcription: '録音を文字起こしできませんでした。しばらくしてからもう一度どうぞ。',
     analysis: '文字起こしを項目に分けられませんでした。もう一度どうぞ。',
   },
+  remind: {
+    title: 'リマインド',
+    at: '時刻どおり',
+    minutes: '{minutes}分前',
+    hour: '1時間前',
+    day: '1日前',
+    useDefault: '標準を使う',
+  },
   settings: {
     title: '設定',
     account: 'アカウント',
@@ -238,6 +253,7 @@ export const ja: Dictionary = {
     providerEmail: 'メール',
     providerApple: 'Apple',
     providerGoogle: 'Google',
+    testNotification: 'テスト通知を送る',
     providerDemo: 'この端末のデモ',
     subscription: 'サブスクリプション',
     manage: 'サブスクリプションを管理',

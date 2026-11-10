@@ -1,4 +1,4 @@
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, router } from 'expo-router';
 import { useEffect } from 'react';
 import * as Linking from 'expo-linking';
 import * as QuickActions from 'expo-quick-actions';
@@ -10,6 +10,7 @@ import { AppText } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { armAutoRecord } from '@/lib/record-signal';
+import { listenForNotificationTaps, openNotificationTarget } from '@/services/notifications';
 import { isRecordLink } from '../../../shared/parse/links';
 
 export default function AppLayout() {
@@ -38,9 +39,15 @@ export default function AppLayout() {
       if (!isRecordLink(url)) return;
       armAutoRecord();
     };
+    const openItem = (itemId: string) => router.push(`/home?item=${itemId}`);
+    openNotificationTarget(openItem);
+    const taps = listenForNotificationTaps(openItem);
     void Linking.getInitialURL().then(open);
     const sub = Linking.addEventListener('url', ({ url }) => open(url));
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+      taps();
+    };
   }, []);
 
   if (ready && !user) return <Redirect href="/sign-in" />;

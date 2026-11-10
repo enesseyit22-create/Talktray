@@ -9,6 +9,8 @@ export type ParsedItem = {
   dueAt: string | null;
   allDay: boolean;
   listName: string | null;
+  /** Minutes before dueAt. Null means the profile default. */
+  reminderOffsets: number[] | null;
 };
 
 export type ExtractContext = {
