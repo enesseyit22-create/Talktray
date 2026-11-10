@@ -58,6 +58,7 @@ export default function AppLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="review" options={{ presentation: 'transparentModal', animation: 'fade' }} />
         <Stack.Screen name="paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="admin" />
       </Stack>
       {banner ? (
         <View style={{ position: 'absolute', top: insets.top + 8, left: 16, right: 16 }}>

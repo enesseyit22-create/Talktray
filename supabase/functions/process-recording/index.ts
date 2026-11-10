@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
       if (!recording.storage_path) return json({ error: 'AUDIO_NOT_FOUND' }, 400);
       const sttKey = Deno.env.get('GROQ_API_KEY') || Deno.env.get('OPENAI_API_KEY');
       if (!sttKey) {
-        await admin.from('recordings').update({ status: 'failed' }).eq('id', recordingId);
+        await admin.from('recordings').update({ status: 'failed', error: 'MISSING_PROVIDER_KEY' }).eq('id', recordingId);
         return json({ error: 'MISSING_PROVIDER_KEY' }, 501);
       }
       const audio = await admin.storage.from('recordings').download(recording.storage_path);
@@ -92,7 +92,8 @@ Deno.serve(async (req) => {
         items = extractItems(transcript, { now, timeZone, locale });
       } else {
         await admin.rpc('refund_recording_quota', { p_user_id: userId, p_period: period });
-        await admin.from('recordings').update({ status: 'failed', transcript }).eq('id', recordingId);
+        const message = error instanceof Error ? error.message : 'UNKNOWN';
+        await admin.from('recordings').update({ status: 'failed', transcript, error: message.slice(0, 500) }).eq('id', recordingId);
         throw error;
       }
     }

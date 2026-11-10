@@ -61,6 +61,7 @@ export function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [testNote, setTestNote] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const remoteMessage =
     availability?.name === normalizedUsername && availability.state === 'error' ? availability.message ?? null : null;
@@ -103,6 +104,17 @@ export function SettingsScreen() {
     };
     void read();
   }, []);
+
+  useEffect(() => {
+    if (app.mode !== 'supabase' || !app.user) return;
+    let active = true;
+    void supabase.rpc('is_admin').then(({ data, error }) => {
+      if (active && !error && data === true) setIsAdmin(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [app.mode, app.user]);
 
   const todayCount = app.recordings.filter((recording) =>
     isSameZonedDay(new Date(recording.createdAt), new Date(), app.profile.timezone),
@@ -189,6 +201,11 @@ export function SettingsScreen() {
         <AppText size={32} weight="extrabold">
           {t('settings.title')}
         </AppText>
+        {isAdmin ? (
+          <Section title={t('admin.title')}>
+            <Row label={t('admin.open')} onPress={() => router.push('/admin')} />
+          </Section>
+        ) : null}
 
         <Section title={t('settings.account')}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
