@@ -11,7 +11,7 @@ import { AppText, Chip, Field, GlassCard, PrimaryButton, Sheet } from '@/compone
 import { useApp } from '@/data/AppProvider';
 import { LOCALES, LOCALE_LABELS, useI18n } from '@/i18n';
 import { errorText } from '@/lib/errors';
-import { PRIVACY_URL, SITE_ORIGIN, TERMS_URL } from '@/lib/legal';
+import { PRIVACY_URL, SITE_ORIGIN, SUPPORT_EMAIL, TERMS_URL } from '@/lib/legal';
 import { supabase } from '@/lib/supabase';
 import { normalizeUsername, usernameProblem } from '@/lib/username';
 import { sendTestNotification } from '@/services/notifications';
@@ -362,7 +362,7 @@ export function SettingsScreen() {
         </Section>
 
         <Section title={t('settings.support')}>
-          <Row label={t('settings.contact')} onPress={() => void Linking.openURL(SITE_ORIGIN)} />
+          <Row label={t('settings.contact')} onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
           <Row
             label={t('settings.rate')}
             onPress={() => {

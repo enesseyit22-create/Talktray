@@ -32,4 +32,4 @@ Transcripts and suggested items can be wrong. You decide what to keep. Talktray 
 
 ## Contact
 
-Questions about these terms: privacy@talktray.app
+Questions about these terms: fishmapss@gmail.com

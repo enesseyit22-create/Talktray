@@ -32,4 +32,4 @@ You can change language and notification settings in Profile, deny microphone or
 
 ## Contact
 
-Questions about this policy: privacy@talktray.app
+Questions about this policy: fishmapss@gmail.com
