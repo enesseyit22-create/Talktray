@@ -324,6 +324,7 @@ export const tr: Dictionary = {
     users7d: '7 günde yeni',
     users30d: '30 günde yeni',
     dau: 'Bugün aktif',
+    active7d: '7 günde aktif',
     pro: 'Aktif Pro',
     recordings: 'Kayıtlar',
     recordingsToday: 'Bugünkü kayıtlar',

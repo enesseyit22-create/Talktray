@@ -324,6 +324,7 @@ export const ptBR: Dictionary = {
     users7d: 'Novos, 7 dias',
     users30d: 'Novos, 30 dias',
     dau: 'Ativos hoje',
+    active7d: 'Ativos, 7 dias',
     pro: 'Pro ativo',
     recordings: 'Gravações',
     recordingsToday: 'Gravações hoje',

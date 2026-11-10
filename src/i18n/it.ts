@@ -324,6 +324,7 @@ export const it: Dictionary = {
     users7d: 'Nuovi, 7 giorni',
     users30d: 'Nuovi, 30 giorni',
     dau: 'Attivi oggi',
+    active7d: 'Attivi, 7 giorni',
     pro: 'Pro attivo',
     recordings: 'Registrazioni',
     recordingsToday: 'Registrazioni oggi',

@@ -322,6 +322,7 @@ export const en = {
     users7d: 'New, 7 days',
     users30d: 'New, 30 days',
     dau: 'Active today',
+    active7d: 'Active, 7 days',
     pro: 'Active Pro',
     recordings: 'Recordings',
     recordingsToday: 'Recordings today',

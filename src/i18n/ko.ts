@@ -324,6 +324,7 @@ export const ko: Dictionary = {
     users7d: '7일 신규',
     users30d: '30일 신규',
     dau: '오늘 활성',
+    active7d: '7일 활성',
     pro: '활성 Pro',
     recordings: '녹음',
     recordingsToday: '오늘 녹음',

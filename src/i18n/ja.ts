@@ -324,6 +324,7 @@ export const ja: Dictionary = {
     users7d: '7日間の新規',
     users30d: '30日間の新規',
     dau: '今日のアクティブ',
+    active7d: '7日間のアクティブ',
     pro: '有効なPro',
     recordings: '録音',
     recordingsToday: '今日の録音',

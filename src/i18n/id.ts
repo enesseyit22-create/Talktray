@@ -324,6 +324,7 @@ export const id: Dictionary = {
     users7d: 'Baru, 7 hari',
     users30d: 'Baru, 30 hari',
     dau: 'Aktif hari ini',
+    active7d: 'Aktif, 7 hari',
     pro: 'Pro aktif',
     recordings: 'Rekaman',
     recordingsToday: 'Rekaman hari ini',

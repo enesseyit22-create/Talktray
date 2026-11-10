@@ -23,6 +23,7 @@ type Stats = {
   items_by_type: Record<string, number>;
   pro_active: number;
   dau: number;
+  active_7d: number;
 };
 
 type AdminUser = {
@@ -86,7 +87,7 @@ export function AdminScreen() {
       setAllowed(true);
       const [statsResult, usersResult, failedResult] = await Promise.all([
         supabase.rpc('admin_stats'),
-        supabase.rpc('admin_recent_users', { p_limit: PAGE, p_offset: nextOffset, p_query: nextQuery }),
+        supabase.rpc('admin_recent_users', { p_search: nextQuery, p_limit: PAGE, p_offset: nextOffset }),
         supabase.rpc('admin_failed_recordings', { p_limit: PAGE }),
       ]);
       if (ticket !== request.current) return;
@@ -134,6 +135,7 @@ export function AdminScreen() {
         [t('admin.users7d'), stats.users_7d],
         [t('admin.users30d'), stats.users_30d],
         [t('admin.dau'), stats.dau],
+        [t('admin.active7d'), stats.active_7d],
         [t('admin.pro'), stats.pro_active],
         [t('admin.recordings'), stats.recordings_total],
         [t('admin.recordingsToday'), stats.recordings_today],
