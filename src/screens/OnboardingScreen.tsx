@@ -4,8 +4,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
-import { Logo } from '@/components/Brand';
-import { RecordOrb } from '@/components/RecordOrb';
+import { Logo, WelcomeMark } from '@/components/Brand';
 import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
@@ -50,7 +49,7 @@ export function OnboardingScreen() {
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Logo />
+          {index === 0 ? <View /> : <Logo />}
           <Pressable
             hitSlop={8}
             style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
@@ -65,7 +64,7 @@ export function OnboardingScreen() {
           </Pressable>
         </View>
         <View style={{ alignItems: 'center', gap: 28 }}>
-          {index === 0 ? <RecordOrb size={200} /> : null}
+          {index === 0 ? <WelcomeMark /> : null}
           {index === 1 ? (
             <View style={{ width: '100%', gap: 10 }}>
               {(['task', 'reminder', 'note'] as const).map((type) => (

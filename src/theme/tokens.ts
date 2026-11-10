@@ -106,4 +106,5 @@ export const fonts = {
   semibold: 'PlusJakartaSans_600SemiBold',
   bold: 'PlusJakartaSans_700Bold',
   extrabold: 'PlusJakartaSans_800ExtraBold',
+  wordmark: 'Manrope_600SemiBold',
 } as const;

@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
-import { WidgetPreview } from '@/components/Brand';
+import { Logo, WidgetPreview } from '@/components/Brand';
 import { AppText, Chip, Field, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { LOCALES, LOCALE_LABELS, useI18n } from '@/i18n';
@@ -361,6 +361,9 @@ export function SettingsScreen() {
         </Section>
 
         <Section title={t('settings.about')}>
+          <View style={{ alignItems: 'center', paddingVertical: 6 }}>
+            <Logo size={72} layout="stack" />
+          </View>
           <Info label={t('updates.version')} value={updates.version} />
           <Info label={t('settings.build')} value={Platform.OS === 'web' ? 'web' : String(Platform.Version)} />
           <Info label={t('updates.updateId')} value={updates.updateId} />

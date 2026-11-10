@@ -62,7 +62,7 @@ export function InboxScreen() {
     <Aurora>
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: 130, gap: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Logo />
+          <Logo animated />
           <Pressable
             onPress={() => setBell(true)}
             style={{

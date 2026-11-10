@@ -27,6 +27,7 @@ export default function RootLayout() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
+    Manrope_600SemiBold: require('../../assets/fonts/Manrope-SemiBold.ttf'),
   });
 
   useEffect(() => {

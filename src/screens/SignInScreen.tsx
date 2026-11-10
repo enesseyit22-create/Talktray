@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
-import { Logo } from '@/components/Brand';
+import { WelcomeMark } from '@/components/Brand';
 import { AppText, Field, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
@@ -77,7 +77,7 @@ export function SignInScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: 24, paddingTop: Math.max(insets.top, 16) + 16, gap: 18, paddingBottom: 40 }}
         >
-          <Logo />
+          <WelcomeMark />
           <View style={{ gap: 6 }}>
             <AppText size={34} weight="extrabold">
               {mode === 'in' ? t('auth.welcome') : t('auth.create')}
