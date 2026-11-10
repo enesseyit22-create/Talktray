@@ -158,6 +158,33 @@ Expo Go and `npm run web` do not apply these updates. The Profile row says so.
 
 The mark in `assets/images/icon.png` is the full-bleed app icon. Android uses the waveform as a transparent foreground over the mint-to-lavender gradient, and notifications use the white silhouette in `assets/images/notification-icon.png`.
 
+## Kendi bilgisayarında kurulum
+
+```bash
+git clone https://github.com/enesseyit22-create/talktray.git
+cd talktray
+npm install
+cp .env.example .env
+```
+
+`.env` içine Supabase ve RevenueCat genel anahtarlarını yaz. Sonra:
+
+```bash
+npx eas-cli login
+npx eas-cli update --channel production --message "İlk yayın"
+```
+
+Aynı işi GitHub’dan yapmak için depo sırlarına şunları ekle (Settings → Secrets and variables → Actions):
+
+- `EXPO_TOKEN` — expo.dev hesap ayarlarındaki erişim anahtarı
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`
+- `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`
+- İsteğe bağlı: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+
+`main` dalına her push, production kanalına bir OTA güncellemesi gönderir. El ile çalıştırmak için Actions → EAS Update → Run workflow (kanal: production veya preview). Mağaza derlemesi için Actions → EAS Build.
+
 ## Languages
 
 Copy is in `src/i18n/en.ts` and `src/i18n/tr.ts`. Add a locale by translating `en.ts`, registering it in `src/i18n/index.tsx`, and allowing the code in the `profiles.locale` check constraint.
