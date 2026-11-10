@@ -1,6 +1,7 @@
 export function buildExtractionMessages(input: {
   transcript: string;
   nowIso: string;
+  utcOffset: string;
   timeZone: string;
   locale: string;
 }): { system: string; user: string } {
@@ -12,6 +13,7 @@ export function buildExtractionMessages(input: {
   const system = `You extract structured inbox items from a voice transcript.
 ${voice}
 Current local time: ${input.nowIso}
+UTC offset: ${input.utcOffset}
 IANA timezone: ${input.timeZone}
 Preferred locale: ${locale}
 

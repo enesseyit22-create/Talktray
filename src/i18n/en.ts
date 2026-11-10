@@ -216,6 +216,9 @@ export const en = {
     generic: 'Something went wrong. Try again.',
     quota: 'You’ve used this month’s free recordings.',
     network: 'The server could not be reached.',
+    process: 'This recording could not be sorted. Try again.',
+    transcription: 'The recording could not be transcribed. Try again in a moment.',
+    analysis: 'The transcript could not be turned into items. Try again.',
   },
   settings: {
     title: 'Settings',

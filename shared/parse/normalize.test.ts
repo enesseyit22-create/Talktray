@@ -40,10 +40,14 @@ describe('prompt and links', () => {
     const { system } = buildExtractionMessages({
       transcript: 'yarın ara',
       nowIso: '2026-11-11T10:00:00+03:00',
+      utcOffset: '+03:00',
       timeZone: 'Europe/Istanbul',
       locale: 'tr',
     });
     expect(system).toContain('Europe/Istanbul');
+    expect(system).toContain('UTC offset');
+    expect(system).toContain('+03:00');
+    expect(system).not.toContain('Z');
     expect(system).toContain('yarın');
     expect(system).toContain('Turkish');
     expect(system).toContain('Never translate');
@@ -54,6 +58,7 @@ describe('prompt and links', () => {
     const { system } = buildExtractionMessages({
       transcript: '明日の9時に電話',
       nowIso: '2026-11-11T10:00:00+09:00',
+      utcOffset: '+09:00',
       timeZone: 'Asia/Tokyo',
       locale: 'ja',
     });

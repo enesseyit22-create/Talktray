@@ -28,6 +28,25 @@ export function formatDayLabel(
   }).format(date);
 }
 
+export function formatDueLabel(
+  iso: string,
+  now: Date,
+  timeZone: string,
+  locale: string,
+  today: string,
+  tomorrow: string,
+  allDay: boolean,
+): string {
+  const day = formatDayLabel(iso, now, timeZone, locale, today, tomorrow);
+  if (allDay) return day;
+  return `${day} ${formatClock(iso, timeZone, locale)}`;
+}
+
+/** A stored UTC zone is the database default, so requests use the device zone instead. */
+export function timeZoneForRequest(profileZone: string, deviceZone: string): string {
+  return profileZone === 'UTC' ? deviceZone : profileZone;
+}
+
 export function greetingKey(now: Date, timeZone: string): 'morning' | 'afternoon' | 'evening' {
   const hour = zonedParts(now, timeZone).hour;
   if (hour < 12) return 'morning';

@@ -117,10 +117,12 @@ Expo Go and `npm run web` do not apply these updates. The Profile row says so.
      STT_PROVIDER=groq \
      STT_MODEL=whisper-large-v3 \
      LLM_PROVIDER=groq \
-     LLM_MODEL=llama-3.3-70b-versatile \
+     LLM_MODEL=openai/gpt-oss-120b \
      REVENUECAT_SECRET_API_KEY=YOUR_REVENUECAT_SECRET \
      REVENUECAT_ENTITLEMENT_ID=pro
    ```
+
+   `llama-3.3-70b-versatile` is retired. The function uses `openai/gpt-oss-120b` and, if that call fails, `openai/gpt-oss-20b`.
 
    Optional OpenAI fallback: `OPENAI_API_KEY`, `OPENAI_STT_MODEL=whisper-1`, `OPENAI_LLM_MODEL=gpt-4o-mini`, and set `STT_PROVIDER=openai` or `LLM_PROVIDER=openai`.
 

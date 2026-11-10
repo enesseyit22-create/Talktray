@@ -218,6 +218,9 @@ export const de: Dictionary = {
     generic: 'Da ist etwas schiefgelaufen. Versuch es noch einmal.',
     quota: 'Die kostenlosen Aufnahmen dieses Monats sind aufgebraucht.',
     network: 'Der Server war nicht erreichbar.',
+    process: 'Diese Aufnahme konnte nicht sortiert werden. Versuch es noch einmal.',
+    transcription: 'Die Aufnahme konnte nicht transkribiert werden. Versuch es gleich noch einmal.',
+    analysis: 'Das Transkript konnte nicht in Einträge geteilt werden. Versuch es noch einmal.',
   },
   settings: {
     title: 'Einstellungen',

@@ -218,6 +218,9 @@ export const fr: Dictionary = {
     generic: 'Quelque chose a coincé. Réessaie.',
     quota: 'Tu as utilisé les enregistrements gratuits de ce mois.',
     network: 'Le serveur n’a pas répondu.',
+    process: 'Cet enregistrement n’a pas pu être trié. Réessaie.',
+    transcription: 'L’enregistrement n’a pas pu être transcrit. Réessaie dans un instant.',
+    analysis: 'La transcription n’a pas pu être rangée en éléments. Réessaie.',
   },
   settings: {
     title: 'Réglages',

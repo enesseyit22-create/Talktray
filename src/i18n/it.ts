@@ -218,6 +218,9 @@ export const it: Dictionary = {
     generic: 'Qualcosa è andato storto. Riprova.',
     quota: 'Hai usato le registrazioni gratuite di questo mese.',
     network: 'Il server non ha risposto.',
+    process: 'Questa registrazione non si è potuta sistemare. Riprova.',
+    transcription: 'La registrazione non si è potuta trascrivere. Riprova tra un momento.',
+    analysis: 'La trascrizione non si è potuta dividere in elementi. Riprova.',
   },
   settings: {
     title: 'Impostazioni',

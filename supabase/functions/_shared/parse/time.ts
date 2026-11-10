@@ -94,6 +94,18 @@ export function deviceTimeZone(): string {
   }
 }
 
+export function localTimestamp(now: Date, timeZone: string): { local: string; offset: string } {
+  const parts = zonedParts(now, safeTimeZone(timeZone));
+  const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  const minutes = Math.round((wall - now.getTime()) / 60000);
+  const sign = minutes >= 0 ? '+' : '-';
+  const abs = Math.abs(minutes);
+  const offset = `${sign}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const local = `${parts.year}-${pad(parts.month)}-${pad(parts.day)}T${pad(parts.hour)}:${pad(parts.minute)}:${pad(parts.second)}${offset}`;
+  return { local, offset };
+}
+
 export function safeTimeZone(timeZone: string | null | undefined): string {
   if (!timeZone) return 'UTC';
   try {

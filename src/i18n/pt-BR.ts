@@ -218,6 +218,9 @@ export const ptBR: Dictionary = {
     generic: 'Algo deu errado. Tente de novo.',
     quota: 'Você já usou as gravações grátis deste mês.',
     network: 'Não foi possível alcançar o servidor.',
+    process: 'Não foi possível organizar esta gravação. Tente de novo.',
+    transcription: 'Não foi possível transcrever a gravação. Tente de novo daqui a pouco.',
+    analysis: 'Não foi possível transformar a transcrição em itens. Tente de novo.',
   },
   settings: {
     title: 'Ajustes',

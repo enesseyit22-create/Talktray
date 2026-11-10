@@ -218,6 +218,9 @@ export const tr: Dictionary = {
     generic: 'Bir şey ters gitti. Yeniden dene.',
     quota: 'Bu ayki ücretsiz kayıtların bitti.',
     network: 'Sunucuya ulaşılamadı.',
+    process: 'Bu kayıt ayıklanamadı. Yeniden dene.',
+    transcription: 'Kayıt yazıya dökülemedi. Biraz sonra yeniden dene.',
+    analysis: 'Metin öğelere ayrılamadı. Yeniden dene.',
   },
   settings: {
     title: 'Ayarlar',

@@ -7,6 +7,8 @@ import { loadDemo, loadPrefs, saveDemo, savePrefs, type DemoState } from '@/data
 import type { Draft, DraftItem, InboxItem, Profile, Recording, SessionUser, Usage } from '@/domain/types';
 import { asLocale, deviceLocale, translate, useI18n, type Locale } from '@/i18n';
 import { isSupabaseConfigured } from '@/lib/config';
+import { processErrorKey } from '@/lib/errors';
+import { timeZoneForRequest } from '@/lib/format';
 import { createId } from '@/lib/id';
 import { supabase } from '@/lib/supabase';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
@@ -161,12 +163,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nextProfile: Profile = {
         displayName: profileRow?.display_name || email.split('@')[0] || 'Talktray',
         username: typeof profileRow?.username === 'string' ? profileRow.username : null,
-        timezone: safeTimeZone(profileRow?.timezone || phoneTimeZone()),
+        timezone: timeZoneForRequest(safeTimeZone(profileRow?.timezone || phoneTimeZone()), phoneTimeZone()),
         locale: asLocale(profileRow?.locale),
         theme: profileRow?.theme === 'light' || profileRow?.theme === 'dark' ? profileRow.theme : 'system',
         exportToCalendar: Boolean(profileRow?.export_to_calendar),
         notificationsEnabled: profileRow?.notifications_enabled !== false,
       };
+      const deviceZone = phoneTimeZone();
+      if (profileRow?.timezone === 'UTC' && deviceZone !== 'UTC' && nextProfile.timezone === deviceZone) {
+        await supabase.from('profiles').update({ timezone: deviceZone }).eq('id', userId);
+      }
       applyProfile(nextProfile);
       await configurePurchases(userId);
       const store = await loadStoreOffers().catch(() => null);
@@ -549,7 +555,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.functions.invoke('process-recording', {
           body: {
             recordingId,
-            timezone: profile.timezone,
+            timezone: timeZoneForRequest(profile.timezone, phoneTimeZone()),
             locale: profile.locale,
             now: new Date().toISOString(),
             useStoredTranscript: !input.audioUri,
@@ -558,22 +564,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (error) {
           const code = await readFunctionError(error);
           if (code === 'QUOTA_EXCEEDED') return 'quota';
-          const transcript = spoken || sampleTranscript(profile.locale);
-          const parsed = extractItems(transcript, {
-            now: new Date(),
-            timeZone: profile.timezone,
-            locale: profile.locale,
-          });
-          setDraft({
-            recordingId,
-            transcript,
-            language: profile.locale,
-            durationMs: input.durationMs,
-            items: parsed.map((item) => ({ ...item, localId: createId() })),
-            mocked: true,
-            audioUri: input.audioUri ?? null,
-          });
-          return 'review';
+          throw new Error(translate(profile.locale, processErrorKey(code)));
         }
         const payload = data as {
           transcript?: string;

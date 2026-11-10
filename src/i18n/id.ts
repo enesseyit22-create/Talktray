@@ -218,6 +218,9 @@ export const id: Dictionary = {
     generic: 'Ada yang tidak beres. Coba lagi.',
     quota: 'Rekaman gratis bulan ini sudah habis.',
     network: 'Server tidak dapat dihubungi.',
+    process: 'Rekaman ini tidak bisa dirapikan. Coba lagi.',
+    transcription: 'Rekaman tidak bisa ditranskrip. Coba lagi sebentar lagi.',
+    analysis: 'Transkrip tidak bisa diubah menjadi item. Coba lagi.',
   },
   settings: {
     title: 'Pengaturan',

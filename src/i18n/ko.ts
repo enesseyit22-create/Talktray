@@ -218,6 +218,9 @@ export const ko: Dictionary = {
     generic: '문제가 생겼습니다. 다시 시도하세요.',
     quota: '이번 달 무료 녹음을 모두 사용했습니다.',
     network: '서버에 연결하지 못했습니다.',
+    process: '이 녹음을 정리하지 못했습니다. 다시 시도하세요.',
+    transcription: '녹음을 받아쓰지 못했습니다. 잠시 후 다시 시도하세요.',
+    analysis: '받아쓰기를 항목으로 나누지 못했습니다. 다시 시도하세요.',
   },
   settings: {
     title: '설정',

@@ -11,7 +11,7 @@ import { useApp } from '@/data/AppProvider';
 import type { DraftItem } from '@/domain/types';
 import { useI18n } from '@/i18n';
 import { errorText } from '@/lib/errors';
-import { intlLocale } from '@/i18n/locale';
+import { formatDueLabel } from '@/lib/format';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export function ReviewScreen() {
@@ -61,7 +61,15 @@ export function ReviewScreen() {
                 </AppText>
                 {item.dueAt ? (
                   <AppText size={12} color={colors.muted}>
-                    {new Date(item.dueAt).toLocaleString(intlLocale(app.profile.locale))}
+                    {formatDueLabel(
+                      item.dueAt,
+                      new Date(),
+                      app.profile.timezone,
+                      app.profile.locale,
+                      t('today'),
+                      t('tomorrow'),
+                      item.allDay,
+                    )}
                   </AppText>
                 ) : null}
               </View>

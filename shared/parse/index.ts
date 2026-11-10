@@ -12,6 +12,6 @@ export {
   recordingLimit,
 } from './quota';
 export { fold, resolveRelativeDate } from './dates';
-export { deviceTimeZone, isSameZonedDay, monthPeriod, safeTimeZone, zonedParts, zonedTimeToUtc } from './time';
+export { deviceTimeZone, isSameZonedDay, localTimestamp, monthPeriod, safeTimeZone, zonedParts, zonedTimeToUtc } from './time';
 export type { ExtractContext, ItemType, ParsedItem, ResolvedWhen } from './types';
 export { ITEM_TYPES } from './types';

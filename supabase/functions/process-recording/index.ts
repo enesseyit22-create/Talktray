@@ -2,6 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   buildExtractionMessages,
   extractItems,
+  localTimestamp,
   monthPeriod,
   normalizeExtraction,
   safeTimeZone,
@@ -197,26 +198,32 @@ async function extractWithModel(transcript: string, now: Date, timeZone: string,
     : 'https://api.groq.com/openai/v1/chat/completions';
   const model = useOpenAI
     ? Deno.env.get('OPENAI_LLM_MODEL') ?? 'gpt-4o-mini'
-    : Deno.env.get('LLM_MODEL') ?? 'llama-3.3-70b-versatile';
+    : Deno.env.get('LLM_MODEL') ?? 'openai/gpt-oss-120b';
+  const fallbackModel = useOpenAI ? null : Deno.env.get('LLM_MODEL_FALLBACK') ?? 'openai/gpt-oss-20b';
+  const stamp = localTimestamp(now, timeZone);
   const messages = buildExtractionMessages({
     transcript,
-    nowIso: now.toISOString(),
+    nowIso: stamp.local,
+    utcOffset: stamp.offset,
     timeZone,
     locale,
   });
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      temperature: 0.1,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: messages.system },
-        { role: 'user', content: messages.user },
-      ],
-    }),
-  });
+  const ask = (chosen: string) =>
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: chosen,
+        temperature: 0.1,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: messages.system },
+          { role: 'user', content: messages.user },
+        ],
+      }),
+    });
+  let response = await ask(model);
+  if (!response.ok && fallbackModel && fallbackModel !== model) response = await ask(fallbackModel);
   if (!response.ok) throw new Error(`LLM_${response.status}`);
   const payload = await response.json();
   const content = payload.choices?.[0]?.message?.content ?? '{}';

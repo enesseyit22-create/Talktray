@@ -218,6 +218,9 @@ export const ja: Dictionary = {
     generic: 'うまくいきませんでした。もう一度どうぞ。',
     quota: '今月の無料録音を使い切りました。',
     network: 'サーバーに届きませんでした。',
+    process: 'この録音を仕分けられませんでした。もう一度どうぞ。',
+    transcription: '録音を文字起こしできませんでした。しばらくしてからもう一度どうぞ。',
+    analysis: '文字起こしを項目に分けられませんでした。もう一度どうぞ。',
   },
   settings: {
     title: '設定',

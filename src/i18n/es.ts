@@ -218,6 +218,9 @@ export const es: Dictionary = {
     generic: 'Algo salió mal. Inténtalo de nuevo.',
     quota: 'Ya usaste las grabaciones gratis de este mes.',
     network: 'No se pudo llegar al servidor.',
+    process: 'No se pudo ordenar esta grabación. Inténtalo de nuevo.',
+    transcription: 'No se pudo transcribir la grabación. Inténtalo en un momento.',
+    analysis: 'No se pudo convertir la transcripción en elementos. Inténtalo de nuevo.',
   },
   settings: {
     title: 'Ajustes',
