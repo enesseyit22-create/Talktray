@@ -8,6 +8,7 @@ import { AppText, EmptyState, Field, GlassCard, PrimaryButton } from '@/componen
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { intlLocale } from '@/i18n/locale';
+import { parseFreeLimits, type FreeLimits } from '@/lib/free-limits';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -60,6 +61,14 @@ export function AdminScreen() {
   const [error, setError] = useState<string | null>(null);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  const [limits, setLimits] = useState<Record<keyof FreeLimits, string>>({
+    free_recordings_per_day: '',
+    free_recordings_per_month: '25',
+    free_max_seconds_per_recording: '',
+    free_max_items: '',
+  });
+  const [limitMessage, setLimitMessage] = useState<string | null>(null);
+  const [savingLimits, setSavingLimits] = useState(false);
   const request = useRef(0);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -73,6 +82,22 @@ export function AdminScreen() {
       minute: '2-digit',
     }).format(new Date(iso));
   };
+
+  const applyLimits = (value: unknown) => {
+    const parsed = parseFreeLimits(value);
+    setLimits({
+      free_recordings_per_day: parsed.free_recordings_per_day == null ? '' : String(parsed.free_recordings_per_day),
+      free_recordings_per_month: parsed.free_recordings_per_month == null ? '' : String(parsed.free_recordings_per_month),
+      free_max_seconds_per_recording:
+        parsed.free_max_seconds_per_recording == null ? '' : String(parsed.free_max_seconds_per_recording),
+      free_max_items: parsed.free_max_items == null ? '' : String(parsed.free_max_items),
+    });
+  };
+
+  const loadLimits = useCallback(async () => {
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'free_limits').maybeSingle();
+    if (data) applyLimits(data.value);
+  }, []);
 
   const load = useCallback(
     async (nextQuery: string, nextOffset: number, replace: boolean) => {
@@ -116,15 +141,16 @@ export function AdminScreen() {
         return;
       }
       void load('', 0, true);
+      void loadLimits();
     });
     return () => {
       active = false;
     };
-  }, [load, t]);
+  }, [load, loadLimits, t]);
 
   const refresh = async () => {
     setRefreshing(true);
-    await load(query, 0, true);
+    await Promise.all([load(query, 0, true), loadLimits()]);
     setRefreshing(false);
   };
 
@@ -182,6 +208,47 @@ export function AdminScreen() {
         ) : null}
         {allowed ? (
           <>
+            <GlassCard style={{ gap: 10 }}>
+              <AppText size={18} weight="extrabold">
+                Free plan limits
+              </AppText>
+              <AppText size={13} color={colors.muted}>
+                Leave a field blank for unlimited. Pro is not capped by these numbers.
+              </AppText>
+              {(
+                [
+                  ['free_recordings_per_day', 'Recordings per day'],
+                  ['free_recordings_per_month', 'Recordings per month'],
+                  ['free_max_seconds_per_recording', 'Max seconds per recording'],
+                  ['free_max_items', 'Max saved items'],
+                ] as const
+              ).map(([key, label]) => (
+                <Field
+                  key={key}
+                  label={label}
+                  value={limits[key]}
+                  onChangeText={(value) => setLimits((current) => ({ ...current, [key]: value.replace(/[^\d]/g, '') }))}
+                  autoCapitalize="none"
+                  placeholder="Unlimited"
+                />
+              ))}
+              {limitMessage ? <AppText color={limitMessage === 'Saved' ? colors.success : colors.danger}>{limitMessage}</AppText> : null}
+              <PrimaryButton
+                label="Save limits"
+                loading={savingLimits}
+                onPress={() => {
+                  const payload = Object.fromEntries(
+                    (Object.keys(limits) as (keyof FreeLimits)[]).map((key) => [key, limits[key] === '' ? null : Number(limits[key])]),
+                  );
+                  setSavingLimits(true);
+                  setLimitMessage(null);
+                  void supabase.rpc('admin_set_free_limits', { p: payload }).then(({ error: saveError }) => {
+                    setSavingLimits(false);
+                    setLimitMessage(saveError ? 'Could not save limits.' : 'Saved');
+                  });
+                }}
+              />
+            </GlassCard>
             <AppText size={18} weight="extrabold">
               {t('admin.recentUsers')}
             </AppText>

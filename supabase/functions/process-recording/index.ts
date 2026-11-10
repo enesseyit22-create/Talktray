@@ -4,9 +4,10 @@ import {
   extractItems,
   localTimestamp,
   mergeSpokenOffsets,
-  monthPeriod,
   normalizeExtraction,
   safeTimeZone,
+  zonedParts,
+  zonedTimeToUtc,
 } from '../_shared/parse/index.ts';
 
 const corsHeaders = {
@@ -43,7 +44,7 @@ Deno.serve(async (req) => {
     const admin = createClient(url, serviceKey);
     const { data: recording, error: recordingError } = await admin
       .from('recordings')
-      .select('id, user_id, storage_path, transcript')
+      .select('id, user_id, storage_path, transcript, duration_ms')
       .eq('id', recordingId)
       .maybeSingle();
     if (recordingError || !recording || recording.user_id !== userId) {
@@ -54,8 +55,15 @@ Deno.serve(async (req) => {
     const timeZone = safeTimeZone(profile?.timezone || body.timezone || 'UTC');
     const locale = resolveLocale(profile?.locale, body.locale);
     const now = body.now ? new Date(body.now) : new Date();
-    const period = monthPeriod(now, timeZone);
     const isPro = await subscriberIsPro(userId);
+    const limits = isPro ? null : await readFreeLimits(admin);
+    if (limits) {
+      const reason = await freeLimitReason(admin, userId, recordingId, Number(recording.duration_ms ?? 0), now, timeZone, limits);
+      if (reason) {
+        await admin.from('recordings').update({ status: 'failed', error: 'quota_exceeded' }).eq('id', recordingId);
+        return json({ error: 'quota_exceeded', reason }, 402);
+      }
+    }
 
     let transcript = '';
     let language: string | null = locale;
@@ -75,15 +83,6 @@ Deno.serve(async (req) => {
       language = spoken.language ?? language;
     }
 
-    const quota = await admin.rpc('consume_recording_quota', {
-      p_user_id: userId,
-      p_is_pro: isPro,
-      p_period: period,
-    });
-    if (quota.error) return json({ error: 'QUOTA_FAILED', detail: quota.error.message }, 500);
-    const usage = quota.data as { allowed: boolean; count: number; limit: number; is_pro: boolean };
-    if (!usage?.allowed) return json({ error: 'QUOTA_EXCEEDED', usage: mapUsage(usage) }, 402);
-
     let items;
     try {
       items = await extractWithModel(transcript, now, timeZone, locale);
@@ -91,7 +90,6 @@ Deno.serve(async (req) => {
       if (error instanceof Error && error.message === 'MISSING_LLM_KEY') {
         items = extractItems(transcript, { now, timeZone, locale });
       } else {
-        await admin.rpc('refund_recording_quota', { p_user_id: userId, p_period: period });
         const message = error instanceof Error ? error.message : 'UNKNOWN';
         await admin.from('recordings').update({ status: 'failed', transcript, error: message.slice(0, 500) }).eq('id', recordingId);
         throw error;
@@ -99,7 +97,17 @@ Deno.serve(async (req) => {
     }
 
     await admin.from('recordings').update({ status: 'ready', transcript, language }).eq('id', recordingId);
-    return json({ transcript, language, items, usage: mapUsage(usage) });
+    const monthCount = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'month'));
+    return json({
+      transcript,
+      language,
+      items,
+      usage: {
+        count: monthCount,
+        limit: isPro ? null : limits?.free_recordings_per_month ?? null,
+        isPro,
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'UNKNOWN';
     return json({ error: message }, 500);
@@ -127,12 +135,97 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function mapUsage(usage: { count: number; limit: number; is_pro: boolean } | null) {
+type FreeLimits = {
+  free_recordings_per_day: number | null;
+  free_recordings_per_month: number | null;
+  free_max_seconds_per_recording: number | null;
+  free_max_items: number | null;
+};
+
+const DEFAULT_FREE_LIMITS: FreeLimits = {
+  free_recordings_per_day: null,
+  free_recordings_per_month: 25,
+  free_max_seconds_per_recording: null,
+  free_max_items: null,
+};
+
+function numberOrNull(value: unknown): number | null {
+  if (value == null) return null;
+  const number = typeof value === 'number' ? value : Number(value);
+  return Number.isInteger(number) && number >= 0 ? number : null;
+}
+
+function parseFreeLimits(value: unknown): FreeLimits {
+  const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
   return {
-    count: usage?.count ?? 0,
-    limit: usage?.limit ?? 25,
-    isPro: Boolean(usage?.is_pro),
+    free_recordings_per_day: numberOrNull(record.free_recordings_per_day),
+    free_recordings_per_month: 'free_recordings_per_month' in record
+      ? numberOrNull(record.free_recordings_per_month)
+      : DEFAULT_FREE_LIMITS.free_recordings_per_month,
+    free_max_seconds_per_recording: numberOrNull(record.free_max_seconds_per_recording),
+    free_max_items: numberOrNull(record.free_max_items),
   };
+}
+
+async function readFreeLimits(admin: ReturnType<typeof createClient>): Promise<FreeLimits> {
+  const { data, error } = await admin.from('app_settings').select('value').eq('key', 'free_limits').maybeSingle();
+  if (error || !data?.value) return DEFAULT_FREE_LIMITS;
+  return parseFreeLimits(data.value);
+}
+
+function windowStart(now: Date, timeZone: string, kind: 'day' | 'month'): string {
+  const parts = zonedParts(now, timeZone);
+  return zonedTimeToUtc(
+    { year: parts.year, month: parts.month, day: kind === 'month' ? 1 : parts.day, hour: 0, minute: 0 },
+    timeZone,
+  ).toISOString();
+}
+
+async function countRecordingsSince(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  start: string,
+  exceptId?: string,
+): Promise<number> {
+  let query = admin
+    .from('recordings')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', start)
+    .neq('status', 'failed');
+  if (exceptId) query = query.neq('id', exceptId);
+  const { count } = await query;
+  return count ?? 0;
+}
+
+async function freeLimitReason(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  recordingId: string,
+  durationMs: number,
+  now: Date,
+  timeZone: string,
+  limits: FreeLimits,
+): Promise<string | null> {
+  if (
+    limits.free_max_seconds_per_recording != null &&
+    Math.floor(durationMs / 1000) > limits.free_max_seconds_per_recording
+  ) {
+    return 'seconds';
+  }
+  if (limits.free_recordings_per_day != null) {
+    const today = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'day'), recordingId);
+    if (today >= limits.free_recordings_per_day) return 'day';
+  }
+  if (limits.free_recordings_per_month != null) {
+    const month = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'month'), recordingId);
+    if (month >= limits.free_recordings_per_month) return 'month';
+  }
+  if (limits.free_max_items != null) {
+    const { count } = await admin.from('items').select('id', { count: 'exact', head: true }).eq('user_id', userId);
+    if ((count ?? 0) >= limits.free_max_items) return 'items';
+  }
+  return null;
 }
 
 function publishableKey() {

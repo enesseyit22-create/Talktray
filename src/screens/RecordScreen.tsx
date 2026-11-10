@@ -6,7 +6,7 @@ import {
   useAudioRecorderState,
 } from 'expo-audio';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,6 +16,7 @@ import { AppText, Field, GlassCard, PrimaryButton } from '@/components/ui/primit
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { errorText } from '@/lib/errors';
+import { loadFreeLimits } from '@/lib/free-limits';
 import { formatDuration } from '@/lib/format';
 import { consumeAutoRecord } from '@/lib/record-signal';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -33,6 +34,8 @@ export function RecordScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const started = useRef(params.autostart === '1');
+  const [maxSeconds, setMaxSeconds] = useState<number | null>(null);
+  const capping = useRef(false);
 
   const finish = useCallback(
     async (input: { audioUri?: string | null; durationMs: number; transcript?: string }) => {
@@ -72,6 +75,34 @@ export function RecordScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (usage.isPro) {
+        setMaxSeconds(null);
+        return;
+      }
+      let active = true;
+      void loadFreeLimits().then((limits) => {
+        if (active) setMaxSeconds(limits.free_max_seconds_per_recording);
+      });
+      return () => {
+        active = false;
+      };
+    }, [usage.isPro]),
+  );
+
+  useEffect(() => {
+    if (!state.isRecording || maxSeconds == null || capping.current) return;
+    if (state.durationMillis < maxSeconds * 1000) return;
+    capping.current = true;
+    const timer = setTimeout(() => {
+      void stop().finally(() => {
+        capping.current = false;
+      });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [maxSeconds, state.durationMillis, state.isRecording, stop]);
+
+  useFocusEffect(
+    useCallback(() => {
       if (started.current || consumeAutoRecord()) {
         started.current = false;
         void start();
@@ -100,7 +131,9 @@ export function RecordScreen() {
           <AppText weight="semibold" color={colors.primary}>
             {usage.isPro
               ? t('record.unlimited', { limit: usage.limit })
-              : t('record.remaining', { count: usage.count, limit: usage.limit })}
+              : usage.limit > 100_000
+                ? t('record.hint')
+                : t('record.remaining', { count: usage.count, limit: usage.limit })}
           </AppText>
         </GlassCard>
         {busy ? <AppText color={colors.muted}>{t('record.processing')}</AppText> : null}
