@@ -28,6 +28,41 @@ export function formatDayLabel(
   }).format(date);
 }
 
+export function isOverdue(
+  item: { dueAt: string | null; completedAt?: string | null; allDay?: boolean },
+  now: Date,
+  timeZone: string,
+): boolean {
+  if (!item.dueAt || item.completedAt) return false;
+  const due = new Date(item.dueAt);
+  if (Number.isNaN(due.getTime()) || due.getTime() >= now.getTime()) return false;
+  if (item.allDay && isSameZonedDay(due, now, timeZone)) return false;
+  return true;
+}
+
+export type PastDuePhrase =
+  | { kind: 'ago'; unit: 'minute' | 'minutes' | 'hour' | 'hours'; count: number }
+  | { kind: 'yesterday'; time: string | null }
+  | { kind: 'days'; unit: 'day' | 'days'; count: number };
+
+function zonedDayStamp(date: Date, timeZone: string): number {
+  const parts = zonedParts(date, timeZone);
+  return Date.UTC(parts.year, parts.month - 1, parts.day);
+}
+
+export function pastDuePhrase(iso: string, now: Date, timeZone: string, locale: string, allDay: boolean): PastDuePhrase {
+  const due = new Date(iso);
+  const dayDiff = Math.round((zonedDayStamp(now, timeZone) - zonedDayStamp(due, timeZone)) / 86_400_000);
+  if (dayDiff <= 0) {
+    const minutes = Math.max(1, Math.floor((now.getTime() - due.getTime()) / 60_000));
+    if (minutes < 60) return { kind: 'ago', unit: minutes === 1 ? 'minute' : 'minutes', count: minutes };
+    const hours = Math.max(1, Math.floor(minutes / 60));
+    return { kind: 'ago', unit: hours === 1 ? 'hour' : 'hours', count: hours };
+  }
+  if (dayDiff === 1) return { kind: 'yesterday', time: allDay ? null : formatClock(iso, timeZone, locale) };
+  return { kind: 'days', unit: dayDiff === 1 ? 'day' : 'days', count: dayDiff };
+}
+
 export function formatDueLabel(
   iso: string,
   now: Date,

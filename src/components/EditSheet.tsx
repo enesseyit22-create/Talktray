@@ -1,8 +1,12 @@
 import { type ReactNode } from 'react';
 import { View } from 'react-native';
 
+import { OverdueBadge, overdueCaption } from '@/components/ItemCard';
 import { AppText, Chip, Field, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useI18n } from '@/i18n';
+import { useTheme } from '@/theme/ThemeProvider';
+import { isOverdue, pastDuePhrase } from '@/lib/format';
+import { useNow } from '@/lib/useNow';
 import { resolveRelativeDate } from '../../shared/parse/dates';
 import type { ItemType } from '../../shared/parse/types';
 
@@ -24,6 +28,7 @@ export type EditableItem = {
   allDay: boolean;
   listName: string | null;
   reminderOffsets: number[] | null;
+  completedAt?: string | null;
 };
 
 export function EditSheet({
@@ -43,8 +48,12 @@ export function EditSheet({
   onChange: (patch: Partial<EditableItem>) => void;
   onDelete?: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { colors } = useTheme();
+  const now = useNow();
   if (!item) return null;
+  const overdue = isOverdue(item, now, timeZone);
+  const pastLabel = overdue && item.dueAt ? overdueCaption(t, pastDuePhrase(item.dueAt, now, timeZone, locale, item.allDay)) : '';
   const apply = (phrase: string | null) => {
     if (!phrase) {
       onChange({ dueAt: null, allDay: false });
@@ -59,6 +68,14 @@ export function EditSheet({
       <AppText size={20} weight="extrabold">
         {t('edit.title')}
       </AppText>
+      {overdue ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <OverdueBadge />
+          <AppText size={14} weight="semibold" color={colors.danger}>
+            {pastLabel}
+          </AppText>
+        </View>
+      ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {TYPES.map((type) => (
           <Chip key={type} label={t(`types.${type}`)} active={item.type === type} onPress={() => onChange({ type })} />

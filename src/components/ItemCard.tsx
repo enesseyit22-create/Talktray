@@ -3,9 +3,10 @@ import { Pressable, View } from 'react-native';
 
 import { AppText, GlassCard } from '@/components/ui/primitives';
 import type { InboxItem } from '@/domain/types';
-import { formatClock, formatDayLabel } from '@/lib/format';
+import { formatClock, formatDayLabel, isOverdue, pastDuePhrase, type PastDuePhrase } from '@/lib/format';
 import { useI18n } from '@/i18n';
 import { haptic } from '@/lib/haptics';
+import { useNow } from '@/lib/useNow';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { ItemType } from '../../shared/parse/types';
 
@@ -37,6 +38,27 @@ export function TypeIcon({ type, done }: { type: ItemType; done?: boolean }) {
   );
 }
 
+export function OverdueBadge() {
+  const { t } = useI18n();
+  return (
+    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: '#E15B73' }}>
+      <AppText size={11} weight="bold" color="#FFFFFF">
+        {t('overdue.badge')}
+      </AppText>
+    </View>
+  );
+}
+
+export function overdueCaption(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  phrase: PastDuePhrase,
+): string {
+  if (phrase.kind === 'yesterday') {
+    return phrase.time ? t('overdue.yesterday', { time: phrase.time }) : t('overdue.yesterdayDay');
+  }
+  return t(`overdue.${phrase.unit}`, { count: phrase.count });
+}
+
 export function ItemCard({
   item,
   timeZone,
@@ -50,19 +72,24 @@ export function ItemCard({
 }) {
   const { colors } = useTheme();
   const { t, locale } = useI18n();
-  const now = new Date();
+  const now = useNow();
   const time = item.dueAt ? formatClock(item.dueAt, timeZone, locale) : '';
   const day = item.dueAt
     ? formatDayLabel(item.dueAt, now, timeZone, locale, t('today'), t('tomorrow'))
     : formatDayLabel(item.createdAt, now, timeZone, locale, t('today'), t('tomorrow'));
-  const past = item.dueAt ? new Date(item.dueAt).getTime() < now.getTime() && !item.completedAt : false;
-  const subtitle = item.type === 'shopping'
-    ? `${item.listName ?? t('types.shopping')}${past ? ` · ${t('home.reminded')}` : time ? ` · ${time}` : ''}`
-    : item.type === 'note'
-      ? `${day}${time ? '' : ` · ${formatClock(item.createdAt, timeZone, locale)}`}`
-      : time
-        ? `${day} · ${time}`
-        : t(`types.${item.type}`);
+  const overdue = isOverdue(item, now, timeZone);
+  const pastLabel = overdue && item.dueAt ? overdueCaption(t, pastDuePhrase(item.dueAt, now, timeZone, locale, item.allDay)) : '';
+  const subtitle = pastLabel
+    ? item.type === 'shopping'
+      ? `${item.listName ?? t('types.shopping')} · ${pastLabel}`
+      : pastLabel
+    : item.type === 'shopping'
+      ? `${item.listName ?? t('types.shopping')}${time ? ` · ${time}` : ''}`
+      : item.type === 'note'
+        ? `${day}${time ? '' : ` · ${formatClock(item.createdAt, timeZone, locale)}`}`
+        : time
+          ? `${day} · ${time}`
+          : t(`types.${item.type}`);
   const accent = colors[item.type].icon;
 
   return (
@@ -80,12 +107,12 @@ export function ItemCard({
           <AppText weight="bold" numberOfLines={2} style={item.completedAt ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}>
             {t(`types.${item.type}`)}: {item.title}
           </AppText>
-          <AppText size={13} color={colors.muted} numberOfLines={1}>
+          <AppText size={13} color={overdue ? colors.danger : colors.muted} numberOfLines={1}>
             {subtitle}
           </AppText>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-          {time ? (
+          {overdue ? <OverdueBadge /> : time ? (
             <AppText size={13} weight="semibold" color={accent}>
               {time}
             </AppText>

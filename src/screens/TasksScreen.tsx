@@ -9,14 +9,19 @@ import { AppText, Chip, EmptyState } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import type { InboxItem } from '@/domain/types';
 import { useI18n } from '@/i18n';
+import { isOverdue } from '@/lib/format';
+import { useNow } from '@/lib/useNow';
 
 export function TasksScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const { items, profile, toggleComplete, updateItem, deleteItem } = useApp();
+  const now = useNow();
   const [done, setDone] = useState(false);
   const [editing, setEditing] = useState<InboxItem | null>(null);
-  const list = items.filter((item) => item.type === 'task' && Boolean(item.completedAt) === done);
+  const list = items
+    .filter((item) => item.type === 'task' && Boolean(item.completedAt) === done)
+    .sort((a, b) => Number(isOverdue(b, now, profile.timezone)) - Number(isOverdue(a, now, profile.timezone)));
   return (
     <Aurora>
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: 130, gap: 14 }}>

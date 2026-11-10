@@ -12,12 +12,13 @@ import { EditSheet, type EditableItem } from '@/components/EditSheet';
 import { AppText, Chip, EmptyState, GlassCard, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import type { InboxItem } from '@/domain/types';
-import { formatClock, formatDuration, greetingKey } from '@/lib/format';
+import { formatClock, formatDuration, greetingKey, isOverdue } from '@/lib/format';
+import { useNow } from '@/lib/useNow';
 import { useI18n } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
 import { isSameZonedDay } from '../../shared/parse/time';
 
-type Filter = 'today' | 'reminders' | 'calendar' | 'shopping' | 'all';
+type Filter = 'today' | 'overdue' | 'reminders' | 'calendar' | 'shopping' | 'all';
 
 export function InboxScreen() {
   const { t, locale } = useI18n();
@@ -31,9 +32,22 @@ export function InboxScreen() {
   const linked = linkedId ? items.find((item) => item.id === linkedId) ?? null : null;
   const editing = picked ?? linked;
   const [bell, setBell] = useState(false);
-  const now = new Date();
+  const now = useNow();
+  const overdue = items
+    .filter((item) => isOverdue(item, now, profile.timezone))
+    .sort((a, b) => (a.dueAt ?? '').localeCompare(b.dueAt ?? ''));
   const visible = filterItems(items, filter, now, profile.timezone);
-  const shown = filter === 'today' ? visible.slice(0, 3) : visible;
+  const shown =
+    filter === 'overdue'
+      ? overdue
+      : filter === 'today'
+        ? visible.filter((item) => !isOverdue(item, now, profile.timezone)).slice(0, 3)
+        : filter === 'all'
+          ? visible.filter((item) => !isOverdue(item, now, profile.timezone))
+          : [...visible].sort(
+              (a, b) => Number(isOverdue(b, now, profile.timezone)) - Number(isOverdue(a, now, profile.timezone)),
+            );
+  const showOverdueSection = (filter === 'today' || filter === 'all') && overdue.length > 0;
   const upcoming = items
     .filter((item) => item.dueAt && !item.completedAt && new Date(item.dueAt).getTime() > now.getTime() - 60 * 60 * 1000)
     .sort((a, b) => (a.dueAt ?? '').localeCompare(b.dueAt ?? ''))
@@ -83,12 +97,36 @@ export function InboxScreen() {
           style={{ marginHorizontal: -20 }}
           contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
         >
-          {(['today', 'reminders', 'calendar', 'shopping', 'all'] as Filter[]).map((key) => (
+          {(['today', 'overdue', 'reminders', 'calendar', 'shopping', 'all'] as Filter[]).map((key) => (
             <Chip key={key} label={t(`filters.${key}`)} active={filter === key} onPress={() => setFilter(key)} />
           ))}
         </ScrollView>
-        {shown.length === 0 ? (
-          <EmptyState title={t('home.emptyTitle')} body={t('home.emptyBody')} />
+        {showOverdueSection ? (
+          <View style={{ gap: 10 }}>
+            <AppText weight="bold" size={18} color={colors.danger}>
+              {t('overdue.section')}
+            </AppText>
+            {overdue.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                timeZone={profile.timezone}
+                onPress={() => setPicked(item)}
+                onToggle={() => void toggleComplete(item.id)}
+              />
+            ))}
+          </View>
+        ) : null}
+        {filter === 'today' && shown.length > 0 && showOverdueSection ? (
+          <AppText weight="bold" size={18}>
+            {t('today')}
+          </AppText>
+        ) : null}
+        {shown.length === 0 && !showOverdueSection ? (
+          <EmptyState
+            title={t(filter === 'overdue' ? 'overdue.emptyTitle' : 'home.emptyTitle')}
+            body={t(filter === 'overdue' ? 'overdue.emptyBody' : 'home.emptyBody')}
+          />
         ) : (
           shown.map((item) => (
             <ItemCard
@@ -180,6 +218,7 @@ function Stat({
 function filterItems(items: InboxItem[], filter: Filter, now: Date, timeZone: string) {
   return items.filter((item) => {
     if (item.completedAt && filter !== 'all') return false;
+    if (filter === 'overdue') return isOverdue(item, now, timeZone);
     if (filter === 'all') return true;
     if (filter === 'reminders') return item.type === 'reminder';
     if (filter === 'calendar') return item.type === 'event';
