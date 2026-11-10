@@ -52,6 +52,7 @@ type AppValue = {
   enterDemo: (name: string, email?: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
+  deleteAllRecordings: () => Promise<void>;
   updateProfile: (patch: Partial<Profile>) => Promise<void>;
   processThought: (input: { audioUri?: string | null; durationMs: number; transcript?: string }) => Promise<'review' | 'quota'>;
   updateDraftItem: (localId: string, patch: Partial<DraftItem>) => void;
@@ -77,12 +78,20 @@ const AppContext = createContext<AppValue | null>(null);
 function defaultProfile(locale: Locale, timeZone: string): Profile {
   return {
     displayName: '',
+    username: null,
     timezone: timeZone,
     locale,
     theme: 'system',
     exportToCalendar: false,
     notificationsEnabled: true,
   };
+}
+
+function authProvider(user: {
+  app_metadata?: { provider?: string };
+  identities?: { provider?: string }[] | null;
+}): string {
+  return user.app_metadata?.provider || user.identities?.[0]?.provider || 'email';
 }
 
 function sampleTranscript(locale: string): string {
@@ -129,7 +138,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const loadRemote = useCallback(
-    async (sessionUser: { id: string; email?: string | null }) => {
+    async (sessionUser: {
+      id: string;
+      email?: string | null;
+      app_metadata?: { provider?: string };
+      identities?: { provider?: string }[] | null;
+    }) => {
       const userId = sessionUser.id;
       const email = sessionUser.email ?? '';
       const [{ data: profileRow }, { data: itemRows }, { data: recordingRows }, { data: usageRow }] =
@@ -146,6 +160,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ]);
       const nextProfile: Profile = {
         displayName: profileRow?.display_name || email.split('@')[0] || 'Talktray',
+        username: typeof profileRow?.username === 'string' ? profileRow.username : null,
         timezone: safeTimeZone(profileRow?.timezone || phoneTimeZone()),
         locale: asLocale(profileRow?.locale),
         theme: profileRow?.theme === 'light' || profileRow?.theme === 'dark' ? profileRow.theme : 'system',
@@ -158,7 +173,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const isPro = store?.isPro ?? false;
       const count = usageRow?.recording_count ?? 0;
       flushSync(() => {
-        setUser({ id: userId, email });
+        setUser({ id: userId, email, provider: authProvider(sessionUser) });
         setItems((itemRows ?? []).map(mapItem));
         setRecordings((recordingRows ?? []).map(mapRecording));
         setUsage({
@@ -211,7 +226,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             await loadRemote(data.session.user);
           } catch {
             if (!active) return;
-            setUser({ id: data.session.user.id, email: data.session.user.email ?? '' });
+            setUser({
+              id: data.session.user.id,
+              email: data.session.user.email ?? '',
+              provider: authProvider(data.session.user),
+            });
             setAppMode('supabase');
             setBanner(translate(savedLocale, 'errors.network'));
           }
@@ -321,10 +340,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
         }
         if (mode === 'supabase' && user) {
-          await supabase
+          const { error } = await supabase
             .from('profiles')
             .update({
               display_name: next.displayName,
+              username: next.username,
               timezone: next.timezone,
               locale: next.locale,
               theme: next.theme,
@@ -332,6 +352,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
               notifications_enabled: next.notificationsEnabled,
             })
             .eq('id', user.id);
+          if (error) {
+            applyProfile(profile);
+            throw error;
+          }
         }
       },
       enterDemo: async (name, email) => {
@@ -430,6 +454,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setBanner(null);
         setAppMode('signedOut');
         refreshUsage(0, false, monthPeriod(new Date(), profile.timezone));
+      },
+      deleteAllRecordings: async () => {
+        if (mode === 'supabase' && user) {
+          await supabase.storage.from('recordings').list(user.id).then(async ({ data }) => {
+            const paths = (data ?? []).map((file) => `${user.id}/${file.name}`);
+            if (paths.length) await supabase.storage.from('recordings').remove(paths);
+          });
+          const { error } = await supabase.from('recordings').delete().eq('user_id', user.id);
+          if (error) throw error;
+        }
+        setRecordings([]);
+        if (mode === 'demo' && user) {
+          await persistDemo({
+            user,
+            profile,
+            items,
+            recordings: [],
+            usageCount: usage.count,
+            usagePeriod: usage.period,
+            isPro: usage.isPro,
+          });
+        }
       },
       processThought: async (input) => {
         const gate = evaluateQuota(usage.count, usage.isPro);

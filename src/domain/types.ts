@@ -3,6 +3,7 @@ import type { ItemType, ParsedItem } from '../../shared/parse/types';
 
 export type Profile = {
   displayName: string;
+  username: string | null;
   timezone: string;
   locale: Locale;
   theme: 'system' | 'light' | 'dark';
@@ -51,6 +52,7 @@ export type Draft = {
 export type SessionUser = {
   id: string;
   email: string;
+  provider?: string;
 };
 
 export type ItemTypeName = ItemType;
