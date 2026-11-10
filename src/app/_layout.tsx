@@ -13,8 +13,10 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AppProvider } from '@/data/AppProvider';
+import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { I18nProvider } from '@/i18n';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+import { UpdateProvider } from '@/updates/UpdateProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -38,7 +40,9 @@ export default function RootLayout() {
       <ThemeProvider>
         <I18nProvider>
           <AppProvider>
-            <ThemedStack />
+            <UpdateProvider>
+              <ThemedStack />
+            </UpdateProvider>
           </AppProvider>
         </I18nProvider>
       </ThemeProvider>
@@ -56,6 +60,7 @@ function ThemedStack() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(app)" />
       </Stack>
+      <UpdatePrompt />
     </>
   );
 }

@@ -8,6 +8,14 @@
     "scheme": "talktray",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/00000000-0000-4000-8000-000000000001",
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "bundleIdentifier": "com.talktray.app",
       "supportsTablet": true,
@@ -54,6 +62,7 @@
       "expo-secure-store",
       "expo-localization",
       "expo-audio",
+      "expo-updates",
       "expo-apple-authentication",
       [
         "expo-notifications",
@@ -86,6 +95,9 @@
       "reactCompiler": true
     },
     "extra": {
+      "eas": {
+        "projectId": "00000000-0000-4000-8000-000000000001"
+      },
       "recordUrl": "talktray://record"
     }
   }

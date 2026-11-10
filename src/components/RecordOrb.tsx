@@ -81,6 +81,9 @@ export function RecordOrb({
             if (holdTimer.current) clearTimeout(holdTimer.current);
             if (held.current) onHoldEnd?.();
           }}
+          accessibilityRole="button"
+          accessibilityLabel="Record"
+          testID="record-orb"
           onPress={() => {
             if (held.current) {
               held.current = false;

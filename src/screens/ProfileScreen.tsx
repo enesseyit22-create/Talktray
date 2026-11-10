@@ -7,12 +7,14 @@ import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n, type Locale } from '@/i18n';
 import { useTheme, type ThemeMode } from '@/theme/ThemeProvider';
+import { useUpdates } from '@/updates/UpdateProvider';
 import { isSameZonedDay } from '../../shared/parse/time';
 
 export function ProfileScreen() {
   const { t, locale } = useI18n();
   const { colors } = useTheme();
   const app = useApp();
+  const updates = useUpdates();
   const todayCount = app.recordings.filter((recording) =>
     isSameZonedDay(new Date(recording.createdAt), new Date(), app.profile.timezone),
   ).length;
@@ -91,6 +93,27 @@ export function ProfileScreen() {
             value={app.profile.exportToCalendar}
             onChange={(exportToCalendar) => void app.updateProfile({ exportToCalendar })}
           />
+        </GlassCard>
+        <GlassCard style={{ gap: 8 }}>
+          <AppText weight="bold">{t('updates.check')}</AppText>
+          <AppText size={13} color={colors.muted}>
+            {t('updates.version')} {updates.version}
+            {updates.channel ? ` · ${t('updates.channel')} ${updates.channel}` : ''}
+          </AppText>
+          <AppText size={13} color={colors.muted}>
+            {t('updates.updateId')} {updates.updateId}
+            {updates.runtimeVersion ? ` · ${t('updates.runtime')} ${updates.runtimeVersion}` : ''}
+          </AppText>
+          <PrimaryButton
+            tone="glass"
+            label={updates.status === 'checking' ? t('updates.checking') : t('updates.check')}
+            loading={updates.status === 'checking'}
+            onPress={() => void updates.check(true)}
+          />
+          {updates.status === 'current' ? <AppText color={colors.success}>{t('updates.upToDate')}</AppText> : null}
+          {updates.status === 'ready' ? <AppText color={colors.primary}>{t('updates.ready')}</AppText> : null}
+          {updates.status === 'unavailable' ? <AppText color={colors.muted}>{t('updates.unavailable')}</AppText> : null}
+          {updates.status === 'error' ? <AppText color={colors.danger}>{t('updates.failed')}</AppText> : null}
         </GlassCard>
         <AppText size={20} weight="extrabold">
           {t('profile.captureTitle')}

@@ -78,6 +78,24 @@ npx eas-cli build --profile development --platform android
 
 Set `ios.appleTeamId` in `app.json` before an iOS build. Find it in Xcode under Signing & Capabilities, or in your Apple Developer account.
 
+## Over-the-air updates
+
+JS and asset changes ship with EAS Update. The runtime version policy is `fingerprint`, so an update only installs on a binary with the same native fingerprint. `eas.json` maps builds to channels: `development`, `preview`, and `production`. The app does not download on cold start by itself (`checkAutomatically` is `NEVER`). It checks when the app launches and when it returns to the foreground, downloads in the background, then shows a glass prompt: **“Yeni sürüm hazır, yeniden başlat”** / “A new version is ready. Restart”. Profile has **Güncellemeleri denetle**, plus the app version and the running update id.
+
+Replace the placeholder project id `00000000-0000-4000-8000-000000000001` in `app.json` (`extra.eas.projectId` and `updates.url`) after `npx eas-cli init`.
+
+```bash
+npx eas-cli update --channel production --message "Copy and inbox fixes"
+npx eas-cli update --channel preview --message "Preview"
+npx eas-cli update --channel development --message "Dev client"
+```
+
+**New store build** (native fingerprint changes): Expo SDK or native module upgrades, `app.json` plugins, icons that are baked into the binary, widgets, Control Center, Siri shortcuts, Quick Settings, entitlements, permissions, and `expo-updates` itself.
+
+**OTA is enough:** screens, copy, styles, the parser in `shared/parse`, and images imported from JavaScript.
+
+Expo Go and `npm run web` do not apply these updates. The Profile row says so.
+
 ## Setup the owner still has to do
 
 1. **Create a Supabase project.** In the SQL editor, run `supabase/migrations/20261110160000_init.sql`. It creates tables, RLS, the signup profile trigger (in the private schema), the quota functions (service role only), and the private `recordings` storage bucket.
@@ -126,6 +144,8 @@ Set `ios.appleTeamId` in `app.json` before an iOS build. Find it in Xcode under 
    npx eas-cli build --profile development --platform all
    ```
 
+8. **EAS Update.** Run `npx eas-cli init` and replace the placeholder project id in `app.json`. Publish JS changes with `npx eas-cli update --channel production`. See “Over-the-air updates” above for what still needs a store build.
+
 ## Project map
 
 - `src/app` — Expo Router screens
@@ -137,5 +157,7 @@ Set `ios.appleTeamId` in `app.json` before an iOS build. Find it in Xcode under 
 - `modules/talktray-capture` — Android widget, Quick Settings tile, and icon shortcut
 
 The mark in `assets/images/icon.png` is the full-bleed app icon. Android uses the waveform as a transparent foreground over the mint-to-lavender gradient, and notifications use the white silhouette in `assets/images/notification-icon.png`.
+
+## Languages
 
 Copy is in `src/i18n/en.ts` and `src/i18n/tr.ts`. Add a locale by translating `en.ts`, registering it in `src/i18n/index.tsx`, and allowing the code in the `profiles.locale` check constraint.
