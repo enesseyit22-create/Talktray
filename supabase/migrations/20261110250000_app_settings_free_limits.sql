@@ -41,7 +41,7 @@ set search_path = ''
 as $$
 declare
   current jsonb;
-  next jsonb;
+  v_next jsonb;
   keys text[] := array[
     'free_recordings_per_day',
     'free_recordings_per_month',
@@ -61,31 +61,31 @@ begin
   select value into current
   from public.app_settings
   where key = 'free_limits';
-  next := coalesce(current, '{}'::jsonb);
+  v_next := coalesce(current, '{}'::jsonb);
 
   foreach k in array keys loop
     if not (p ? k) then
       continue;
     end if;
     if jsonb_typeof(p -> k) = 'null' then
-      next := jsonb_set(next, array[k], 'null'::jsonb, true);
+      v_next := jsonb_set(v_next, array[k], 'null'::jsonb, true);
       continue;
     end if;
     raw := p ->> k;
     if raw is null or raw !~ '^[0-9]+$' then
       raise exception 'INVALID_LIMITS';
     end if;
-    next := jsonb_set(next, array[k], to_jsonb(raw::integer), true);
+    v_next := jsonb_set(v_next, array[k], to_jsonb(raw::integer), true);
   end loop;
 
   insert into public.app_settings (key, value, updated_at, updated_by)
-  values ('free_limits', next, now(), auth.uid())
+  values ('free_limits', v_next, now(), auth.uid())
   on conflict (key) do update
     set value = excluded.value,
         updated_at = excluded.updated_at,
         updated_by = excluded.updated_by;
 
-  return next;
+  return v_next;
 end;
 $$;
 
