@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+  <shortcut
+    android:enabled="true"
+    android:icon="@drawable/ic_talktray_mic"
+    android:shortcutId="record"
+    android:shortcutLongLabel="@string/talktray_shortcut_long"
+    android:shortcutShortLabel="@string/talktray_shortcut_short">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:data="talktray://record?autostart=1"
+      android:targetClass="com.talktray.app.MainActivity"
+      android:targetPackage="com.talktray.app" />
+  </shortcut>
+</shortcuts>

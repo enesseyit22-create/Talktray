@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/widget_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@drawable/talktray_widget_bg"
+  android:gravity="center_vertical"
+  android:orientation="horizontal"
+  android:padding="16dp">
+
+  <ImageView
+    android:layout_width="72dp"
+    android:layout_height="72dp"
+    android:contentDescription="@string/talktray_shortcut_short"
+    android:scaleType="fitCenter"
+    android:src="@drawable/talktray_mark" />
+
+  <LinearLayout
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="14dp"
+    android:layout_weight="1"
+    android:orientation="vertical">
+
+    <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="Talktray"
+      android:textColor="#7A6AF0"
+      android:textStyle="bold" />
+
+    <TextView
+      android:id="@+id/today_count"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="0"
+      android:textColor="#2A2452"
+      android:textSize="28sp"
+      android:textStyle="bold" />
+
+    <TextView
+      android:id="@+id/open_tasks"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="0 görev"
+      android:textColor="#8E89A8" />
+  </LinearLayout>
+</LinearLayout>

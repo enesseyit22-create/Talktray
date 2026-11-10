@@ -1,0 +1,4 @@
+project_id = "talktray"
+
+[functions.process-recording]
+verify_jwt = true

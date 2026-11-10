@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="talktray_widget_desc">Tap the mic to start a Talktray recording.</string>
+  <string name="talktray_shortcut_short">Kaydet</string>
+  <string name="talktray_shortcut_long">Talktray ile kaydet</string>
+</resources>

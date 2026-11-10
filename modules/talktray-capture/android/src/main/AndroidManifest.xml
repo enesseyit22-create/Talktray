@@ -1,0 +1,36 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <receiver
+      android:name=".TalktrayWidgetSmall"
+      android:exported="true"
+      android:label="Talktray">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/talktray_widget_small_info" />
+    </receiver>
+    <receiver
+      android:name=".TalktrayWidgetMedium"
+      android:exported="true"
+      android:label="Talktray">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/talktray_widget_medium_info" />
+    </receiver>
+    <service
+      android:name=".TalktrayTileService"
+      android:exported="true"
+      android:icon="@drawable/ic_talktray_mic"
+      android:label="Talktray"
+      android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+      <intent-filter>
+        <action android:name="android.service.quicksettings.action.QS_TILE" />
+      </intent-filter>
+    </service>
+  </application>
+</manifest>

@@ -1,0 +1,57 @@
+import { useState } from 'react';
+import { ScrollView, View } from 'react-native';
+
+import { Aurora } from '@/components/Aurora';
+import { EditSheet } from '@/components/EditSheet';
+import { ItemCard } from '@/components/ItemCard';
+import { AppText, Chip, EmptyState } from '@/components/ui/primitives';
+import { useApp } from '@/data/AppProvider';
+import type { InboxItem } from '@/domain/types';
+import { useI18n } from '@/i18n';
+
+export function TasksScreen() {
+  const { t } = useI18n();
+  const { items, profile, toggleComplete, updateItem, deleteItem } = useApp();
+  const [done, setDone] = useState(false);
+  const [editing, setEditing] = useState<InboxItem | null>(null);
+  const list = items.filter((item) => item.type === 'task' && Boolean(item.completedAt) === done);
+  return (
+    <Aurora>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 64, paddingBottom: 130, gap: 14 }}>
+        <AppText size={32} weight="extrabold">
+          {t('tabs.tasks')}
+        </AppText>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Chip label={t('tasks.open')} active={!done} onPress={() => setDone(false)} />
+          <Chip label={t('tasks.completed')} active={done} onPress={() => setDone(true)} />
+        </View>
+        {list.length === 0 ? <EmptyState title={t('tasks.emptyTitle')} body={t('tasks.emptyBody')} /> : null}
+        {list.map((item) => (
+          <ItemCard
+            key={item.id}
+            item={item}
+            timeZone={profile.timezone}
+            onPress={() => setEditing(item)}
+            onToggle={() => void toggleComplete(item.id)}
+          />
+        ))}
+      </ScrollView>
+      <EditSheet
+        visible={Boolean(editing)}
+        item={editing}
+        timeZone={profile.timezone}
+        onClose={() => setEditing(null)}
+        onChange={(patch) => {
+          if (!editing) return;
+          setEditing({ ...editing, ...patch });
+          void updateItem(editing.id, patch);
+        }}
+        onDelete={() => {
+          if (!editing) return;
+          void deleteItem(editing.id);
+          setEditing(null);
+        }}
+      />
+    </Aurora>
+  );
+}

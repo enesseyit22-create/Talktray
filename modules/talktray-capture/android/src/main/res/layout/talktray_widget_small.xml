@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/widget_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@drawable/talktray_widget_bg"
+  android:padding="12dp">
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <ImageView
+      android:layout_width="72dp"
+      android:layout_height="72dp"
+      android:contentDescription="@string/talktray_shortcut_short"
+      android:scaleType="fitCenter"
+      android:src="@drawable/talktray_mark" />
+
+    <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:text="Kaydet"
+      android:textColor="#2A2452"
+      android:textStyle="bold" />
+  </LinearLayout>
+</FrameLayout>

@@ -1,0 +1,92 @@
+{
+  "expo": {
+    "name": "Talktray",
+    "slug": "talktray",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "talktray",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.talktray.app",
+      "supportsTablet": true,
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.talktray.app"]
+      },
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Talktray records your voice so it can turn a thought into tasks, reminders, and notes.",
+        "NSCalendarsUsageDescription": "Talktray can add the events you confirm to your calendar.",
+        "NSRemindersUsageDescription": "Talktray can save the reminders you confirm to the Reminders app.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.talktray.app",
+      "permissions": [
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#D7EEE6",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#E7F6F1",
+          "image": "./assets/images/icon.png",
+          "imageWidth": 240
+        }
+      ],
+      "expo-secure-store",
+      "expo-localization",
+      "expo-audio",
+      "expo-apple-authentication",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#8B7CFF"
+        }
+      ],
+      "@bacons/apple-targets",
+      [
+        "expo-quick-actions",
+        {
+          "iosActions": [
+            {
+              "id": "record",
+              "title": "Kaydet",
+              "subtitle": "Talktray ile kaydet",
+              "icon": "symbol:mic.fill",
+              "params": {
+                "href": "/record?autostart=1"
+              }
+            }
+          ]
+        }
+      ],
+      "./modules/talktray-capture/app.plugin.js"
+    ],
+    "experiments": {
+      "typedRoutes": false,
+      "reactCompiler": true
+    },
+    "extra": {
+      "recordUrl": "talktray://record"
+    }
+  }
+}
