@@ -99,6 +99,15 @@ export const tr: Dictionary = {
     remaining: 'Bu ay {count} / {limit}',
     unlimited: 'Pro · adil kullanım {limit}/ay',
     permission: 'Bir düşünceyi almak için mikrofon izni gerekir.',
+    mix: 'Türkçe ve İngilizce aynı cümlede olabilir.',
+  },
+  quick: {
+    title: 'Kaydet',
+    subtitle: 'Talktray ile kaydet',
+  },
+  notifications: {
+    reminder: 'Talktray hatırlatması',
+    channel: 'Hatırlatmalar',
   },
   review: {
     title: 'Böyle mi olsun?',

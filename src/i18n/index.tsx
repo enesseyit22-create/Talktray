@@ -1,26 +1,15 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { getLocales } from 'expo-localization';
 
-import { en, type Dictionary } from '@/i18n/en';
-import { tr } from '@/i18n/tr';
+import { asLocale, localeFromTag, LOCALES, LOCALE_LABELS, type Locale } from '@/i18n/locale';
+import { dictionaries, translate } from '@/i18n/translate';
 
-export type Locale = 'en' | 'tr';
-
-const dictionaries: Record<Locale, Dictionary> = { en, tr };
+export { asLocale, localeFromTag, LOCALES, LOCALE_LABELS, type Locale };
+export { translate };
 
 export function deviceLocale(): Locale {
-  const code = getLocales()[0]?.languageCode?.toLowerCase() ?? 'en';
-  return code.startsWith('tr') ? 'tr' : 'en';
-}
-
-function lookup(dict: Dictionary, path: string): string {
-  const value = path.split('.').reduce<unknown>((acc, key) => {
-    if (acc && typeof acc === 'object' && key in acc) {
-      return (acc as Record<string, unknown>)[key];
-    }
-    return undefined;
-  }, dict);
-  return typeof value === 'string' ? value : path;
+  const first = getLocales()[0];
+  return localeFromTag(first?.languageCode, first?.languageTag);
 }
 
 type I18nValue = {
@@ -34,19 +23,11 @@ const I18nContext = createContext<I18nValue | null>(null);
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>(deviceLocale);
   const value = useMemo<I18nValue>(() => {
-    const dict = dictionaries[locale];
+    const active = dictionaries[locale] ? locale : 'en';
     return {
-      locale,
-      setLocale,
-      t: (path, vars) => {
-        let text = lookup(dict, path);
-        if (vars) {
-          for (const [key, replacement] of Object.entries(vars)) {
-            text = text.replaceAll(`{${key}}`, String(replacement));
-          }
-        }
-        return text;
-      },
+      locale: active,
+      setLocale: (next) => setLocale(asLocale(next)),
+      t: (path, vars) => translate(active, path, vars),
     };
   }, [locale]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await admin.from('profiles').select('timezone, locale').eq('id', userId).maybeSingle();
     const timeZone = safeTimeZone(profile?.timezone || body.timezone || 'UTC');
-    const locale = profile?.locale === 'tr' || body.locale === 'tr' ? 'tr' : 'en';
+    const locale = resolveLocale(profile?.locale, body.locale);
     const now = body.now ? new Date(body.now) : new Date();
     const period = monthPeriod(now, timeZone);
     const isPro = await subscriberIsPro(userId);
@@ -102,6 +102,20 @@ Deno.serve(async (req) => {
     return json({ error: message }, 500);
   }
 });
+
+const APP_LOCALES = new Set(['en', 'tr', 'es', 'pt-BR', 'de', 'fr', 'it', 'ja', 'ko', 'id']);
+
+function resolveLocale(profileLocale?: string | null, bodyLocale?: string | null): string {
+  return normalizeLocale(bodyLocale) ?? normalizeLocale(profileLocale) ?? 'en';
+}
+
+function normalizeLocale(value?: string | null): string | null {
+  if (!value) return null;
+  const raw = value.trim();
+  if (/^pt([-_]|$)/i.test(raw)) return 'pt-BR';
+  const key = raw.toLowerCase() === 'pt-br' ? 'pt-BR' : raw.toLowerCase();
+  return APP_LOCALES.has(key) ? key : null;
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

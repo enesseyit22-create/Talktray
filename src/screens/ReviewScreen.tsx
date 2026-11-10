@@ -10,6 +10,7 @@ import { AppText, Field, GlassCard, PrimaryButton } from '@/components/ui/primit
 import { useApp } from '@/data/AppProvider';
 import type { DraftItem } from '@/domain/types';
 import { useI18n } from '@/i18n';
+import { intlLocale } from '@/i18n/locale';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export function ReviewScreen() {
@@ -58,7 +59,7 @@ export function ReviewScreen() {
                 </AppText>
                 {item.dueAt ? (
                   <AppText size={12} color={colors.muted}>
-                    {new Date(item.dueAt).toLocaleString(app.profile.locale === 'tr' ? 'tr-TR' : 'en-US')}
+                    {new Date(item.dueAt).toLocaleString(intlLocale(app.profile.locale))}
                   </AppText>
                 ) : null}
               </View>

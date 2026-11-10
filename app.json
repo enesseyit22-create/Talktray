@@ -29,7 +29,8 @@
         "NSMicrophoneUsageDescription": "Talktray records your voice so it can turn a thought into tasks, reminders, and notes.",
         "NSCalendarsUsageDescription": "Talktray can add the events you confirm to your calendar.",
         "NSRemindersUsageDescription": "Talktray can save the reminders you confirm to the Reminders app.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
       }
     },
     "android": {
@@ -63,7 +64,15 @@
         }
       ],
       "expo-secure-store",
-      "expo-localization",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": ["en", "tr", "es", "pt-BR", "de", "fr", "it", "ja", "ko", "id"],
+            "android": ["en", "tr", "es", "pt-BR", "de", "fr", "it", "ja", "ko", "id"]
+          }
+        }
+      ],
       "expo-audio",
       "expo-updates",
       "expo-apple-authentication",
@@ -96,6 +105,18 @@
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
+    },
+    "locales": {
+      "en": "./locales/en.json",
+      "tr": "./locales/tr.json",
+      "es": "./locales/es.json",
+      "pt-BR": "./locales/pt-BR.json",
+      "de": "./locales/de.json",
+      "fr": "./locales/fr.json",
+      "it": "./locales/it.json",
+      "ja": "./locales/ja.json",
+      "ko": "./locales/ko.json",
+      "id": "./locales/id.json"
     },
     "extra": {
       "eas": {

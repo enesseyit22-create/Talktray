@@ -1,0 +1,11 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Talktray",
+    "NSMicrophoneUsageDescription": "O Talktray grava sua voz para transformar um pensamento em tarefas, lembretes e notas.",
+    "NSCalendarsUsageDescription": "O Talktray pode adicionar ao seu calendário os eventos que você confirmar.",
+    "NSRemindersUsageDescription": "O Talktray pode salvar no app Lembretes os avisos que você confirmar."
+  },
+  "android": {
+    "app_name": "Talktray"
+  }
+}

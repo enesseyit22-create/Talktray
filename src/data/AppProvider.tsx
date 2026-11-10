@@ -5,7 +5,7 @@ import { getCalendars } from 'expo-localization';
 import { buildSeed } from '@/data/seed';
 import { loadDemo, loadPrefs, saveDemo, savePrefs, type DemoState } from '@/data/storage';
 import type { Draft, DraftItem, InboxItem, Profile, Recording, SessionUser, Usage } from '@/domain/types';
-import { deviceLocale, useI18n, type Locale } from '@/i18n';
+import { asLocale, deviceLocale, useI18n, type Locale } from '@/i18n';
 import { isSupabaseConfigured } from '@/lib/config';
 import { createId } from '@/lib/id';
 import { supabase } from '@/lib/supabase';
@@ -84,6 +84,10 @@ function defaultProfile(locale: Locale, timeZone: string): Profile {
   };
 }
 
+function sampleTranscript(locale: string): string {
+  return locale === 'tr' ? SAMPLE_TRANSCRIPTS.tr : SAMPLE_TRANSCRIPTS.en;
+}
+
 function phoneTimeZone() {
   return safeTimeZone(getCalendars()[0]?.timeZone ?? deviceTimeZone());
 }
@@ -142,7 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nextProfile: Profile = {
         displayName: profileRow?.display_name || email.split('@')[0] || 'Talktray',
         timezone: safeTimeZone(profileRow?.timezone || phoneTimeZone()),
-        locale: profileRow?.locale === 'tr' ? 'tr' : 'en',
+        locale: asLocale(profileRow?.locale),
         theme: profileRow?.theme === 'light' || profileRow?.theme === 'dark' ? profileRow.theme : 'system',
         exportToCalendar: Boolean(profileRow?.export_to_calendar),
         notificationsEnabled: profileRow?.notifications_enabled !== false,
@@ -174,15 +178,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const prefs = await loadPrefs();
       if (!active) return;
       setOnboardingDone(prefs.onboardingDone);
-      setLocale(prefs.locale);
+      const savedLocale = asLocale(prefs.locale);
+      setLocale(savedLocale);
       setMode(prefs.theme);
       const preview = process.env.EXPO_PUBLIC_PREVIEW === '1';
-      const locale = (process.env.EXPO_PUBLIC_PREVIEW_LOCALE as Locale | undefined) || prefs.locale || deviceLocale();
+      const locale = asLocale(process.env.EXPO_PUBLIC_PREVIEW_LOCALE || savedLocale || deviceLocale());
       if (preview) {
         const name = process.env.EXPO_PUBLIC_PREVIEW_NAME || 'Enes';
         const timeZone = phoneTimeZone();
         const seeded = buildSeed(new Date(), timeZone, locale === 'tr' ? 'tr' : 'en');
-        const nextProfile = { ...defaultProfile(locale === 'tr' ? 'tr' : 'en', timeZone), displayName: name };
+        const nextProfile = { ...defaultProfile(locale, timeZone), displayName: name };
         applyProfile(nextProfile);
         setUser({ id: 'preview', email: 'enes@talktray.app' });
         setItems(seeded.items);
@@ -331,7 +336,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           locale,
         };
         const nextUser = seeded?.user ?? { id: createId(), email: email?.trim() || 'demo@talktray.app' };
-        const seed = seeded ? null : buildSeed(new Date(), timeZone, locale);
+        const seed = seeded ? null : buildSeed(new Date(), timeZone, locale === 'tr' ? 'tr' : 'en');
         const nextItems = seeded?.items ?? seed?.items ?? [];
         const nextRecordings = seeded?.recordings ?? seed?.recordings ?? [];
         const period = monthPeriod(new Date(), timeZone);
@@ -403,7 +408,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const now = new Date().toISOString();
         const spoken = input.transcript?.trim() ?? '';
         if (mode !== 'supabase' || !user) {
-          const transcript = spoken || SAMPLE_TRANSCRIPTS[profile.locale];
+          const transcript = spoken || sampleTranscript(profile.locale);
           const parsed = extractItems(transcript, {
             now: new Date(),
             timeZone: profile.timezone,
@@ -478,7 +483,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (error) {
           const code = await readFunctionError(error);
           if (code === 'QUOTA_EXCEEDED') return 'quota';
-          const transcript = spoken || SAMPLE_TRANSCRIPTS[profile.locale];
+          const transcript = spoken || sampleTranscript(profile.locale);
           const parsed = extractItems(transcript, {
             now: new Date(),
             timeZone: profile.timezone,
@@ -527,7 +532,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return 'review';
       },
       openSample: (locale) =>
-        actions.current?.processThought({ durationMs: 12000, transcript: SAMPLE_TRANSCRIPTS[locale] }) ??
+        actions.current?.processThought({ durationMs: 12000, transcript: sampleTranscript(locale) }) ??
         Promise.resolve('quota'),
       updateDraftItem: (localId, patch) => {
         setDraft((current) =>

@@ -1,0 +1,11 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Talktray",
+    "NSMicrophoneUsageDescription": "Talktrayは、思いつきをタスク、リマインダー、メモにするために音声を録音します。",
+    "NSCalendarsUsageDescription": "Talktrayは、確認した予定をカレンダーに追加できます。",
+    "NSRemindersUsageDescription": "Talktrayは、確認したリマインダーをリマインダーアプリに保存できます。"
+  },
+  "android": {
+    "app_name": "Talktray"
+  }
+}

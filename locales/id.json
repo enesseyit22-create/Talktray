@@ -1,0 +1,11 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Talktray",
+    "NSMicrophoneUsageDescription": "Talktray merekam suaramu untuk mengubah sebuah pikiran menjadi tugas, pengingat, dan catatan.",
+    "NSCalendarsUsageDescription": "Talktray dapat menambahkan acara yang kamu konfirmasi ke kalender.",
+    "NSRemindersUsageDescription": "Talktray dapat menyimpan pengingat yang kamu konfirmasi ke aplikasi Pengingat."
+  },
+  "android": {
+    "app_name": "Talktray"
+  }
+}

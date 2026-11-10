@@ -1,0 +1,11 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Talktray",
+    "NSMicrophoneUsageDescription": "Talktray registra la tua voce per trasformare un pensiero in attività, promemoria e note.",
+    "NSCalendarsUsageDescription": "Talktray può aggiungere al calendario gli eventi che confermi.",
+    "NSRemindersUsageDescription": "Talktray può salvare nell’app Promemoria i promemoria che confermi."
+  },
+  "android": {
+    "app_name": "Talktray"
+  }
+}

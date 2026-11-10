@@ -46,7 +46,19 @@ describe('prompt and links', () => {
     expect(system).toContain('Europe/Istanbul');
     expect(system).toContain('yarın');
     expect(system).toContain('Turkish');
+    expect(system).toContain('Never translate');
     expect(system).toContain('"type"');
+  });
+
+  it('asks other locales to phrase inbox text in the user language', () => {
+    const { system } = buildExtractionMessages({
+      transcript: '明日の9時に電話',
+      nowIso: '2026-11-11T10:00:00+09:00',
+      timeZone: 'Asia/Tokyo',
+      locale: 'ja',
+    });
+    expect(system).toContain("user's language (ja)");
+    expect(system).not.toContain('Never translate');
   });
 
   it('recognizes record deep links', () => {

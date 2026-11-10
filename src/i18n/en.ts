@@ -97,6 +97,15 @@ export const en = {
     remaining: '{count} of {limit} this month',
     unlimited: 'Pro · fair use {limit}/month',
     permission: 'Microphone access is needed to capture a thought.',
+    mix: 'Turkish and English can share one thought.',
+  },
+  quick: {
+    title: 'Record',
+    subtitle: 'Record with Talktray',
+  },
+  notifications: {
+    reminder: 'Talktray reminder',
+    channel: 'Reminders',
   },
   review: {
     title: 'Does this look right?',

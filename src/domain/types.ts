@@ -1,9 +1,10 @@
+import type { Locale } from '@/i18n/locale';
 import type { ItemType, ParsedItem } from '../../shared/parse/types';
 
 export type Profile = {
   displayName: string;
   timezone: string;
-  locale: 'en' | 'tr';
+  locale: Locale;
   theme: 'system' | 'light' | 'dark';
   exportToCalendar: boolean;
   notificationsEnabled: boolean;

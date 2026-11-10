@@ -5,7 +5,7 @@ import { Aurora } from '@/components/Aurora';
 import { WidgetPreview } from '@/components/Brand';
 import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
-import { useI18n, type Locale } from '@/i18n';
+import { LOCALES, LOCALE_LABELS, useI18n } from '@/i18n';
 import { useTheme, type ThemeMode } from '@/theme/ThemeProvider';
 import { useUpdates } from '@/updates/UpdateProvider';
 import { isSameZonedDay } from '../../shared/parse/time';
@@ -57,15 +57,14 @@ export function ProfileScreen() {
         </GlassCard>
         <GlassCard style={{ gap: 10 }}>
           <AppText weight="bold">{t('profile.language')}</AppText>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {(['tr', 'en'] as Locale[]).map((code) => (
-              <View key={code} style={{ flex: 1 }}>
-                <PrimaryButton
-                  tone={locale === code ? 'solid' : 'glass'}
-                  label={code === 'tr' ? 'Türkçe' : 'English'}
-                  onPress={() => void app.updateProfile({ locale: code })}
-                />
-              </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {LOCALES.map((code) => (
+              <PrimaryButton
+                key={code}
+                tone={locale === code ? 'solid' : 'glass'}
+                label={LOCALE_LABELS[code]}
+                onPress={() => void app.updateProfile({ locale: code })}
+              />
             ))}
           </View>
           <AppText weight="bold">{t('profile.theme')}</AppText>

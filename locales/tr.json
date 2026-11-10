@@ -1,0 +1,11 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Talktray",
+    "NSMicrophoneUsageDescription": "Talktray, bir düşünceyi görev, hatırlatma ve nota çevirmek için sesini kaydeder.",
+    "NSCalendarsUsageDescription": "Talktray, onayladığın etkinlikleri takvimine ekleyebilir.",
+    "NSRemindersUsageDescription": "Talktray, onayladığın hatırlatmaları Anımsatıcılar uygulamasına kaydedebilir."
+  },
+  "android": {
+    "app_name": "Talktray"
+  }
+}

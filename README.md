@@ -188,4 +188,4 @@ Aynı işi GitHub’dan yapmak için depo sırlarına şunları ekle (Settings �
 
 ## Languages
 
-Copy is in `src/i18n/en.ts` and `src/i18n/tr.ts`. Add a locale by translating `en.ts`, registering it in `src/i18n/index.tsx`, and allowing the code in the `profiles.locale` check constraint.
+The app ships in English, Turkish, Spanish, Brazilian Portuguese, German, French, Italian, Japanese, Korean, and Indonesian. Copy is in `src/i18n/`. The device locale comes from `expo-localization`; any `pt-*` tag maps to `pt-BR`, and anything else unknown falls back to English. Native permission strings live in `locales/`. Store listing copy is in `store/listings/`. Add a locale by translating `en.ts`, registering it, listing it in `expo.locales` and `supportedLocales`, and allowing the code in the `profiles.locale` check.

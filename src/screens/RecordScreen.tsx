@@ -19,7 +19,7 @@ import { consumeAutoRecord } from '@/lib/record-signal';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export function RecordScreen() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { colors } = useTheme();
   const { usage, processThought, openSample } = useApp();
   const params = useLocalSearchParams<{ autostart?: string }>();
@@ -139,7 +139,7 @@ export function RecordScreen() {
           ) : null}
         </View>
         <AppText size={12} color={colors.soft}>
-          {locale === 'tr' ? 'Türkçe ve İngilizce aynı cümlede olabilir.' : 'Turkish and English can share one thought.'}
+          {t('record.mix')}
         </AppText>
       </ScrollView>
     </Aurora>

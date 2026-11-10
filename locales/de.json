@@ -1,0 +1,11 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Talktray",
+    "NSMicrophoneUsageDescription": "Talktray nimmt deine Stimme auf, um einen Gedanken in Aufgaben, Erinnerungen und Notizen zu verwandeln.",
+    "NSCalendarsUsageDescription": "Talktray kann bestätigte Termine in deinen Kalender eintragen.",
+    "NSRemindersUsageDescription": "Talktray kann bestätigte Erinnerungen in der Erinnerungen-App sichern."
+  },
+  "android": {
+    "app_name": "Talktray"
+  }
+}

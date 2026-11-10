@@ -1,0 +1,11 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Talktray",
+    "NSMicrophoneUsageDescription": "Talktray는 떠오른 생각을 할 일, 알림, 메모로 바꾸려고 음성을 녹음합니다.",
+    "NSCalendarsUsageDescription": "Talktray는 확인한 일정을 캘린더에 넣을 수 있습니다.",
+    "NSRemindersUsageDescription": "Talktray는 확인한 알림을 미리 알림 앱에 저장할 수 있습니다."
+  },
+  "android": {
+    "app_name": "Talktray"
+  }
+}

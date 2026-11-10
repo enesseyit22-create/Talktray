@@ -12,7 +12,7 @@ import { isRecordLink } from '../../../shared/parse/links';
 
 export default function AppLayout() {
   const { ready, user } = useApp();
-  const { locale } = useI18n();
+  const { t } = useI18n();
   useQuickActionRouting((action) => {
     if (action.id === 'record') armAutoRecord();
   });
@@ -22,13 +22,13 @@ export default function AppLayout() {
     void QuickActions.setItems([
       {
         id: 'record',
-        title: locale === 'tr' ? 'Kaydet' : 'Record',
-        subtitle: 'Talktray ile kaydet',
+        title: t('quick.title'),
+        subtitle: t('quick.subtitle'),
         icon: Platform.OS === 'ios' ? 'symbol:mic.fill' : undefined,
         params: { href: '/record?autostart=1' },
       },
     ]).catch(() => undefined);
-  }, [locale]);
+  }, [t]);
 
   useEffect(() => {
     const open = (url: string | null) => {

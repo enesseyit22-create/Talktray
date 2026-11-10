@@ -1,7 +1,8 @@
+import { intlLocale } from '@/i18n/locale';
 import { isSameZonedDay, zonedParts } from '../../shared/parse/time';
 
-export function formatClock(iso: string, timeZone: string, locale: 'en' | 'tr'): string {
-  return new Intl.DateTimeFormat(locale === 'tr' ? 'tr-TR' : 'en-US', {
+export function formatClock(iso: string, timeZone: string, locale: string): string {
+  return new Intl.DateTimeFormat(intlLocale(locale), {
     timeZone,
     hour: '2-digit',
     minute: '2-digit',
@@ -12,7 +13,7 @@ export function formatDayLabel(
   iso: string,
   now: Date,
   timeZone: string,
-  locale: 'en' | 'tr',
+  locale: string,
   today: string,
   tomorrow: string,
 ): string {
@@ -20,7 +21,7 @@ export function formatDayLabel(
   if (isSameZonedDay(date, now, timeZone)) return today;
   const next = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   if (isSameZonedDay(date, next, timeZone)) return tomorrow;
-  return new Intl.DateTimeFormat(locale === 'tr' ? 'tr-TR' : 'en-US', {
+  return new Intl.DateTimeFormat(intlLocale(locale), {
     timeZone,
     day: 'numeric',
     month: 'short',
