@@ -1,6 +1,5 @@
 import { AudioModule } from 'expo-audio';
 import * as Notifications from 'expo-notifications';
-import * as StoreReview from 'expo-store-review';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Linking, Platform, Pressable, ScrollView, Share, Switch, View } from 'react-native';
 import { router } from 'expo-router';
@@ -349,9 +348,15 @@ export function SettingsScreen() {
           <Row label={t('settings.contact')} onPress={() => void Linking.openURL(SITE_ORIGIN)} />
           <Row
             label={t('settings.rate')}
-            onPress={() =>
-              void StoreReview.isAvailableAsync().then((ok) => (ok ? StoreReview.requestReview() : Linking.openURL(SITE_ORIGIN)))
-            }
+            onPress={() => {
+              if (Platform.OS === 'ios') {
+                void Linking.openURL('https://apps.apple.com/app/id6833066274?action=write-review');
+                return;
+              }
+              void Linking.openURL('market://details?id=com.talktray.app').catch(() =>
+                Linking.openURL('https://play.google.com/store/apps/details?id=com.talktray.app'),
+              );
+            }}
           />
           <Row
             label={t('settings.share')}
