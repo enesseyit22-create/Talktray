@@ -134,9 +134,9 @@ Expo Go and `npm run web` do not apply these updates. The Profile row says so.
 
    The client uploads audio to `recordings/{userId}/{recordingId}.m4a`, then calls this function. It checks the RevenueCat `pro` entitlement, reserves a monthly credit, transcribes, asks the model for JSON, and resolves leftover relative dates in the user’s timezone. Items are saved only after the person confirms them on the review sheet.
 
-5. **RevenueCat.** Create a project with an entitlement named `pro`. Add products for **$7.99/month** and **$49.99/year**, put both in the current offering, and attach them to `pro`. Copy the public SDK keys (`appl_…` and `goog_…`) into `.env`. Put the secret API key in the Supabase secret above. The app calls `Purchases.logIn` with the Supabase user id, so the Edge Function can look up the same subscriber.
+5. **RevenueCat.** The project is already wired. Entitlement `pro`. Offering `default` with packages `$rc_monthly` ($7.99/month) and `$rc_annual` ($49.99/year). Public SDK keys are the defaults in `.env.example`, `eas.json` build env, and `src/services/billing-shared.ts`: iOS `appl_RgzWQMZehRfiafWyReOAOBMlTgD`, Android `goog_PBSMDAoJJABsIyxqmhhcXSCorNT`. Put only the **secret** API key in the Supabase secret above. The app calls `Purchases.logIn` with the Supabase user id.
 
-6. **Store setup.** App Store Connect in-app purchases and a Google Play service account are required before real charges work. Until then, purchases throw and the paywall explains that. Demo mode can still simulate Pro.
+6. **Store setup.** Create the same product IDs in the stores and attach them in RevenueCat, or purchases stay empty. App Store Connect auto-renewable subscriptions: `talktray_pro_monthly` ($7.99/month) and `talktray_pro_annual` ($49.99/year). Google Play subscription id `talktray_pro` with base plans `monthly` and `annual`. A Play service account is still required before real charges work. Demo mode can still simulate Pro.
 
 7. **EAS.** `eas.json` has `development`, `preview`, and `production` profiles. Development builds include the dev client plus widgets. Set the Apple team id, then:
 

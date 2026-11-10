@@ -2,17 +2,27 @@ import { Platform } from 'react-native';
 import Purchases, { LOG_LEVEL, PACKAGE_TYPE, PURCHASES_ERROR_CODE } from 'react-native-purchases';
 
 import { ENTITLEMENT_ID, MONTHLY_PRICE, YEARLY_PRICE } from '../../shared/parse/quota';
-import { fallbackOffers, type PlanId, type StoreOffer } from '@/services/billing-shared';
+import {
+  fallbackOffers,
+  REVENUECAT_ANDROID_SDK_KEY,
+  REVENUECAT_ANNUAL_PACKAGE,
+  REVENUECAT_IOS_SDK_KEY,
+  REVENUECAT_MONTHLY_PACKAGE,
+  REVENUECAT_OFFERING_ID,
+  type PlanId,
+  type StoreOffer,
+} from '@/services/billing-shared';
 
 let configured = false;
 
 function publicKey(): string | undefined {
-  const key =
+  const fromEnv =
     Platform.OS === 'ios'
       ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
       : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
-  if (!key || key.includes('YOUR_') || key.length < 8) return undefined;
-  return key;
+  const fallback = Platform.OS === 'ios' ? REVENUECAT_IOS_SDK_KEY : REVENUECAT_ANDROID_SDK_KEY;
+  const key = fromEnv && !fromEnv.includes('YOUR_') && fromEnv.length > 8 ? fromEnv : fallback;
+  return key.length > 8 ? key : undefined;
 }
 
 export async function configurePurchases(userId?: string): Promise<boolean> {
@@ -45,9 +55,14 @@ export async function loadStoreOffers(): Promise<{
   if (!ready) return { available: false, offers: fallbackOffers, isPro: false };
   try {
     const offerings = await Purchases.getOfferings();
-    const packages = offerings.current?.availablePackages ?? [];
-    const monthly = packages.find((pkg) => pkg.packageType === PACKAGE_TYPE.MONTHLY);
-    const yearly = packages.find((pkg) => pkg.packageType === PACKAGE_TYPE.ANNUAL);
+    const offering = offerings.all[REVENUECAT_OFFERING_ID] ?? offerings.current;
+    const packages = offering?.availablePackages ?? [];
+    const monthly =
+      packages.find((pkg) => pkg.identifier === REVENUECAT_MONTHLY_PACKAGE) ??
+      packages.find((pkg) => pkg.packageType === PACKAGE_TYPE.MONTHLY);
+    const yearly =
+      packages.find((pkg) => pkg.identifier === REVENUECAT_ANNUAL_PACKAGE) ??
+      packages.find((pkg) => pkg.packageType === PACKAGE_TYPE.ANNUAL);
     const offers: StoreOffer[] = [
       { id: 'monthly', price: monthly?.product.priceString ?? MONTHLY_PRICE, title: 'Monthly' },
       { id: 'yearly', price: yearly?.product.priceString ?? YEARLY_PRICE, title: 'Yearly' },
@@ -65,9 +80,13 @@ export async function purchaseOffer(
   if (!ready) return { isPro: false, cancelled: false, unavailable: true };
   try {
     const offerings = await Purchases.getOfferings();
-    const packages = offerings.current?.availablePackages ?? [];
-    const wanted = plan === 'yearly' ? PACKAGE_TYPE.ANNUAL : PACKAGE_TYPE.MONTHLY;
-    const selected = packages.find((pkg) => pkg.packageType === wanted) ?? packages[0];
+    const offering = offerings.all[REVENUECAT_OFFERING_ID] ?? offerings.current;
+    const packages = offering?.availablePackages ?? [];
+    const wantedId = plan === 'yearly' ? REVENUECAT_ANNUAL_PACKAGE : REVENUECAT_MONTHLY_PACKAGE;
+    const wantedType = plan === 'yearly' ? PACKAGE_TYPE.ANNUAL : PACKAGE_TYPE.MONTHLY;
+    const selected =
+      packages.find((pkg) => pkg.identifier === wantedId) ??
+      packages.find((pkg) => pkg.packageType === wantedType);
     if (!selected) return { isPro: false, cancelled: false, unavailable: true };
     const result = await Purchases.purchasePackage(selected);
     return {
