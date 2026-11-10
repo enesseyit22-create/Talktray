@@ -157,7 +157,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         supabase.from('recordings').select('*').order('created_at', { ascending: false }),
       ]);
       const nextProfile: Profile = {
-        displayName: profileRow?.display_name || email.split('@')[0] || 'Talktray',
+        displayName: profileRow?.display_name || email.split('@')[0] || 'TalkTray',
         username: typeof profileRow?.username === 'string' ? profileRow.username : null,
         timezone: timeZoneForRequest(safeTimeZone(profileRow?.timezone || phoneTimeZone()), phoneTimeZone()),
         locale: asLocale(profileRow?.locale),

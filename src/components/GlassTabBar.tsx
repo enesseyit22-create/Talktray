@@ -8,6 +8,11 @@ import { useI18n } from '@/i18n';
 import { haptic } from '@/lib/haptics';
 import { useTheme } from '@/theme/ThemeProvider';
 
+/** Scroll space that clears the floating bar and the mic button that rises above it. */
+export function tabBarClearance(bottomInset: number): number {
+  return Math.max(bottomInset, 10) + 72 + 28 + 40;
+}
+
 const ICONS = {
   home: House,
   tasks: CircleCheck,

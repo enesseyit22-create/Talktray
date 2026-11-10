@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import Purchases, { LOG_LEVEL, PACKAGE_TYPE, PURCHASES_ERROR_CODE } from 'react-native-purchases';
 
 import { ENTITLEMENT_ID, MONTHLY_PRICE, YEARLY_PRICE } from '../../shared/parse/quota';
+import { priceLabel, yearlyPerMonthLabel } from '@/lib/store-price';
 import {
   fallbackOffers,
   REVENUECAT_ANDROID_SDK_KEY,
@@ -64,8 +65,18 @@ export async function loadStoreOffers(): Promise<{
       packages.find((pkg) => pkg.identifier === REVENUECAT_ANNUAL_PACKAGE) ??
       packages.find((pkg) => pkg.packageType === PACKAGE_TYPE.ANNUAL);
     const offers: StoreOffer[] = [
-      { id: 'monthly', price: monthly?.product.priceString ?? MONTHLY_PRICE, title: 'Monthly' },
-      { id: 'yearly', price: yearly?.product.priceString ?? YEARLY_PRICE, title: 'Yearly' },
+      {
+        id: 'monthly',
+        price: priceLabel(monthly?.product, MONTHLY_PRICE),
+        title: 'Monthly',
+        perMonth: null,
+      },
+      {
+        id: 'yearly',
+        price: priceLabel(yearly?.product, YEARLY_PRICE),
+        title: 'Yearly',
+        perMonth: yearlyPerMonthLabel(yearly?.product),
+      },
     ];
     return { available: true, offers, isPro: await readPro() };
   } catch {
