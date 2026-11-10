@@ -2,6 +2,7 @@
   "expo": {
     "name": "Talktray",
     "slug": "talktray",
+    "owner": "fishmaps",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -12,7 +13,7 @@
       "policy": "fingerprint"
     },
     "updates": {
-      "url": "https://u.expo.dev/00000000-0000-4000-8000-000000000001",
+      "url": "https://u.expo.dev/02e5d8f6-f11d-421c-92c9-2d4f699eed65",
       "checkAutomatically": "NEVER",
       "fallbackToCacheTimeout": 0
     },
@@ -96,7 +97,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "00000000-0000-4000-8000-000000000001"
+        "projectId": "02e5d8f6-f11d-421c-92c9-2d4f699eed65"
       },
       "recordUrl": "talktray://record"
     }

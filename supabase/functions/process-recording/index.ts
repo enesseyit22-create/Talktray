@@ -5,7 +5,7 @@ import {
   monthPeriod,
   normalizeExtraction,
   safeTimeZone,
-} from '../../../shared/parse/index.ts';
+} from '../_shared/parse/index.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

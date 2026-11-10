@@ -82,7 +82,7 @@ Set `ios.appleTeamId` in `app.json` before an iOS build. Find it in Xcode under 
 
 JS and asset changes ship with EAS Update. The runtime version policy is `fingerprint`, so an update only installs on a binary with the same native fingerprint. `eas.json` maps builds to channels: `development`, `preview`, and `production`. The app does not download on cold start by itself (`checkAutomatically` is `NEVER`). It checks when the app launches and when it returns to the foreground, downloads in the background, then shows a glass prompt: **“Yeni sürüm hazır, yeniden başlat”** / “A new version is ready. Restart”. Profile has **Güncellemeleri denetle**, plus the app version and the running update id.
 
-Replace the placeholder project id `00000000-0000-4000-8000-000000000001` in `app.json` (`extra.eas.projectId` and `updates.url`) after `npx eas-cli init`.
+EAS is linked to the `fishmaps` project `02e5d8f6-f11d-421c-92c9-2d4f699eed65` (`expo.owner`, `extra.eas.projectId`, and `updates.url` in `app.json`).
 
 ```bash
 npx eas-cli update --channel production --message "Copy and inbox fixes"
@@ -106,7 +106,7 @@ Expo Go and `npm run web` do not apply these updates. The Profile row says so.
    cp .env.example .env
    ```
 
-   `EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co`  
+   `EXPO_PUBLIC_SUPABASE_URL=https://ggcubezrrnplpdyfvzhe.supabase.co`  
    `EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY`
 
 3. **Secrets for the Edge Function.** Never put these in the app.
@@ -144,13 +144,14 @@ Expo Go and `npm run web` do not apply these updates. The Profile row says so.
    npx eas-cli build --profile development --platform all
    ```
 
-8. **EAS Update.** Run `npx eas-cli init` and replace the placeholder project id in `app.json`. Publish JS changes with `npx eas-cli update --channel production`. See “Over-the-air updates” above for what still needs a store build.
+8. **EAS Update.** `app.json` already has the `fishmaps` owner and project id `02e5d8f6-f11d-421c-92c9-2d4f699eed65`. Publish JS changes with `npx eas-cli update --channel production`. See “Over-the-air updates” above for what still needs a store build.
 
 ## Project map
 
 - `src/app` — Expo Router screens
 - `src/screens` — glass UI
 - `shared/parse` — date resolution, extraction, quota, and the LLM prompt. This is what the unit tests cover
+- `supabase/functions/_shared/parse` — the same parser, with explicit `.ts` imports, so `supabase functions deploy` can bundle it
 - `supabase/functions/process-recording` — speech and model calls
 - `supabase/migrations` — schema and RLS
 - `targets/widget` — iOS WidgetKit, Control Center, and the Siri shortcut
