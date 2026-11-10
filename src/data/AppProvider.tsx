@@ -9,6 +9,7 @@ import type { Draft, DraftItem, InboxItem, Profile, Recording, SessionUser, Usag
 import { asLocale, deviceLocale, translate, useI18n, type Locale } from '@/i18n';
 import { isSupabaseConfigured } from '@/lib/config';
 import { processErrorKey } from '@/lib/errors';
+import { loadFreeLimits, zonedDayStart, zonedMonthStart, type FreeLimits } from '@/lib/free-limits';
 import { timeZoneForRequest } from '@/lib/format';
 import { createId } from '@/lib/id';
 import { supabase } from '@/lib/supabase';
@@ -150,18 +151,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }) => {
       const userId = sessionUser.id;
       const email = sessionUser.email ?? '';
-      const [{ data: profileRow }, { data: itemRows }, { data: recordingRows }, { data: usageRow }] =
-        await Promise.all([
-          supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-          supabase.from('items').select('*').order('created_at', { ascending: false }),
-          supabase.from('recordings').select('*').order('created_at', { ascending: false }),
-          supabase
-            .from('usage_monthly')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('period', monthPeriod(new Date(), phoneTimeZone()))
-            .maybeSingle(),
-        ]);
+      const [{ data: profileRow }, { data: itemRows }, { data: recordingRows }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+        supabase.from('items').select('*').order('created_at', { ascending: false }),
+        supabase.from('recordings').select('*').order('created_at', { ascending: false }),
+      ]);
       const nextProfile: Profile = {
         displayName: profileRow?.display_name || email.split('@')[0] || 'Talktray',
         username: typeof profileRow?.username === 'string' ? profileRow.username : null,
@@ -180,15 +174,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await configurePurchases(userId);
       const store = await loadStoreOffers().catch(() => null);
       const isPro = store?.isPro ?? false;
-      const count = usageRow?.recording_count ?? 0;
+      const limits = await loadFreeLimits().catch(() => null);
+      const period = monthPeriod(new Date(), nextProfile.timezone);
+      const count = (recordingRows ?? []).filter((row) => {
+        if (row.status === 'failed') return false;
+        return monthPeriod(new Date(String(row.created_at)), nextProfile.timezone) === period;
+      }).length;
       flushSync(() => {
         setUser({ id: userId, email, provider: authProvider(sessionUser) });
         setItems((itemRows ?? []).map(mapItem));
         setRecordings((recordingRows ?? []).map(mapRecording));
         setUsage({
-          period: monthPeriod(new Date(), nextProfile.timezone),
+          period,
           count,
-          limit: recordingLimit(isPro),
+          limit: isPro ? recordingLimit(true) : freeMonthLimit(limits),
           isPro,
         });
         setAppMode('supabase');
@@ -321,8 +320,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const actions = useRef<Pick<AppValue, 'enterDemo' | 'updateProfile' | 'processThought'> | null>(null);
 
   const value = useMemo<AppValue>(() => {
-    const refreshUsage = (count: number, isPro: boolean, period = usage.period) => {
-      setUsage({ period, count, limit: recordingLimit(isPro), isPro });
+    const refreshUsage = (count: number, isPro: boolean, period = usage.period, limit = recordingLimit(isPro)) => {
+      setUsage({ period, count, limit, isPro });
     };
 
     return {
@@ -505,8 +504,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       },
       processThought: async (input) => {
-        const gate = evaluateQuota(usage.count, usage.isPro);
-        if (!gate.allowed) return 'quota';
+        if (mode !== 'supabase' || !user) {
+          const gate = evaluateQuota(usage.count, usage.isPro);
+          if (!gate.allowed) return 'quota';
+        } else if (!usage.isPro) {
+          const limits = await loadFreeLimits().catch(() => null);
+          if (overFreeLimit(limits, recordings, items.length, profile.timezone)) return 'quota';
+        }
         const now = new Date().toISOString();
         const spoken = input.transcript?.trim() ?? '';
         if (mode !== 'supabase' || !user) {
@@ -584,17 +588,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
         if (error) {
           const code = await readFunctionError(error);
-          if (code === 'QUOTA_EXCEEDED') return 'quota';
+          if (code === 'QUOTA_EXCEEDED' || code === 'quota_exceeded') return 'quota';
           throw new Error(translate(profile.locale, processErrorKey(code)));
         }
         const payload = data as {
           transcript?: string;
           language?: string | null;
           items?: Omit<DraftItem, 'localId'>[];
-          usage?: { count: number; limit: number; isPro: boolean };
+          usage?: { count: number; limit: number | null; isPro: boolean };
         };
         if (payload.usage) {
-          refreshUsage(payload.usage.count, payload.usage.isPro);
+          const nextLimit = payload.usage.isPro
+            ? recordingLimit(true)
+            : payload.usage.limit ?? Number.MAX_SAFE_INTEGER;
+          refreshUsage(payload.usage.count, payload.usage.isPro, usage.period, nextLimit);
         }
         setDraft({
           recordingId,
@@ -851,6 +858,33 @@ export function useApp() {
   const value = useContext(AppContext);
   if (!value) throw new Error('useApp must be used within AppProvider');
   return value;
+}
+
+function freeMonthLimit(limits: FreeLimits | null): number {
+  if (!limits || limits.free_recordings_per_month == null) return Number.MAX_SAFE_INTEGER;
+  return limits.free_recordings_per_month;
+}
+
+function overFreeLimit(limits: FreeLimits | null, recordings: Recording[], itemCount: number, timeZone: string): boolean {
+  const resolved: FreeLimits = limits ?? {
+    free_recordings_per_day: null,
+    free_recordings_per_month: 25,
+    free_max_seconds_per_recording: null,
+    free_max_items: null,
+  };
+  const now = new Date();
+  const active = recordings.filter((recording) => recording.status !== 'failed');
+  if (resolved.free_recordings_per_day != null) {
+    const start = zonedDayStart(now, timeZone).getTime();
+    const today = active.filter((recording) => new Date(recording.createdAt).getTime() >= start).length;
+    if (today >= resolved.free_recordings_per_day) return true;
+  }
+  if (resolved.free_recordings_per_month != null) {
+    const start = zonedMonthStart(now, timeZone).getTime();
+    const month = active.filter((recording) => new Date(recording.createdAt).getTime() >= start).length;
+    if (month >= resolved.free_recordings_per_month) return true;
+  }
+  return resolved.free_max_items != null && itemCount >= resolved.free_max_items;
 }
 
 function mapItem(row: Record<string, unknown>): InboxItem {
