@@ -36,6 +36,7 @@ export const tr: Dictionary = {
     morning: 'Günaydın',
     afternoon: 'İyi günler',
     evening: 'İyi akşamlar',
+    night: 'İyi geceler',
     subtitle: 'Sesli notların, görevlerin ve fikirlerin.',
     hello: '{greeting}, {name}',
   },

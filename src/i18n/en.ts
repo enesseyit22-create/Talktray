@@ -34,6 +34,7 @@ export const en = {
     morning: 'Good morning',
     afternoon: 'Good afternoon',
     evening: 'Good evening',
+    night: 'Good night',
     subtitle: 'Voice notes, tasks, and ideas.',
     hello: '{greeting}, {name}',
   },

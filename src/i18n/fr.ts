@@ -36,6 +36,7 @@ export const fr: Dictionary = {
     morning: 'Bonjour',
     afternoon: 'Bon après-midi',
     evening: 'Bonsoir',
+    night: 'Bonne nuit',
     subtitle: 'Notes vocales, tâches et idées.',
     hello: '{greeting}, {name}',
   },
