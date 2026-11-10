@@ -1,5 +1,5 @@
 import { intlLocale } from '@/i18n/locale';
-import { isSameZonedDay, zonedParts } from '../../shared/parse/time';
+import { isSameZonedDay, safeTimeZone, zonedParts } from '../../shared/parse/time';
 
 export function formatClock(iso: string, timeZone: string, locale: string): string {
   return new Intl.DateTimeFormat(intlLocale(locale), {
@@ -82,11 +82,15 @@ export function timeZoneForRequest(profileZone: string, deviceZone: string): str
   return profileZone === 'UTC' ? deviceZone : profileZone;
 }
 
-export function greetingKey(now: Date, timeZone: string): 'morning' | 'afternoon' | 'evening' {
-  const hour = zonedParts(now, timeZone).hour;
-  if (hour < 12) return 'morning';
-  if (hour < 18) return 'afternoon';
-  return 'evening';
+export type GreetingKey = 'morning' | 'afternoon' | 'evening' | 'night';
+
+/** Local hour in `timeZone`: morning 05–11, afternoon 12–17, evening 18–21, night 22–04. */
+export function greetingKey(now: Date, timeZone: string): GreetingKey {
+  const hour = zonedParts(now, safeTimeZone(timeZone)).hour;
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  if (hour >= 18 && hour < 22) return 'evening';
+  return 'night';
 }
 
 export function formatDuration(ms: number): string {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDueLabel, isOverdue, pastDuePhrase, timeZoneForRequest } from './format';
+import { formatDueLabel, greetingKey, isOverdue, pastDuePhrase, timeZoneForRequest } from './format';
 
 describe('formatDueLabel', () => {
   const now = new Date('2026-11-11T07:00:00.000Z');
@@ -48,6 +48,28 @@ describe('past due', () => {
     expect(isOverdue({ ...timed, completedAt: now.toISOString() }, now, zone)).toBe(false);
     expect(isOverdue({ dueAt: '2026-11-11T06:00:00.000Z', completedAt: null, allDay: true }, now, zone)).toBe(false);
     expect(isOverdue({ dueAt: '2026-11-10T06:00:00.000Z', completedAt: null, allDay: true }, now, zone)).toBe(true);
+  });
+});
+
+describe('greetingKey', () => {
+  const atUtc = (hour: number, minute: number) => new Date(Date.UTC(2026, 10, 10, hour, minute, 0));
+
+  it('follows the zoned hour, including night after midnight', () => {
+    expect(greetingKey(atUtc(4, 59), 'UTC')).toBe('night');
+    expect(greetingKey(atUtc(5, 0), 'UTC')).toBe('morning');
+    expect(greetingKey(atUtc(11, 59), 'UTC')).toBe('morning');
+    expect(greetingKey(atUtc(12, 0), 'UTC')).toBe('afternoon');
+    expect(greetingKey(atUtc(17, 59), 'UTC')).toBe('afternoon');
+    expect(greetingKey(atUtc(18, 0), 'UTC')).toBe('evening');
+    expect(greetingKey(atUtc(21, 59), 'UTC')).toBe('evening');
+    expect(greetingKey(atUtc(22, 0), 'UTC')).toBe('night');
+    expect(greetingKey(atUtc(0, 30), 'UTC')).toBe('night');
+  });
+
+  it('uses the given time zone instead of UTC', () => {
+    const instant = new Date('2026-11-10T19:30:00.000Z');
+    expect(greetingKey(instant, 'UTC')).toBe('evening');
+    expect(greetingKey(instant, 'Europe/Istanbul')).toBe('night');
   });
 });
 

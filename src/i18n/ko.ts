@@ -36,6 +36,7 @@ export const ko: Dictionary = {
     morning: '좋은 아침이에요',
     afternoon: '좋은 오후예요',
     evening: '좋은 저녁이에요',
+    night: '좋은 밤이에요',
     subtitle: '음성 메모, 할 일, 아이디어.',
     hello: '{greeting}, {name}',
   },

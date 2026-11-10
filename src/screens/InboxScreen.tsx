@@ -16,7 +16,7 @@ import { formatClock, formatDuration, greetingKey, isOverdue } from '@/lib/forma
 import { useNow } from '@/lib/useNow';
 import { useI18n } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
-import { isSameZonedDay } from '../../shared/parse/time';
+import { deviceTimeZone, isSameZonedDay } from '../../shared/parse/time';
 
 type Filter = 'today' | 'overdue' | 'reminders' | 'calendar' | 'shopping' | 'all';
 
@@ -56,7 +56,7 @@ export function InboxScreen() {
   const notesToday = items.filter(
     (item) => item.type === 'note' && isSameZonedDay(new Date(item.createdAt), now, profile.timezone),
   ).length;
-  const greeting = t(`greet.${greetingKey(now, profile.timezone)}`);
+  const greeting = t(`greet.${greetingKey(now, deviceTimeZone())}`);
 
   return (
     <Aurora>

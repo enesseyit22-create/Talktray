@@ -36,6 +36,7 @@ export const ja: Dictionary = {
     morning: 'おはよう',
     afternoon: 'こんにちは',
     evening: 'こんばんは',
+    night: 'おやすみ',
     subtitle: '音声メモ、タスク、アイデア。',
     hello: '{greeting}、{name}',
   },

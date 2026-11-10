@@ -36,6 +36,7 @@ export const ptBR: Dictionary = {
     morning: 'Bom dia',
     afternoon: 'Boa tarde',
     evening: 'Boa noite',
+    night: 'Boa noite',
     subtitle: 'Notas de voz, tarefas e ideias.',
     hello: '{greeting}, {name}',
   },

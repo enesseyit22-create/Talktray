@@ -36,6 +36,7 @@ export const id: Dictionary = {
     morning: 'Selamat pagi',
     afternoon: 'Selamat siang',
     evening: 'Selamat malam',
+    night: 'Selamat malam',
     subtitle: 'Catatan suara, tugas, dan ide.',
     hello: '{greeting}, {name}',
   },
