@@ -32,9 +32,11 @@ export type StoreOffer = {
   id: PlanId;
   price: string;
   title: string;
+  /** Localized monthly equivalent for a yearly plan. Null when the store did not provide one. */
+  perMonth: string | null;
 };
 
 export const fallbackOffers: StoreOffer[] = [
-  { id: 'monthly', price: MONTHLY_PRICE, title: 'Monthly' },
-  { id: 'yearly', price: YEARLY_PRICE, title: 'Yearly' },
+  { id: 'monthly', price: MONTHLY_PRICE, title: 'Monthly', perMonth: null },
+  { id: 'yearly', price: YEARLY_PRICE, title: 'Yearly', perMonth: null },
 ];

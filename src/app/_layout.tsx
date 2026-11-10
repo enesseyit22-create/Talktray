@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { WelcomeIntro } from '@/components/WelcomeIntro';
 import { AppProvider } from '@/data/AppProvider';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { I18nProvider } from '@/i18n';
@@ -62,6 +63,7 @@ function ThemedStack() {
         <Stack.Screen name="(app)" />
       </Stack>
       <UpdatePrompt />
+      <WelcomeIntro />
     </>
   );
 }

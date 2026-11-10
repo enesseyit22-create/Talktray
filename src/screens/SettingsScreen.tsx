@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { Logo, WidgetPreview } from '@/components/Brand';
+import { tabBarClearance } from '@/components/GlassTabBar';
 import { AppText, Chip, Field, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { LOCALES, LOCALE_LABELS, useI18n } from '@/i18n';
@@ -192,12 +193,19 @@ export function SettingsScreen() {
       null,
       2,
     );
-    await Share.share({ message: payload, title: 'Talktray' });
+    await Share.share({ message: payload, title: 'TalkTray' });
   };
 
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 12, paddingBottom: 150, gap: 16 }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: 20,
+          paddingTop: Math.max(insets.top, 16) + 12,
+          paddingBottom: tabBarClearance(insets.bottom),
+          gap: 16,
+        }}
+      >
         <AppText size={32} weight="extrabold">
           {t('settings.title')}
         </AppText>
@@ -403,9 +411,12 @@ export function SettingsScreen() {
         </AppText>
         <WidgetPreview count={todayCount} label={t('home.voiceNotes')} />
         <GlassCard style={{ gap: 8 }}>
-          <AppText color={colors.muted}>{t('profile.captureBody')}</AppText>
-          <AppText color={colors.muted}>{t('profile.widgetSteps')}</AppText>
-          <AppText color={colors.muted}>{t('profile.androidSteps')}</AppText>
+          <AppText color={colors.muted}>
+            {Platform.OS === 'android' ? t('profile.androidBody') : t('profile.captureBody')}
+          </AppText>
+          <AppText color={colors.muted}>
+            {Platform.OS === 'android' ? t('profile.androidSteps') : t('profile.widgetSteps')}
+          </AppText>
         </GlassCard>
       </ScrollView>
 
