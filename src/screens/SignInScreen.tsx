@@ -8,6 +8,7 @@ import { Logo } from '@/components/Brand';
 import { AppText, Field, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
+import { errorText } from '@/lib/errors';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export function SignInScreen() {
@@ -43,8 +44,8 @@ export function SignInScreen() {
         await signIn(email, password);
       }
       router.replace('/home');
-    } catch {
-      setError(t('auth.failed'));
+    } catch (caught) {
+      setError(errorText(caught, t('auth.failed')));
     } finally {
       setLoading(false);
     }

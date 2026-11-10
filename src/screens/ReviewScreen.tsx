@@ -10,6 +10,7 @@ import { AppText, Field, GlassCard, PrimaryButton } from '@/components/ui/primit
 import { useApp } from '@/data/AppProvider';
 import type { DraftItem } from '@/domain/types';
 import { useI18n } from '@/i18n';
+import { errorText } from '@/lib/errors';
 import { intlLocale } from '@/i18n/locale';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -88,7 +89,7 @@ export function ReviewScreen() {
             void app
               .saveDraft(exportCalendar)
               .then(() => router.replace('/'))
-              .catch(() => setSaveError(t('errors.generic')))
+              .catch((caught) => setSaveError(errorText(caught, t('errors.generic'))))
               .finally(() => setSaving(false));
           }}
         />

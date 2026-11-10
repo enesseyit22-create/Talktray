@@ -380,18 +380,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (data.user) await loadRemote(data.user);
       },
       signUp: async (email, password, name) => {
-        if (!isSupabaseConfigured) {
-          await actions.current?.enterDemo(name || email.split('@')[0] || 'Enes', email);
-          return 'session';
+        if (isSupabaseConfigured) {
+          const { data, error } = await supabase.auth.signUp({
+            email: email.trim(),
+            password,
+            options: { data: { display_name: name, locale: profile.locale } },
+          });
+          if (error) throw error;
+          if (data.session?.user) {
+            await loadRemote(data.session.user);
+            return 'session';
+          }
+          return 'confirm';
         }
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: { data: { display_name: name, locale: profile.locale } },
-        });
-        if (error) throw error;
-        if (data.session?.user) await loadRemote(data.session.user);
-        return data.session ? 'session' : 'confirm';
+        await actions.current?.enterDemo(name || email.split('@')[0] || 'Enes', email);
+        return 'session';
       },
       signInApple: async () => {
         if (!isSupabaseConfigured) throw new Error('OAUTH');
@@ -627,9 +630,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           saved.push(next);
         }
         const nextItems = [...saved, ...items];
-        setItems(nextItems);
-        setDraft(null);
-        setBanner('saved');
         if (mode === 'supabase') {
           if (saved.length) {
             const { error } = await supabase.from('items').insert(
@@ -660,6 +660,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             isPro: usage.isPro,
           });
         }
+        setItems(nextItems);
+        setDraft(null);
+        setBanner(translate(profile.locale, 'review.saved'));
       },
       discardDraft: () => setDraft(null),
       toggleComplete: async (id) => {

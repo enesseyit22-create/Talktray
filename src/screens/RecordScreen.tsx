@@ -15,6 +15,7 @@ import { RecordOrb } from '@/components/RecordOrb';
 import { AppText, Field, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
+import { errorText } from '@/lib/errors';
 import { formatDuration } from '@/lib/format';
 import { consumeAutoRecord } from '@/lib/record-signal';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -41,8 +42,8 @@ export function RecordScreen() {
         const result = await processThought(input);
         if (result === 'quota') router.push('/paywall');
         else router.push('/review');
-      } catch {
-        setError(t('errors.generic'));
+      } catch (caught) {
+        setError(errorText(caught, t('errors.generic')));
       } finally {
         setBusy(false);
       }
