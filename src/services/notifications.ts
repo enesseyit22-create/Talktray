@@ -220,6 +220,20 @@ export function listenForNotificationTaps(open: (itemId: string) => void) {
   return () => sub.remove();
 }
 
+export async function cancelRemindersForItem(itemId: string): Promise<void> {
+  if (Platform.OS === 'web' || !itemId) return;
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  const prefix = `tt:${itemId}:`;
+  await Promise.all(
+    scheduled
+      .filter((request) => {
+        const dataId = request.content.data?.itemId;
+        return request.identifier === itemId || request.identifier.startsWith(prefix) || dataId === itemId;
+      })
+      .map((request) => Notifications.cancelScheduledNotificationAsync(request.identifier).catch(() => undefined)),
+  );
+}
+
 export async function cancelItemNotification(id: string | null) {
   if (Platform.OS === 'web' || !id) return;
   await Notifications.cancelScheduledNotificationAsync(id).catch((error) => {

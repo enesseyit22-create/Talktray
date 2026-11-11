@@ -29,6 +29,7 @@ export type Recording = {
   language: string | null;
   durationMs: number;
   status: 'processing' | 'ready' | 'failed';
+  storagePath: string | null;
   createdAt: string;
 };
 

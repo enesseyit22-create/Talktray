@@ -1,10 +1,11 @@
-import { Bell } from 'lucide-react-native';
+import { Bell, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
+import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { Logo } from '@/components/Brand';
 import { ItemCard } from '@/components/ItemCard';
 import { RecordOrb } from '@/components/RecordOrb';
@@ -23,7 +24,7 @@ type Filter = 'today' | 'overdue' | 'reminders' | 'calendar' | 'shopping' | 'all
 export function InboxScreen() {
   const { t, locale } = useI18n();
   const { colors } = useTheme();
-  const { profile, items, recordings, updateItem, deleteItem, toggleComplete } = useApp();
+  const { profile, items, recordings, updateItem, deleteItem, deleteRecording, toggleComplete } = useApp();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ item?: string | string[] }>();
   const linkedId = Array.isArray(params.item) ? params.item[0] : params.item;
@@ -32,6 +33,8 @@ export function InboxScreen() {
   const linked = linkedId ? items.find((item) => item.id === linkedId) ?? null : null;
   const editing = picked ?? linked;
   const [bell, setBell] = useState(false);
+  const [pendingItem, setPendingItem] = useState<string | null>(null);
+  const [pendingRecording, setPendingRecording] = useState<string | null>(null);
   const now = useNow();
   const overdue = items
     .filter((item) => isOverdue(item, now, profile.timezone))
@@ -113,6 +116,7 @@ export function InboxScreen() {
                 timeZone={profile.timezone}
                 onPress={() => setPicked(item)}
                 onToggle={() => void toggleComplete(item.id)}
+                onDelete={() => setPendingItem(item.id)}
               />
             ))}
           </View>
@@ -135,6 +139,7 @@ export function InboxScreen() {
               timeZone={profile.timezone}
               onPress={() => setPicked(item)}
               onToggle={() => void toggleComplete(item.id)}
+              onDelete={() => setPendingItem(item.id)}
             />
           ))
         )}
@@ -146,14 +151,26 @@ export function InboxScreen() {
         <AppText weight="bold" size={18}>
           {t('home.recent')}
         </AppText>
-        {recordings.slice(0, 3).map((recording) => (
+        {recordings.map((recording) => (
           <GlassCard key={recording.id}>
-            <AppText weight="semibold" numberOfLines={2}>
-              {recording.transcript}
-            </AppText>
-            <AppText size={12} color={colors.muted}>
-              {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
-            </AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <AppText weight="semibold" numberOfLines={2}>
+                  {recording.transcript}
+                </AppText>
+                <AppText size={12} color={colors.muted}>
+                  {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
+                </AppText>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => setPendingRecording(recording.id)}
+                style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Trash2 color={colors.danger} size={18} />
+              </Pressable>
+            </View>
           </GlassCard>
         ))}
       </ScrollView>
@@ -174,9 +191,33 @@ export function InboxScreen() {
         }}
         onDelete={() => {
           if (!editing) return;
-          void deleteItem(editing.id);
-          setPicked(null);
-          if (linkedId) router.setParams({ item: '' });
+          setPendingItem(editing.id);
+        }}
+      />
+      <ConfirmDelete
+        visible={pendingItem != null}
+        title={t('confirmDelete.itemTitle')}
+        body={t('confirmDelete.itemBody')}
+        onCancel={() => setPendingItem(null)}
+        onConfirm={() => {
+          if (!pendingItem) return;
+          void deleteItem(pendingItem);
+          if (editing?.id === pendingItem) {
+            setPicked(null);
+            if (linkedId) router.setParams({ item: '' });
+          }
+          setPendingItem(null);
+        }}
+      />
+      <ConfirmDelete
+        visible={pendingRecording != null}
+        title={t('confirmDelete.recordingTitle')}
+        body={t('confirmDelete.recordingBody')}
+        onCancel={() => setPendingRecording(null)}
+        onConfirm={() => {
+          if (!pendingRecording) return;
+          void deleteRecording(pendingRecording);
+          setPendingRecording(null);
         }}
       />
       <Sheet visible={bell} onClose={() => setBell(false)}>
@@ -185,7 +226,7 @@ export function InboxScreen() {
         </AppText>
         {upcoming.length === 0 ? <AppText color={colors.muted}>{t('noUpcoming')}</AppText> : null}
         {upcoming.map((item) => (
-          <ItemCard key={item.id} item={item} timeZone={profile.timezone} />
+          <ItemCard key={item.id} item={item} timeZone={profile.timezone} onDelete={() => setPendingItem(item.id)} />
         ))}
       </Sheet>
     </Aurora>

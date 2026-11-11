@@ -18,7 +18,7 @@ import { exportItemToDevice } from '@/services/calendar';
 import { persistRemoteProfile } from '@/data/save-profile';
 import { registerAdminPushToken } from '@/services/admin-push';
 import { touchPresence } from '@/services/presence';
-import { ensureReminderChannel, promptExactAlarmOnce, requestReminderPermission, syncItemNotifications } from '@/services/notifications';
+import { cancelRemindersForItem, ensureReminderChannel, promptExactAlarmOnce, requestReminderPermission, syncItemNotifications } from '@/services/notifications';
 import {
   configurePurchases,
   loadStoreOffers,
@@ -60,6 +60,7 @@ type AppValue = {
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   deleteAllRecordings: () => Promise<void>;
+  deleteRecording: (id: string) => Promise<void>;
   updateProfile: (patch: Partial<Profile>) => Promise<void>;
   processThought: (input: { audioUri?: string | null; durationMs: number; transcript?: string }) => Promise<'review' | 'quota'>;
   updateDraftItem: (localId: string, patch: Partial<DraftItem>) => void;
@@ -595,6 +596,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             language: profile.locale,
             durationMs: input.durationMs,
             status: 'ready',
+            storagePath: null,
             createdAt: now,
           };
           const nextRecordings = [recording, ...recordings];
@@ -685,6 +687,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             language: payload.language ?? profile.locale,
             durationMs: input.durationMs,
             status: 'ready',
+            storagePath,
             createdAt: now,
           },
           ...current,
@@ -847,11 +850,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
           await snapshotDemo({ items: nextItems });
         }
       },
+      deleteRecording: async (id) => {
+        const current = recordings.find((recording) => recording.id === id);
+        if (!current) return;
+        const nextRecordings = recordings.filter((recording) => recording.id !== id);
+        setRecordings(nextRecordings);
+        if (mode === 'supabase' && user) {
+          const path = current.storagePath || `${user.id}/${id}.m4a`;
+          await supabase.storage.from('recordings').remove([path]).catch(() => undefined);
+          const { data, error } = await supabase.from('recordings').delete().eq('id', id).select('id');
+          if (error || !data?.length) {
+            setRecordings(recordings);
+            setBanner(translate(profile.locale, 'confirmDelete.failed'));
+            return;
+          }
+        } else if (user) {
+          await persistDemo({
+            user,
+            profile,
+            items,
+            recordings: nextRecordings,
+            usageCount: usage.count,
+            usagePeriod: usage.period,
+            isPro: usage.isPro,
+          });
+        }
+      },
       deleteItem: async (id) => {
         const nextItems = items.filter((item) => item.id !== id);
         setItems(nextItems);
-        if (mode === 'supabase') await supabase.from('items').delete().eq('id', id);
-        else if (user) await snapshotDemo({ items: nextItems });
+        await cancelRemindersForItem(id);
+        if (mode === 'supabase') {
+          const { data, error } = await supabase.from('items').delete().eq('id', id).select('id');
+          if (error || !data?.length) {
+            setItems(items);
+            setBanner(translate(profile.locale, 'confirmDelete.failed'));
+            return;
+          }
+        } else if (user) {
+          await snapshotDemo({ items: nextItems });
+        }
       },
       clearSamples: async () => {
         setItems([]);
@@ -968,6 +1006,7 @@ function mapRecording(row: Record<string, unknown>): Recording {
     language: (row.language as string | null) ?? null,
     durationMs: Number(row.duration_ms ?? 0),
     status: (row.status as Recording['status']) ?? 'ready',
+    storagePath: typeof row.storage_path === 'string' ? row.storage_path : null,
     createdAt: String(row.created_at),
   };
 }

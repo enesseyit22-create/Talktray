@@ -3,6 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
+import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { EditSheet } from '@/components/EditSheet';
 import { ItemCard } from '@/components/ItemCard';
 import { AppText, Chip, EmptyState } from '@/components/ui/primitives';
@@ -19,6 +20,7 @@ export function TasksScreen() {
   const now = useNow();
   const [done, setDone] = useState(false);
   const [editing, setEditing] = useState<InboxItem | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const list = items
     .filter((item) => item.type === 'task' && Boolean(item.completedAt) === done)
     .sort((a, b) => Number(isOverdue(b, now, profile.timezone)) - Number(isOverdue(a, now, profile.timezone)));
@@ -40,6 +42,7 @@ export function TasksScreen() {
             timeZone={profile.timezone}
             onPress={() => setEditing(item)}
             onToggle={() => void toggleComplete(item.id)}
+            onDelete={() => setPendingId(item.id)}
           />
         ))}
       </ScrollView>
@@ -56,8 +59,19 @@ export function TasksScreen() {
         }}
         onDelete={() => {
           if (!editing) return;
-          void deleteItem(editing.id);
-          setEditing(null);
+          setPendingId(editing.id);
+        }}
+      />
+      <ConfirmDelete
+        visible={pendingId != null}
+        title={t('confirmDelete.itemTitle')}
+        body={t('confirmDelete.itemBody')}
+        onCancel={() => setPendingId(null)}
+        onConfirm={() => {
+          if (!pendingId) return;
+          void deleteItem(pendingId);
+          if (editing?.id === pendingId) setEditing(null);
+          setPendingId(null);
         }}
       />
     </Aurora>
