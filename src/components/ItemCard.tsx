@@ -41,8 +41,8 @@ export function TypeIcon({ type, done }: { type: ItemType; done?: boolean }) {
 export function OverdueBadge() {
   const { t } = useI18n();
   return (
-    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: '#E15B73' }}>
-      <AppText size={11} weight="bold" color="#FFFFFF">
+    <View style={{ flexShrink: 1, maxWidth: '100%', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: '#E15B73' }}>
+      <AppText size={11} weight="bold" color="#FFFFFF" style={{ textAlign: 'center' }}>
         {t('overdue.badge')}
       </AppText>
     </View>
@@ -103,17 +103,17 @@ export function ItemCard({
         >
           <TypeIcon type={item.type} done={Boolean(item.completedAt)} />
         </Pressable>
-        <View style={{ flex: 1, gap: 2 }}>
-          <AppText weight="bold" numberOfLines={2} style={item.completedAt ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}>
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <AppText weight="bold" numberOfLines={3} style={item.completedAt ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}>
             {t(`types.${item.type}`)}: {item.title}
           </AppText>
-          <AppText size={13} color={overdue ? colors.danger : colors.muted} numberOfLines={1}>
+          <AppText size={13} color={overdue ? colors.danger : colors.muted} numberOfLines={2}>
             {subtitle}
           </AppText>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 1, maxWidth: '46%' }}>
           {overdue ? <OverdueBadge /> : time ? (
-            <AppText size={13} weight="semibold" color={accent}>
+            <AppText size={13} weight="semibold" color={accent} numberOfLines={1} style={{ flexShrink: 1 }}>
               {time}
             </AppText>
           ) : null}

@@ -48,17 +48,17 @@ export function OnboardingScreen() {
           gap: 24,
         }}
       >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          {index === 0 ? <View /> : <Logo />}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <View style={{ flexShrink: 1 }}>{index === 0 ? null : <Logo />}</View>
           <Pressable
             hitSlop={8}
-            style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+            style={{ flexShrink: 1, maxWidth: '48%', minHeight: 44, justifyContent: 'center' }}
             onPress={async () => {
               await finishOnboarding();
               router.replace('/sign-in');
             }}
           >
-            <AppText weight="semibold" color={colors.muted}>
+            <AppText weight="semibold" color={colors.muted} style={{ textAlign: 'right' }}>
               {t('skip')}
             </AppText>
           </Pressable>
@@ -80,7 +80,7 @@ export function OnboardingScreen() {
               <AppText color={colors.muted}>{t('greet.subtitle')}</AppText>
             </GlassCard>
           ) : null}
-          <View style={{ gap: 8, alignItems: 'center' }}>
+          <View style={{ gap: 8, alignSelf: 'stretch' }}>
             <AppText size={32} weight="extrabold" style={{ textAlign: 'center' }}>
               {t(`onboarding.${SLIDES[index]}Title`)}
             </AppText>

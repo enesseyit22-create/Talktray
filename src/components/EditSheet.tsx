@@ -69,9 +69,9 @@ export function EditSheet({
         {t('edit.title')}
       </AppText>
       {overdue ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <OverdueBadge />
-          <AppText size={14} weight="semibold" color={colors.danger}>
+          <AppText size={14} weight="semibold" color={colors.danger} style={{ flexShrink: 1 }}>
             {pastLabel}
           </AppText>
         </View>
