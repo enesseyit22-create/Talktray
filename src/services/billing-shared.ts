@@ -1,4 +1,4 @@
-import { ENTITLEMENT_ID, MONTHLY_PRICE, YEARLY_PRICE } from '../../shared/parse/quota';
+import { ENTITLEMENT_ID } from '../../shared/parse/quota';
 
 /** Public SDK keys. Used when EXPO_PUBLIC_REVENUECAT_* is unset. */
 export const REVENUECAT_IOS_SDK_KEY = 'appl_RgzWQMZehRfiafWyReOAOBMlTgD';
@@ -30,13 +30,46 @@ export type PlanId = 'monthly' | 'yearly';
 
 export type StoreOffer = {
   id: PlanId;
-  price: string;
+  /** Localized store price. Null until StoreKit or Play returns one. */
+  price: string | null;
   title: string;
   /** Localized monthly equivalent for a yearly plan. Null when the store did not provide one. */
   perMonth: string | null;
 };
 
+/** Empty prices. The paywall must not invent a currency while the store is loading or unavailable. */
 export const fallbackOffers: StoreOffer[] = [
-  { id: 'monthly', price: MONTHLY_PRICE, title: 'Monthly', perMonth: null },
-  { id: 'yearly', price: YEARLY_PRICE, title: 'Yearly', perMonth: null },
+  { id: 'monthly', price: null, title: 'Monthly', perMonth: null },
+  { id: 'yearly', price: null, title: 'Yearly', perMonth: null },
 ];
+
+export type OfferLoadReason = 'ok' | 'not_configured' | 'network' | 'no_offering' | 'plans_missing' | 'store';
+
+export type OfferLoad = {
+  available: boolean;
+  offers: StoreOffer[];
+  isPro: boolean;
+  reason: OfferLoadReason;
+};
+
+export type PurchaseReason =
+  | 'ok'
+  | 'cancelled'
+  | 'not_configured'
+  | 'plans_missing'
+  | 'network'
+  | 'pending'
+  | 'already_owned'
+  | 'not_allowed'
+  | 'store'
+  | 'entitlement_pending';
+
+export type PurchaseResult = {
+  isPro: boolean;
+  reason: PurchaseReason;
+};
+
+export type RestoreResult = {
+  isPro: boolean;
+  reason: 'ok' | 'restore_empty' | 'not_configured' | 'network' | 'store';
+};
