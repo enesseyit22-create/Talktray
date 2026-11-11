@@ -6,6 +6,7 @@ import { useQuickActionRouting } from 'expo-quick-actions/router';
 import { Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CaptureProvider } from '@/capture/CaptureProvider';
 import { AppText } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
@@ -53,7 +54,7 @@ export default function AppLayout() {
   if (ready && !user) return <Redirect href="/sign-in" />;
 
   return (
-    <>
+    <CaptureProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="review" options={{ presentation: 'transparentModal', animation: 'fade' }} />
@@ -69,6 +70,6 @@ export default function AppLayout() {
           </Pressable>
         </View>
       ) : null}
-    </>
+    </CaptureProvider>
   );
 }

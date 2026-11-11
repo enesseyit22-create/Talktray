@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StatusBar, View } from 'react-native';
 import { router } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { useApp } from '@/data/AppProvider';
 import type { DraftItem } from '@/domain/types';
 import { useI18n } from '@/i18n';
 import { errorText } from '@/lib/errors';
+import { sheetTopInset } from '@/lib/layout';
 import { formatDueLabel } from '@/lib/format';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -29,7 +30,7 @@ export function ReviewScreen() {
   if (!draft) {
     return (
       <Aurora>
-        <View style={{ flex: 1, justifyContent: 'center', padding: 24, paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }}>
+        <View style={{ flex: 1, justifyContent: 'center', padding: 24, paddingTop: sheetTopInset(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0, Platform.OS), paddingBottom: Math.max(insets.bottom, 16) }}>
           <EmptyBack />
         </View>
       </Aurora>
@@ -44,7 +45,7 @@ export function ReviewScreen() {
         automaticallyAdjustKeyboardInsets
         contentContainerStyle={{
           padding: 20,
-          paddingTop: Math.max(insets.top, 16) + 8,
+          paddingTop: sheetTopInset(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0, Platform.OS) + 8,
           paddingBottom: Math.max(insets.bottom, 16) + 24,
           gap: 12,
         }}

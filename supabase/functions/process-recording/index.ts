@@ -1,13 +1,16 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   buildExtractionMessages,
+  decideFreeRecording,
   extractItems,
   localTimestamp,
   mergeSpokenOffsets,
   normalizeExtraction,
+  RECORDINGS_BEFORE_PAYWALL,
   safeTimeZone,
   zonedParts,
   zonedTimeToUtc,
+  type FreeLimitDecision,
 } from '../_shared/parse/index.ts';
 
 const corsHeaders = {
@@ -207,25 +210,59 @@ async function freeLimitReason(
   timeZone: string,
   limits: FreeLimits,
 ): Promise<string | null> {
-  if (
-    limits.free_max_seconds_per_recording != null &&
-    Math.floor(durationMs / 1000) > limits.free_max_seconds_per_recording
-  ) {
-    return 'seconds';
+  const ever = await countRecordingsSince(admin, userId, '1970-01-01T00:00:00.000Z', recordingId);
+  const durationSeconds = Math.floor(durationMs / 1000);
+  if (ever < RECORDINGS_BEFORE_PAYWALL) {
+    return decideFreeRecording({
+      isPro: false,
+      completedEver: ever,
+      completedToday: 0,
+      completedMonth: 0,
+      durationSeconds,
+      itemCount: 0,
+      limits,
+    }).reason;
   }
-  if (limits.free_recordings_per_day != null) {
-    const today = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'day'), recordingId);
-    if (today >= limits.free_recordings_per_day) return 'day';
-  }
-  if (limits.free_recordings_per_month != null) {
-    const month = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'month'), recordingId);
-    if (month >= limits.free_recordings_per_month) return 'month';
-  }
+  const today = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'day'), recordingId);
+  const monthStart = windowStart(now, timeZone, 'month');
+  const month = await countRecordingsSince(admin, userId, monthStart, recordingId);
+  let itemCount = 0;
   if (limits.free_max_items != null) {
     const { count } = await admin.from('items').select('id', { count: 'exact', head: true }).eq('user_id', userId);
-    if ((count ?? 0) >= limits.free_max_items) return 'items';
+    itemCount = count ?? 0;
   }
-  return null;
+  let decision: FreeLimitDecision = decideFreeRecording({
+    isPro: false,
+    completedEver: ever,
+    completedToday: today,
+    completedMonth: month,
+    durationSeconds,
+    itemCount,
+    limits,
+  });
+  if (decision.allowed || decision.reason === 'month') {
+    const reserved = await reserveMonthlyCredit(admin, userId, recordingId, monthStart);
+    if (reserved === 'blocked') decision = { allowed: false, reason: 'month', enforceDurationCap: true };
+  }
+  return decision.allowed ? null : decision.reason;
+}
+
+/** Optional lock. Missing function falls back to the same TypeScript decision, so 1.0 clients keep working. */
+async function reserveMonthlyCredit(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  recordingId: string,
+  periodStart: string,
+): Promise<'ok' | 'blocked' | 'unavailable'> {
+  const { data, error } = await admin.rpc('reserve_monthly_credit', {
+    p_user_id: userId,
+    p_recording_id: recordingId,
+    p_is_pro: false,
+    p_period_start: periodStart,
+  });
+  if (error) return 'unavailable';
+  const row = data as { allowed?: boolean } | null;
+  return row?.allowed === false ? 'blocked' : 'ok';
 }
 
 function publishableKey() {

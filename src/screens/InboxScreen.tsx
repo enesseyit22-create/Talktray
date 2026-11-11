@@ -8,6 +8,7 @@ import { Aurora } from '@/components/Aurora';
 import { Logo } from '@/components/Brand';
 import { tabBarClearance } from '@/components/GlassTabBar';
 import { ItemCard } from '@/components/ItemCard';
+import { useCapture } from '@/capture/CaptureProvider';
 import { RecordOrb } from '@/components/RecordOrb';
 import { EditSheet, type EditableItem } from '@/components/EditSheet';
 import { AppText, Chip, EmptyState, GlassCard, Sheet } from '@/components/ui/primitives';
@@ -25,6 +26,7 @@ export function InboxScreen() {
   const { t, locale } = useI18n();
   const { colors } = useTheme();
   const { profile, items, recordings, updateItem, deleteItem, toggleComplete } = useApp();
+  const capture = useCapture();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ item?: string | string[] }>();
   const linkedId = Array.isArray(params.item) ? params.item[0] : params.item;
@@ -90,7 +92,15 @@ export function InboxScreen() {
           <AppText color={colors.muted}>{t('greet.subtitle')}</AppText>
         </View>
         <View style={{ alignItems: 'center', marginVertical: 4 }}>
-          <RecordOrb size={176} onPress={() => router.push('/record')} />
+          <RecordOrb
+            size={176}
+            recording={capture.isRecording}
+            accessibilityLabel={t('tabs.record')}
+            label={capture.isRecording ? formatDuration(capture.durationMillis) : capture.busy ? t('record.processing') : undefined}
+            onPress={() => void capture.toggle()}
+            onHoldStart={() => void capture.start()}
+            onHoldEnd={() => void capture.stopAndSubmit()}
+          />
         </View>
         <ScrollView
           horizontal

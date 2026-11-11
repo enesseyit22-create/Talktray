@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { OverdueBadge, overdueCaption } from '@/components/ItemCard';
 import { AppText, Chip, Field, PrimaryButton, Sheet } from '@/components/ui/primitives';
@@ -105,7 +105,12 @@ export function EditSheet({
       <AppText size={13} weight="semibold">
         {t('remind.title')}
       </AppText>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <ScrollView
+        horizontal
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8, paddingRight: 4 }}
+      >
         <Chip
           label={t('remind.useDefault')}
           active={item.reminderOffsets == null}
@@ -128,7 +133,7 @@ export function EditSheet({
             />
           );
         })}
-      </View>
+      </ScrollView>
       <AppText size={13} weight="semibold">
         {t('edit.due')}
       </AppText>
