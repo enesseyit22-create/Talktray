@@ -36,12 +36,26 @@ export function asLocale(value: unknown): Locale {
   return isLocale(value) ? value : 'en';
 }
 
+/** Explicit in-app choice, or follow the device language. */
+export type LocalePreference = 'system' | Locale;
+
+export function isLocalePreference(value: unknown): value is LocalePreference {
+  return value === 'system' || isLocale(value);
+}
+
+export function resolveLocalePreference(preference: LocalePreference, device: Locale): Locale {
+  return preference === 'system' ? device : preference;
+}
+
 /** Map a device language to a shipped locale. Any Portuguese tag becomes pt-BR. */
 export function localeFromTag(languageCode?: string | null, languageTag?: string | null): Locale {
   const code = (languageCode ?? '').trim().toLowerCase();
   const tag = (languageTag ?? '').trim().toLowerCase();
-  if (code === 'pt' || tag.startsWith('pt')) return 'pt-BR';
-  const known = LOCALES.find((locale) => locale.toLowerCase() === code || locale.toLowerCase() === tag);
+  const primary = (code || tag.split(/[-_]/)[0] || '').trim();
+  if (primary === 'pt' || tag.startsWith('pt')) return 'pt-BR';
+  // Android's legacy code for Indonesian is "in".
+  if (primary === 'in' || primary === 'id') return 'id';
+  const known = LOCALES.find((locale) => locale.toLowerCase() === primary || locale.toLowerCase() === tag);
   return known ?? 'en';
 }
 

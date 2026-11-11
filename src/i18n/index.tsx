@@ -1,10 +1,28 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { getLocales } from 'expo-localization';
 
-import { asLocale, localeFromTag, LOCALES, LOCALE_LABELS, type Locale } from '@/i18n/locale';
+import {
+  asLocale,
+  localeFromTag,
+  LOCALES,
+  LOCALE_LABELS,
+  isLocalePreference,
+  resolveLocalePreference,
+  type Locale,
+  type LocalePreference,
+} from '@/i18n/locale';
 import { dictionaries, translate } from '@/i18n/translate';
 
-export { asLocale, localeFromTag, LOCALES, LOCALE_LABELS, type Locale };
+export {
+  asLocale,
+  isLocalePreference,
+  localeFromTag,
+  LOCALES,
+  LOCALE_LABELS,
+  resolveLocalePreference,
+  type Locale,
+  type LocalePreference,
+};
 export { translate };
 
 export function deviceLocale(): Locale {

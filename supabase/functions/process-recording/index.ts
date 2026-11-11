@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import {
   buildExtractionMessages,
   extractItems,
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     const locale = resolveLocale(profile?.locale, body.locale);
     const now = body.now ? new Date(body.now) : new Date();
     const period = monthPeriod(now, timeZone);
-    const isPro = await subscriberIsPro(userId);
+    const isPro = await subscriberIsPro(admin, userId);
 
     let transcript = '';
     let language: string | null = locale;
@@ -149,7 +149,18 @@ function secretKey() {
   return parsed.default ?? Object.values(parsed)[0] ?? '';
 }
 
-async function subscriberIsPro(userId: string): Promise<boolean> {
+function overrideActive(until: string | null | undefined): boolean {
+  if (!until) return false;
+  if (until.toLowerCase() === 'infinity') return true;
+  const time = Date.parse(until);
+  return Number.isFinite(time) && time > Date.now();
+}
+
+async function subscriberIsPro(admin: SupabaseClient, userId: string): Promise<boolean> {
+  const override = await admin.from('profiles').select('pro_override_until').eq('id', userId).maybeSingle();
+  const until = override.data && typeof override.data.pro_override_until === 'string' ? override.data.pro_override_until : null;
+  if (!override.error && overrideActive(until)) return true;
+
   const secret = Deno.env.get('REVENUECAT_SECRET_API_KEY');
   const entitlement = Deno.env.get('REVENUECAT_ENTITLEMENT_ID') ?? 'pro';
   if (!secret) return false;
