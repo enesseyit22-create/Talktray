@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddToDeviceButton } from '@/components/AddToDeviceButton';
 import { Aurora } from '@/components/Aurora';
@@ -18,6 +19,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 export function ReviewScreen() {
   const { t } = useI18n();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const app = useApp();
   const [editing, setEditing] = useState<DraftItem | null>(null);
   const [exportCalendar, setExportCalendar] = useState(app.profile.exportToCalendar);
@@ -28,7 +30,7 @@ export function ReviewScreen() {
   if (!draft) {
     return (
       <Aurora>
-        <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
+        <View style={{ flex: 1, justifyContent: 'center', padding: 24, paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }}>
           <EmptyBack />
         </View>
       </Aurora>
@@ -37,7 +39,17 @@ export function ReviewScreen() {
 
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 28, paddingBottom: 40, gap: 12 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={{
+          padding: 20,
+          paddingTop: Math.max(insets.top, 16) + 8,
+          paddingBottom: Math.max(insets.bottom, 16) + 24,
+          gap: 12,
+        }}
+      >
         <View style={{ alignSelf: 'center', width: 48, height: 5, borderRadius: 99, backgroundColor: colors.soft }} />
         <AppText size={28} weight="extrabold">
           {t('review.title')}
@@ -57,7 +69,7 @@ export function ReviewScreen() {
             <GlassCard onPress={() => setEditing(item)}>
             <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
               <TypeIcon type={item.type} />
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
                 <AppText weight="bold">
                   {t(`types.${item.type}`)}: {item.title}
                 </AppText>

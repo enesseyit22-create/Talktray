@@ -1,9 +1,10 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
+import { tabBarClearance } from '@/components/GlassTabBar';
 import { RecordOrb } from '@/components/RecordOrb';
 import { AppText, Field, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useCapture } from '@/capture/CaptureProvider';
@@ -18,6 +19,8 @@ import { shouldPresentPaywall } from '../../shared/parse/quota';
 export function RecordScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const orbSize = Math.min(250, Math.max(168, width - 72));
   const { colors } = useTheme();
   const { usage, recordings, processThought, openSample } = useApp();
   const capture = useCapture();
@@ -68,22 +71,34 @@ export function RecordScreen() {
 
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingTop: Math.max(insets.top, 16) + 12, paddingBottom: 140, alignItems: 'center', gap: 18 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={{
+          padding: 24,
+          paddingTop: Math.max(insets.top, 16) + 12,
+          paddingBottom: tabBarClearance(insets.bottom),
+          gap: 18,
+        }}
+      >
         <AppText size={32} weight="extrabold" style={{ textAlign: 'center' }}>
           {t('record.title')}
         </AppText>
         <AppText color={colors.muted} style={{ textAlign: 'center' }}>
           {capture.isRecording ? t('record.recording') : t('record.hint')}
         </AppText>
-        <RecordOrb
-          size={250}
-          recording={capture.isRecording}
-          accessibilityLabel={t('quick.title')}
-          label={capture.isRecording ? formatDuration(capture.durationMillis) : undefined}
-          onPress={() => void capture.toggle()}
-          onHoldStart={() => void capture.start()}
-          onHoldEnd={() => void capture.stopAndSubmit()}
-        />
+        <View style={{ alignItems: 'center' }}>
+          <RecordOrb
+            size={orbSize}
+            recording={capture.isRecording}
+            accessibilityLabel={t('quick.title')}
+            label={capture.isRecording ? formatDuration(capture.durationMillis) : undefined}
+            onPress={() => void capture.toggle()}
+            onHoldStart={() => void capture.start()}
+            onHoldEnd={() => void capture.stopAndSubmit()}
+          />
+        </View>
         <GlassCard>
           <AppText weight="semibold" color={colors.primary}>
             {usage.isPro
@@ -98,14 +113,14 @@ export function RecordScreen() {
         <View style={{ width: '100%', gap: 10 }}>
           <AppText weight="semibold">{t('record.samples')}</AppText>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <PrimaryButton
                 tone="glass"
                 label={t('record.sampleTr')}
                 onPress={() => void openSample('tr').then((result) => afterThought(result))}
               />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <PrimaryButton
                 tone="glass"
                 label={t('record.sampleEn')}

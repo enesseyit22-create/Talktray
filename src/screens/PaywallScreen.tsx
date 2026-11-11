@@ -47,11 +47,19 @@ export function PaywallScreen() {
 
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 22, paddingTop: Math.max(insets.top, 12) + 8, paddingBottom: 48, gap: 14 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          padding: 22,
+          paddingTop: Math.max(insets.top, 12) + 8,
+          paddingBottom: Math.max(insets.bottom, 16) + 28,
+          gap: 14,
+        }}
+      >
         <Pressable onPress={() => router.back()} hitSlop={8} style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}>
           <AppText color={colors.muted}>{t('close')}</AppText>
         </Pressable>
-        <View style={{ alignItems: 'center', gap: 8 }}>
+        <View style={{ alignItems: 'center', alignSelf: 'stretch', gap: 8 }}>
           <View
             style={{
               width: 84,
@@ -66,10 +74,10 @@ export function PaywallScreen() {
           >
             <Sparkles color={colors.primary} size={34} />
           </View>
-          <AppText size={34} weight="extrabold">
+          <AppText size={34} weight="extrabold" style={{ textAlign: 'center', alignSelf: 'stretch' }}>
             {t('paywall.title')}
           </AppText>
-          <AppText color={colors.muted} style={{ textAlign: 'center' }}>
+          <AppText color={colors.muted} style={{ textAlign: 'center', alignSelf: 'stretch' }}>
             {app.usage.isPro ? t('paywall.current') : t('paywall.subtitle')}
           </AppText>
         </View>
@@ -77,7 +85,7 @@ export function PaywallScreen() {
           {offers.map((offer) => {
             const active = offer.id === plan;
             return (
-              <Pressable key={offer.id} style={{ flex: 1 }} onPress={() => setPlan(offer.id)}>
+              <Pressable key={offer.id} style={{ flex: 1, minWidth: 0 }} onPress={() => setPlan(offer.id)}>
                 <GlassCard
                   style={{
                     gap: 6,
@@ -115,7 +123,7 @@ export function PaywallScreen() {
           {['f1', 'f2', 'f3', 'f4'].map((key) => (
             <View key={key} style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
               <Check color={colors.success} size={18} />
-              <AppText style={{ flex: 1 }}>{t(`paywall.${key}`)}</AppText>
+              <AppText style={{ flex: 1, minWidth: 0 }}>{t(`paywall.${key}`)}</AppText>
             </View>
           ))}
         </GlassCard>

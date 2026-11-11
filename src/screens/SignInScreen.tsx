@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -72,53 +72,59 @@ export function SignInScreen() {
 
   return (
     <Aurora>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 24, paddingTop: Math.max(insets.top, 16) + 16, gap: 18, paddingBottom: 40 }}
-        >
-          <WelcomeMark />
-          <View style={{ gap: 6 }}>
-            <AppText size={34} weight="extrabold">
-              {mode === 'in' ? t('auth.welcome') : t('auth.create')}
+      <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={{
+          flexGrow: 1,
+          padding: 24,
+          paddingTop: Math.max(insets.top, 16) + 16,
+          paddingBottom: Math.max(insets.bottom, 16) + 24,
+          gap: 18,
+        }}
+      >
+        <WelcomeMark />
+        <View style={{ gap: 6 }}>
+          <AppText size={34} weight="extrabold">
+            {mode === 'in' ? t('auth.welcome') : t('auth.create')}
+          </AppText>
+          <AppText color={colors.muted}>{t('auth.subtitle')}</AppText>
+        </View>
+        <GlassCard style={{ gap: 12 }}>
+          {mode === 'up' ? (
+            <Field label={t('name')} value={name} onChangeText={setName} placeholder={t('auth.namePlaceholder')} autoCapitalize="words" />
+          ) : null}
+          <Field label={t('email')} value={email} onChangeText={setEmail} placeholder="enes@talktray.app" />
+          <Field label={t('password')} value={password} onChangeText={setPassword} secureTextEntry placeholder="••••••••" />
+          {error ? <AppText color={colors.danger}>{error}</AppText> : null}
+          {info ? <AppText color={colors.success}>{info}</AppText> : null}
+          <PrimaryButton label={mode === 'in' ? t('auth.signIn') : t('auth.signUp')} onPress={() => void submit()} loading={loading} />
+          <Pressable onPress={() => setMode(mode === 'in' ? 'up' : 'in')}>
+            <AppText weight="semibold" color={colors.primary} style={{ textAlign: 'center' }}>
+              {mode === 'in' ? t('auth.switchSignUp') : t('auth.switchSignIn')}
             </AppText>
-            <AppText color={colors.muted}>{t('auth.subtitle')}</AppText>
-          </View>
-          <GlassCard style={{ gap: 12 }}>
-            {mode === 'up' ? (
-              <Field label={t('name')} value={name} onChangeText={setName} placeholder={t('auth.namePlaceholder')} autoCapitalize="words" />
-            ) : null}
-            <Field label={t('email')} value={email} onChangeText={setEmail} placeholder="enes@talktray.app" />
-            <Field label={t('password')} value={password} onChangeText={setPassword} secureTextEntry placeholder="••••••••" />
-            {error ? <AppText color={colors.danger}>{error}</AppText> : null}
-            {info ? <AppText color={colors.success}>{info}</AppText> : null}
-            <PrimaryButton label={mode === 'in' ? t('auth.signIn') : t('auth.signUp')} onPress={() => void submit()} loading={loading} />
-            <Pressable onPress={() => setMode(mode === 'in' ? 'up' : 'in')}>
-              <AppText weight="semibold" color={colors.primary} style={{ textAlign: 'center' }}>
-                {mode === 'in' ? t('auth.switchSignUp') : t('auth.switchSignIn')}
-              </AppText>
-            </Pressable>
+          </Pressable>
+        </GlassCard>
+        {Platform.OS === 'ios' ? (
+          <PrimaryButton label={t('auth.apple')} tone="glass" onPress={() => void oauth('apple')} />
+        ) : null}
+        <PrimaryButton label={t('auth.google')} tone="glass" onPress={() => void oauth('google')} />
+        {!configured ? (
+          <GlassCard style={{ gap: 10 }}>
+            <AppText color={colors.muted}>{t('auth.demoHint')}</AppText>
+            <PrimaryButton
+              label={t('auth.demoCta')}
+              onPress={() => {
+                setError(null);
+                void enterDemo(name || email.split('@')[0] || 'Enes', email)
+                  .then(() => router.replace('/home'))
+                  .catch(() => setError(t('errors.generic')));
+              }}
+            />
           </GlassCard>
-          {Platform.OS === 'ios' ? (
-            <PrimaryButton label={t('auth.apple')} tone="glass" onPress={() => void oauth('apple')} />
-          ) : null}
-          <PrimaryButton label={t('auth.google')} tone="glass" onPress={() => void oauth('google')} />
-          {!configured ? (
-            <GlassCard style={{ gap: 10 }}>
-              <AppText color={colors.muted}>{t('auth.demoHint')}</AppText>
-              <PrimaryButton
-                label={t('auth.demoCta')}
-                onPress={() => {
-                  setError(null);
-                  void enterDemo(name || email.split('@')[0] || 'Enes', email)
-                    .then(() => router.replace('/home'))
-                    .catch(() => setError(t('errors.generic')));
-                }}
-              />
-            </GlassCard>
-          ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        ) : null}
+      </ScrollView>
     </Aurora>
   );
 }

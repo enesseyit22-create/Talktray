@@ -173,8 +173,16 @@ export function AdminScreen() {
   return (
     <Aurora>
       <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.primary} />}
-        contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: 40, gap: 16 }}
+        contentContainerStyle={{
+          padding: 20,
+          paddingTop: Math.max(insets.top, 16) + 8,
+          paddingBottom: Math.max(insets.bottom, 16) + 24,
+          gap: 16,
+        }}
       >
         <AppText size={32} weight="extrabold">
           {t('admin.title')}
@@ -184,7 +192,7 @@ export function AdminScreen() {
         {stats ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {cards.map(([label, value]) => (
-              <GlassCard key={String(label)} padding={12} style={{ width: '48%', flexGrow: 1, gap: 2 }}>
+              <GlassCard key={String(label)} padding={12} style={{ flexGrow: 1, flexBasis: '46%', maxWidth: '100%', minWidth: 0, gap: 2 }}>
                 <AppText size={22} weight="extrabold">
                   {String(value)}
                 </AppText>

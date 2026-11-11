@@ -1,20 +1,27 @@
 import { BlurView } from 'expo-blur';
-import { type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
+  Keyboard,
   Modal,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { haptic } from '@/lib/haptics';
+import { sheetFrame } from '@/lib/layout';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, radius, space } from '@/theme/tokens';
 
@@ -130,7 +137,7 @@ export function PrimaryButton({
       {loading ? (
         <ActivityIndicator color={solid ? colors.onPrimary : colors.primary} />
       ) : (
-        <AppText weight="bold" size={16} color={solid ? colors.onPrimary : colors.text}>
+        <AppText weight="bold" size={16} color={solid ? colors.onPrimary : colors.text} style={styles.buttonLabel}>
           {label}
         </AppText>
       )}
@@ -214,7 +221,7 @@ export function Chip({
         },
       ]}
     >
-      <AppText size={13} weight="semibold" color={active ? colors.onPrimary : colors.text}>
+      <AppText size={13} weight="semibold" color={active ? colors.onPrimary : colors.text} style={styles.chipLabel}>
         {label}
       </AppText>
     </Pressable>
@@ -228,10 +235,10 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
       <View style={[styles.emptyOrb, { backgroundColor: colors.task.tile }]}>
         <AppText size={22}>✦</AppText>
       </View>
-      <AppText size={18} weight="bold" style={{ textAlign: 'center' }}>
+      <AppText size={18} weight="bold" style={styles.emptyCopy}>
         {title}
       </AppText>
-      <AppText color={colors.muted} style={{ textAlign: 'center' }}>
+      <AppText color={colors.muted} style={styles.emptyCopy}>
         {body}
       </AppText>
     </GlassCard>
@@ -245,6 +252,63 @@ export function Skeleton({ height = 72 }: { height?: number }) {
   );
 }
 
+const HANDLE_BLOCK = 13;
+
+function useOverlayInsets() {
+  const insets = useSafeAreaInsets();
+  const initial = initialWindowMetrics?.insets;
+  return {
+    top: Math.max(insets.top, initial?.top ?? 0),
+    bottom: Math.max(insets.bottom, initial?.bottom ?? 0),
+    left: Math.max(insets.left, initial?.left ?? 0),
+    right: Math.max(insets.right, initial?.right ?? 0),
+  };
+}
+
+function useKeyboardHeight() {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, (event) => setHeight(event.endCoordinates?.height ?? 0));
+    const hide = Keyboard.addListener(hideEvent, () => setHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return height;
+}
+
+export function BoundedScroll({
+  maxHeight,
+  children,
+  contentStyle,
+}: {
+  maxHeight: number;
+  children: ReactNode;
+  contentStyle?: StyleProp<ViewStyle>;
+}) {
+  const [contentHeight, setContentHeight] = useState(0);
+  const height = contentHeight > 0 ? Math.min(maxHeight, contentHeight) : undefined;
+  return (
+    <ScrollView
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+      nestedScrollEnabled
+      bounces={false}
+      showsVerticalScrollIndicator={contentHeight > maxHeight}
+      style={height ? { height, maxHeight } : { maxHeight }}
+      onContentSizeChange={(_, next) => {
+        setContentHeight((current) => (Math.abs(current - next) < 1 ? current : next));
+      }}
+      contentContainerStyle={contentStyle}
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
 export function Sheet({
   visible,
   onClose,
@@ -255,15 +319,50 @@ export function Sheet({
   children: ReactNode;
 }) {
   const { colors } = useTheme();
+  const insets = useOverlayInsets();
+  const keyboard = useKeyboardHeight();
+  const { height: windowHeight } = useWindowDimensions();
+  const frame = sheetFrame({
+    windowHeight,
+    screenHeight: Dimensions.get('screen').height,
+    topInset: insets.top,
+    bottomInset: insets.bottom,
+    keyboard,
+  });
+  const cardMax = Math.max(0, frame.maxHeight - HANDLE_BLOCK);
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <Animated.View entering={SlideInDown.duration(280)} style={styles.sheetWrap}>
-        <View style={[styles.handle, { backgroundColor: colors.soft }]} />
-        <GlassCard padding={space.xl} style={{ gap: 14 }}>
-          {children}
-        </GlassCard>
-      </Animated.View>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
+      <View style={styles.sheetRoot}>
+        <Pressable style={styles.backdrop} onPress={onClose} />
+        <View pointerEvents="box-none" style={styles.sheetDock}>
+          <Animated.View
+            entering={SlideInDown.duration(280)}
+            style={[
+              styles.sheetWrap,
+              {
+                marginBottom: frame.marginBottom,
+                marginLeft: Math.max(12, insets.left),
+                marginRight: Math.max(12, insets.right),
+                maxHeight: frame.maxHeight,
+              },
+            ]}
+          >
+            <View style={[styles.handle, { backgroundColor: colors.soft }]} />
+            <GlassCard padding={0} style={{ maxHeight: cardMax }}>
+              <BoundedScroll maxHeight={cardMax} contentStyle={styles.sheetContent}>
+                {children}
+              </BoundedScroll>
+            </GlassCard>
+          </Animated.View>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -286,6 +385,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     paddingHorizontal: 20,
+    paddingVertical: 12,
+    maxWidth: '100%',
+  },
+  buttonLabel: {
+    textAlign: 'center',
+    alignSelf: 'stretch',
   },
   field: {
     borderWidth: 1,
@@ -299,6 +404,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 8,
+    maxWidth: '100%',
+    flexShrink: 1,
+  },
+  chipLabel: {
+    textAlign: 'center',
+    flexShrink: 1,
+  },
+  emptyCopy: {
+    textAlign: 'center',
+    alignSelf: 'stretch',
   },
   emptyOrb: {
     width: 64,
@@ -320,11 +435,19 @@ const styles = StyleSheet.create({
     left: 0,
     backgroundColor: 'rgba(28, 22, 48, 0.28)',
   },
+  sheetRoot: {
+    flex: 1,
+  },
+  sheetDock: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   sheetWrap: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 12,
+    marginHorizontal: 12,
+  },
+  sheetContent: {
+    padding: space.xl,
+    gap: 14,
   },
   handle: {
     alignSelf: 'center',

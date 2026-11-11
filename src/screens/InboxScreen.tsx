@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { Logo } from '@/components/Brand';
+import { tabBarClearance } from '@/components/GlassTabBar';
 import { ItemCard } from '@/components/ItemCard';
 import { RecordOrb } from '@/components/RecordOrb';
 import { useCapture } from '@/capture/CaptureProvider';
@@ -62,7 +63,7 @@ export function InboxScreen() {
 
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: 130, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: tabBarClearance(insets.bottom), gap: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Logo animated />
           <Pressable
@@ -213,12 +214,12 @@ function Stat({
 }) {
   const { colors } = useTheme();
   return (
-    <GlassCard padding={12} style={{ flex: 1, gap: 2, alignItems: 'flex-start' }}>
+    <GlassCard padding={12} style={{ flex: 1, minWidth: 0, gap: 2 }}>
       <View style={{ width: 28, height: 28, borderRadius: 10, backgroundColor: tint.tile }} />
       <AppText size={20} weight="extrabold" color={tint.icon}>
         {value}
       </AppText>
-      <AppText size={11} color={colors.muted} numberOfLines={2}>
+      <AppText size={11} color={colors.muted}>
         {label}
       </AppText>
     </GlassCard>

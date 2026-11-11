@@ -1,7 +1,7 @@
-import { View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
+import { AppText, BoundedScroll, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useI18n } from '@/i18n';
 import { useUpdates } from '@/updates/UpdateProvider';
 
@@ -9,19 +9,21 @@ export function UpdatePrompt() {
   const { promptVisible, dismiss, restart } = useUpdates();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   if (!promptVisible) return null;
+  const bottom = Math.max(insets.bottom, 16);
+  const maxHeight = Math.max(0, height - insets.top - bottom - 16);
   return (
-    <View
-      pointerEvents="box-none"
-      style={{ position: 'absolute', left: 16, right: 16, bottom: Math.max(insets.bottom, 16) }}
-    >
-      <GlassCard style={{ gap: 12 }}>
-        <AppText size={18} weight="extrabold">
-          {t('updates.ready')}
-        </AppText>
-        <AppText>{t('updates.readyBody')}</AppText>
-        <PrimaryButton label={t('updates.restart')} onPress={() => void restart()} />
-        <PrimaryButton tone="glass" label={t('updates.later')} onPress={dismiss} />
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom, maxHeight }}>
+      <GlassCard padding={0} style={{ maxHeight }}>
+        <BoundedScroll maxHeight={maxHeight} contentStyle={{ padding: 16, gap: 12 }}>
+          <AppText size={18} weight="extrabold">
+            {t('updates.ready')}
+          </AppText>
+          <AppText>{t('updates.readyBody')}</AppText>
+          <PrimaryButton label={t('updates.restart')} onPress={() => void restart()} />
+          <PrimaryButton tone="glass" label={t('updates.later')} onPress={dismiss} />
+        </BoundedScroll>
       </GlassCard>
     </View>
   );
