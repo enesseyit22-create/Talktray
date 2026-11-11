@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
+import { UsageCard } from '@/components/UsageCard';
 import { Logo, WidgetPreview } from '@/components/Brand';
 import { tabBarClearance } from '@/components/GlassTabBar';
 import { AppText, Chip, Field, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
@@ -273,11 +274,7 @@ export function SettingsScreen() {
 
         <Section title={t('settings.subscription')}>
           <AppText weight="bold">{app.usage.isPro ? t('pro') : t('free')}</AppText>
-          <AppText size={13} color={colors.muted}>
-            {app.usage.isPro
-              ? t('profile.usagePro', { count: app.usage.count, limit: app.usage.limit })
-              : t('profile.usage', { count: app.usage.count, limit: app.usage.limit })}
-          </AppText>
+          <UsageCard />
           {!app.usage.isPro ? <PrimaryButton label={t('upgrade')} onPress={() => router.push('/paywall')} /> : null}
           <PrimaryButton tone="glass" label={t('restore')} onPress={() => void app.restore()} />
           <Row label={t('settings.manage')} onPress={() => void Linking.openURL(subscriptionUrl())} />
