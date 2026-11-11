@@ -199,6 +199,9 @@ export function SettingsScreen() {
   return (
     <Aurora>
       <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={{
           padding: 20,
           paddingTop: Math.max(insets.top, 16) + 12,
@@ -231,7 +234,7 @@ export function SettingsScreen() {
                 {initial}
               </AppText>
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <AppText weight="bold">{name.trim() || t('appName')}</AppText>
               <AppText size={13} color={colors.muted}>
                 {app.profile.username ? `@${app.profile.username}` : t('settings.username')}
@@ -538,7 +541,7 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
   const { colors } = useTheme();
   return (
     <View style={{ minHeight: 44, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-      <AppText weight="semibold" style={{ flex: 1 }}>
+      <AppText weight="semibold" style={{ flex: 1, minWidth: 0 }}>
         {label}
       </AppText>
       <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.primary, false: colors.soft }} />

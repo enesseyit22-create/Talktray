@@ -208,7 +208,7 @@ export function WidgetPreview({ count, label }: { count: number; label: string }
   return (
     <View
       style={{
-        height: 148,
+        minHeight: 148,
         borderRadius: 28,
         padding: 16,
         backgroundColor: scheme === 'dark' ? '#221C3E' : '#F4EEFF',
@@ -232,7 +232,7 @@ export function WidgetPreview({ count, label }: { count: number; label: string }
       <Wordmark size={16} play={false} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Image source={mark} style={{ width: 54, height: 54 }} resizeMode="contain" />
-        <View>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <AppText weight="extrabold" size={28}>
             {count}
           </AppText>

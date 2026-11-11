@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { EditSheet } from '@/components/EditSheet';
+import { tabBarClearance } from '@/components/GlassTabBar';
 import { ItemCard } from '@/components/ItemCard';
 import { AppText, EmptyState } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
@@ -18,7 +19,7 @@ export function NotesScreen() {
   const notes = items.filter((item) => item.type === 'note');
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: 130, gap: 14 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: tabBarClearance(insets.bottom), gap: 14 }}>
         <AppText size={32} weight="extrabold">
           {t('tabs.notes')}
         </AppText>

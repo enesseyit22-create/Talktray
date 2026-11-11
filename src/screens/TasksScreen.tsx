@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
 import { EditSheet } from '@/components/EditSheet';
+import { tabBarClearance } from '@/components/GlassTabBar';
 import { ItemCard } from '@/components/ItemCard';
 import { AppText, Chip, EmptyState } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
@@ -24,11 +25,11 @@ export function TasksScreen() {
     .sort((a, b) => Number(isOverdue(b, now, profile.timezone)) - Number(isOverdue(a, now, profile.timezone)));
   return (
     <Aurora>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: 130, gap: 14 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: tabBarClearance(insets.bottom), gap: 14 }}>
         <AppText size={32} weight="extrabold">
           {t('tabs.tasks')}
         </AppText>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Chip label={t('tasks.open')} active={!done} onPress={() => setDone(false)} />
           <Chip label={t('tasks.completed')} active={done} onPress={() => setDone(true)} />
         </View>

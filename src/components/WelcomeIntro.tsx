@@ -70,13 +70,13 @@ export function WelcomeIntro() {
           onPress={() => dismiss.current(false)}
           style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 }}
         >
-          <View style={{ position: 'absolute', top: insets.top + 8, right: 20, minHeight: 44, justifyContent: 'center' }}>
-            <AppText weight="semibold" color={colors.muted}>
+          <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 8, left: 20, right: 20, minHeight: 44, justifyContent: 'center', alignItems: 'flex-end' }}>
+            <AppText weight="semibold" color={colors.muted} style={{ textAlign: 'right' }}>
               {t('skip')}
             </AppText>
           </View>
           <Logo size={128} animated layout="stack" />
-          <AppText color={colors.muted} style={{ marginTop: 16, textAlign: 'center' }}>
+          <AppText color={colors.muted} style={{ marginTop: 16, textAlign: 'center', alignSelf: 'stretch' }}>
             {t('greet.subtitle')}
           </AppText>
         </Pressable>
