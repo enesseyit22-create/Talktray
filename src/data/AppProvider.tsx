@@ -26,6 +26,7 @@ import {
 import { syncWidgets } from '@/services/widget-sync';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
+  decideFreeRecording,
   evaluateQuota,
   extractItems,
   monthPeriod,
@@ -509,7 +510,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (!gate.allowed) return 'quota';
         } else if (!usage.isPro) {
           const limits = await loadFreeLimits().catch(() => null);
-          if (overFreeLimit(limits, recordings, items.length, profile.timezone)) return 'quota';
+          const counts = countCompleted(recordings, profile.timezone);
+          const decision = decideFreeRecording({
+            isPro: false,
+            completedEver: counts.ever,
+            completedToday: counts.today,
+            completedMonth: counts.month,
+            durationSeconds: Math.floor(input.durationMs / 1000),
+            itemCount: items.length,
+            limits,
+          });
+          if (!decision.allowed) return 'quota';
         }
         const now = new Date().toISOString();
         const spoken = input.transcript?.trim() ?? '';
@@ -865,26 +876,16 @@ function freeMonthLimit(limits: FreeLimits | null): number {
   return limits.free_recordings_per_month;
 }
 
-function overFreeLimit(limits: FreeLimits | null, recordings: Recording[], itemCount: number, timeZone: string): boolean {
-  const resolved: FreeLimits = limits ?? {
-    free_recordings_per_day: null,
-    free_recordings_per_month: 25,
-    free_max_seconds_per_recording: null,
-    free_max_items: null,
-  };
+function countCompleted(recordings: Recording[], timeZone: string) {
   const now = new Date();
   const active = recordings.filter((recording) => recording.status !== 'failed');
-  if (resolved.free_recordings_per_day != null) {
-    const start = zonedDayStart(now, timeZone).getTime();
-    const today = active.filter((recording) => new Date(recording.createdAt).getTime() >= start).length;
-    if (today >= resolved.free_recordings_per_day) return true;
-  }
-  if (resolved.free_recordings_per_month != null) {
-    const start = zonedMonthStart(now, timeZone).getTime();
-    const month = active.filter((recording) => new Date(recording.createdAt).getTime() >= start).length;
-    if (month >= resolved.free_recordings_per_month) return true;
-  }
-  return resolved.free_max_items != null && itemCount >= resolved.free_max_items;
+  const day = zonedDayStart(now, timeZone).getTime();
+  const month = zonedMonthStart(now, timeZone).getTime();
+  return {
+    ever: active.length,
+    today: active.filter((recording) => new Date(recording.createdAt).getTime() >= day).length,
+    month: active.filter((recording) => new Date(recording.createdAt).getTime() >= month).length,
+  };
 }
 
 function mapItem(row: Record<string, unknown>): InboxItem {

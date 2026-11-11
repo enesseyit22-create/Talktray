@@ -203,7 +203,7 @@ export function WelcomeMark() {
   return <Logo size={120} animated layout="stack" />;
 }
 
-export function WidgetPreview({ count, label }: { count: number; label: string }) {
+export function WidgetPreview({ caption }: { caption: string }) {
   const { colors, scheme } = useTheme();
   return (
     <View
@@ -232,14 +232,9 @@ export function WidgetPreview({ count, label }: { count: number; label: string }
       <Wordmark size={16} play={false} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Image source={mark} style={{ width: 54, height: 54 }} resizeMode="contain" />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <AppText weight="extrabold" size={28}>
-            {count}
-          </AppText>
-          <AppText size={13} color={colors.muted}>
-            {label}
-          </AppText>
-        </View>
+        <AppText weight="extrabold" size={20} style={{ flex: 1 }} numberOfLines={2}>
+          {caption}
+        </AppText>
       </View>
     </View>
   );

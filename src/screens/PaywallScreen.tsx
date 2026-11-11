@@ -1,6 +1,6 @@
 import { Check, Sparkles } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StatusBar, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal';
+import { sheetTopInset } from '@/lib/layout';
 import { loadStoreOffers, type StoreOffer } from '@/services/purchases';
 import { fallbackOffers } from '@/services/billing-shared';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -51,7 +52,7 @@ export function PaywallScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: 22,
-          paddingTop: Math.max(insets.top, 12) + 8,
+          paddingTop: sheetTopInset(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0, Platform.OS) + 8,
           paddingBottom: Math.max(insets.bottom, 16) + 28,
           gap: 14,
         }}

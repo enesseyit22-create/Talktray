@@ -8,9 +8,13 @@ export {
   MONTHLY_PRICE,
   PRO_FAIR_USE_RECORDINGS,
   YEARLY_PRICE,
+  RECORDINGS_BEFORE_PAYWALL,
+  decideFreeRecording,
   evaluateQuota,
   recordingLimit,
+  shouldPresentPaywall,
 } from './quota';
+export type { FreeLimitDecision, FreeLimitInput, FreeLimitReason } from './quota';
 export { fold, resolveRelativeDate } from './dates';
 export { mergeSpokenOffsets, parseReminderOffsets } from './reminders';
 export { deviceTimeZone, isSameZonedDay, localTimestamp, monthPeriod, safeTimeZone, zonedParts, zonedTimeToUtc } from './time';

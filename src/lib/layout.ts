@@ -38,3 +38,16 @@ function clampInset(value: number, frame: number) {
   if (!Number.isFinite(value) || value <= 0) return 0;
   return Math.min(value, frame);
 }
+
+/**
+ * Top inset for an edge-to-edge Android modal. The modal often reports 0 from
+ * safe-area context, so the status-bar height is the fallback. 24 is the last
+ * resort when both are missing, which keeps the sheet below the status bar.
+ */
+export function sheetTopInset(reported: number, statusBarHeight: number, platform: string): number {
+  const safe = Number.isFinite(reported) && reported > 0 ? reported : 0;
+  const status = Number.isFinite(statusBarHeight) && statusBarHeight > 0 ? statusBarHeight : 0;
+  const resolved = Math.max(safe, status);
+  if (platform === 'android') return Math.max(resolved, 24);
+  return resolved;
+}

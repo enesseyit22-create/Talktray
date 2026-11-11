@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { contentClearance, sheetFrame, tabBarBlockHeight } from './layout';
+import { contentClearance, sheetFrame, sheetTopInset, tabBarBlockHeight } from './layout';
 
 describe('sheetFrame', () => {
   it('keeps a short phone sheet inside the screen, above the home indicator', () => {
@@ -40,6 +40,30 @@ describe('sheetFrame', () => {
     expect(frame.marginBottom).toBe(48);
     expect(frame.maxHeight).toBe(520 - 24 - 48 - 8);
     expect(frame.maxHeight + frame.marginBottom + 24).toBeLessThanOrEqual(520);
+  });
+
+  it('keeps a 360x800 Android sheet under the status bar, keyboard closed or open', () => {
+    expect(sheetTopInset(0, 0, 'android')).toBe(24);
+    expect(sheetTopInset(0, 48, 'android')).toBe(48);
+    const closed = sheetFrame({
+      windowHeight: 800,
+      screenHeight: 800,
+      topInset: sheetTopInset(0, 48, 'android'),
+      bottomInset: 48,
+      keyboard: 0,
+    });
+    expect(closed.maxHeight + closed.marginBottom + 48).toBeLessThanOrEqual(800);
+    expect(closed.maxHeight).toBe(800 - 48 - 48 - 8);
+    const open = sheetFrame({
+      windowHeight: 800,
+      screenHeight: 800,
+      topInset: 48,
+      bottomInset: 48,
+      keyboard: 320,
+    });
+    expect(open.marginBottom).toBe(320);
+    expect(open.maxHeight).toBe(800 - 48 - 320 - 8);
+    expect(open.maxHeight + open.marginBottom + 48).toBeLessThanOrEqual(800);
   });
 
   it('never returns a max height that crosses the top inset', () => {

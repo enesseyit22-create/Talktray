@@ -412,13 +412,16 @@ export function SettingsScreen() {
         <AppText size={20} weight="extrabold">
           {t('profile.captureTitle')}
         </AppText>
-        <WidgetPreview count={todayCount} label={t('home.voiceNotes')} />
+        <AppText size={13} weight="semibold" color={colors.muted}>
+          {t('profile.widgetPreview')}
+        </AppText>
+        <WidgetPreview caption={t('profile.widgetToday', { count: todayCount })} />
         <GlassCard style={{ gap: 8 }}>
-          <AppText color={colors.muted}>
-            {Platform.OS === 'android' ? t('profile.androidBody') : t('profile.captureBody')}
-          </AppText>
-          <AppText color={colors.muted}>
+          <AppText>
             {Platform.OS === 'android' ? t('profile.androidSteps') : t('profile.widgetSteps')}
+          </AppText>
+          <AppText size={13} color={colors.muted}>
+            {t('profile.captureBody')}
           </AppText>
         </GlassCard>
       </ScrollView>

@@ -7,6 +7,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  StatusBar,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,7 +22,7 @@ import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { haptic } from '@/lib/haptics';
-import { sheetFrame } from '@/lib/layout';
+import { sheetFrame, sheetTopInset } from '@/lib/layout';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, radius, space } from '@/theme/tokens';
 
@@ -284,21 +285,25 @@ export function BoundedScroll({
   maxHeight,
   children,
   contentStyle,
+  adjustKeyboard = false,
 }: {
   maxHeight: number;
   children: ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
+  /** Off for sheets. The sheet already moves above the keyboard, so this would push it off the top. */
+  adjustKeyboard?: boolean;
 }) {
   const [contentHeight, setContentHeight] = useState(0);
-  const height = contentHeight > 0 ? Math.min(maxHeight, contentHeight) : undefined;
+  const cap = Math.max(0, maxHeight);
+  const height = Math.min(cap, contentHeight > 0 ? contentHeight : cap);
   return (
     <ScrollView
       keyboardShouldPersistTaps="handled"
-      automaticallyAdjustKeyboardInsets
+      automaticallyAdjustKeyboardInsets={adjustKeyboard}
       nestedScrollEnabled
       bounces={false}
-      showsVerticalScrollIndicator={contentHeight > maxHeight}
-      style={height ? { height, maxHeight } : { maxHeight }}
+      showsVerticalScrollIndicator={contentHeight > cap}
+      style={{ height, maxHeight: cap, width: '100%' }}
       onContentSizeChange={(_, next) => {
         setContentHeight((current) => (Math.abs(current - next) < 1 ? current : next));
       }}
@@ -322,14 +327,20 @@ export function Sheet({
   const insets = useOverlayInsets();
   const keyboard = useKeyboardHeight();
   const { height: windowHeight } = useWindowDimensions();
+  const [modalHeight, setModalHeight] = useState(0);
+  const screenHeight = Dimensions.get('screen').height;
+  const statusBar = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
+  const topInset = sheetTopInset(insets.top, statusBar, Platform.OS);
+  const measured = modalHeight > 0 ? modalHeight : Math.max(windowHeight, screenHeight);
   const frame = sheetFrame({
-    windowHeight,
-    screenHeight: Dimensions.get('screen').height,
-    topInset: insets.top,
+    windowHeight: measured,
+    screenHeight,
+    topInset,
     bottomInset: insets.bottom,
     keyboard,
   });
-  const cardMax = Math.max(0, frame.maxHeight - HANDLE_BLOCK);
+  const sheetMax = Math.max(0, frame.maxHeight);
+  const cardMax = Math.max(0, sheetMax - HANDLE_BLOCK);
   return (
     <Modal
       visible={visible}
@@ -339,9 +350,15 @@ export function Sheet({
       statusBarTranslucent
       navigationBarTranslucent
     >
-      <View style={styles.sheetRoot}>
+      <View
+        style={styles.sheetRoot}
+        onLayout={(event) => {
+          const next = event.nativeEvent.layout.height;
+          setModalHeight((current) => (Math.abs(current - next) < 1 ? current : next));
+        }}
+      >
         <Pressable style={styles.backdrop} onPress={onClose} />
-        <View pointerEvents="box-none" style={styles.sheetDock}>
+        <View pointerEvents="box-none" style={[styles.sheetDock, { paddingTop: topInset }]}>
           <Animated.View
             entering={SlideInDown.duration(280)}
             style={[
@@ -350,16 +367,18 @@ export function Sheet({
                 marginBottom: frame.marginBottom,
                 marginLeft: Math.max(12, insets.left),
                 marginRight: Math.max(12, insets.right),
-                maxHeight: frame.maxHeight,
+                maxHeight: sheetMax,
               },
             ]}
           >
             <View style={[styles.handle, { backgroundColor: colors.soft }]} />
-            <GlassCard padding={0} style={{ maxHeight: cardMax }}>
-              <BoundedScroll maxHeight={cardMax} contentStyle={styles.sheetContent}>
-                {children}
-              </BoundedScroll>
-            </GlassCard>
+            <View style={{ maxHeight: cardMax, overflow: 'hidden' }}>
+              <GlassCard padding={0} style={{ maxHeight: cardMax }}>
+                <BoundedScroll maxHeight={cardMax} contentStyle={styles.sheetContent}>
+                  {children}
+                </BoundedScroll>
+              </GlassCard>
+            </View>
           </Animated.View>
         </View>
       </View>
@@ -444,6 +463,8 @@ const styles = StyleSheet.create({
   },
   sheetWrap: {
     marginHorizontal: 12,
+    overflow: 'hidden',
+    flexShrink: 1,
   },
   sheetContent: {
     padding: space.xl,
