@@ -1,5 +1,5 @@
 import { Check, Sparkles } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StatusBar, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,29 +8,73 @@ import { Aurora } from '@/components/Aurora';
 import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
+import { intlLocale } from '@/i18n/locale';
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal';
 import { sheetTopInset } from '@/lib/layout';
+import { formatGrantDate, isLifetimeGrant } from '@/lib/pro-grant';
 import { loadStoreOffers, type StoreOffer } from '@/services/purchases';
 import { fallbackOffers } from '@/services/billing-shared';
 import { useTheme } from '@/theme/ThemeProvider';
 
+function paywallMessage(reason: string): string {
+  switch (reason) {
+    case 'cancelled':
+      return 'paywall.cancelled';
+    case 'plans_missing':
+    case 'no_offering':
+      return 'paywall.plansMissing';
+    case 'network':
+      return 'paywall.network';
+    case 'pending':
+      return 'paywall.pending';
+    case 'already_owned':
+      return 'paywall.alreadyOwned';
+    case 'not_allowed':
+      return 'paywall.notAllowed';
+    case 'entitlement_pending':
+      return 'paywall.entitlementPending';
+    case 'restore_empty':
+      return 'paywall.restoreEmpty';
+    case 'ok':
+      return 'paywall.restored';
+    default:
+      return 'paywall.storeError';
+  }
+}
+
 export function PaywallScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { colors } = useTheme();
   const app = useApp();
   const insets = useSafeAreaInsets();
   const [offers, setOffers] = useState<StoreOffer[]>(fallbackOffers);
   const [available, setAvailable] = useState(false);
+  const [phase, setPhase] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [plan, setPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    void loadStoreOffers().then((result) => {
-      setOffers(result.offers);
-      setAvailable(result.available);
-    });
+  const applyOffers = useCallback((result: Awaited<ReturnType<typeof loadStoreOffers>>) => {
+    setOffers(result.offers);
+    setAvailable(result.available);
+    setPhase(result.reason === 'ok' ? 'ready' : 'unavailable');
+    if (result.reason === 'ok') setMessage(null);
   }, []);
+
+  const loadPrices = useCallback(() => {
+    setPhase('loading');
+    void loadStoreOffers().then(applyOffers);
+  }, [applyOffers]);
+
+  useEffect(() => {
+    let active = true;
+    void loadStoreOffers().then((result) => {
+      if (active) applyOffers(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [applyOffers]);
 
   const selected = offers.find((offer) => offer.id === plan) ?? offers[1] ?? offers[0];
   const buy = async () => {
@@ -38,13 +82,19 @@ export function PaywallScreen() {
     setMessage(null);
     const result = await app.purchase(plan);
     setLoading(false);
-    if (result === 'pro') {
+    if (result.isPro) {
       router.back();
       return;
     }
-    if (result === 'cancelled') setMessage(t('paywall.cancelled'));
-    else setMessage(t('paywall.unavailable'));
+    setMessage(t(paywallMessage(result.reason)));
   };
+  const giftLine = app.giftUntil
+    ? isLifetimeGrant(app.giftUntil)
+      ? t('paywall.giftedLifetime')
+      : t('paywall.giftedCurrent', {
+          date: formatGrantDate(app.giftUntil, intlLocale(locale), app.profile.timezone),
+        })
+    : null;
 
   return (
     <Aurora>
@@ -79,7 +129,7 @@ export function PaywallScreen() {
             {t('paywall.title')}
           </AppText>
           <AppText color={colors.muted} style={{ textAlign: 'center', alignSelf: 'stretch' }}>
-            {app.usage.isPro ? t('paywall.current') : t('paywall.subtitle')}
+            {app.usage.isPro ? giftLine || t('paywall.current') : t('paywall.subtitle')}
           </AppText>
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -103,7 +153,7 @@ export function PaywallScreen() {
                   )}
                   <AppText weight="bold">{t(offer.id === 'yearly' ? 'paywall.yearly' : 'paywall.monthly')}</AppText>
                   <AppText size={26} weight="extrabold">
-                    {offer.price}
+                    {offer.price ?? (phase === 'loading' ? '…' : t('paywall.priceMissing'))}
                   </AppText>
                   <AppText size={12} color={colors.muted}>
                     {offer.id === 'yearly' ? t('paywall.billedYearly') : t('paywall.billedMonthly')}
@@ -129,8 +179,11 @@ export function PaywallScreen() {
           ))}
         </GlassCard>
         {message ? <AppText color={colors.primary}>{message}</AppText> : null}
-        {!app.usage.isPro ? (
-          <PrimaryButton label={`${t('paywall.cta')} · ${selected?.price ?? ''}`} onPress={() => void buy()} loading={loading} />
+        {!app.usage.isPro && selected?.price ? (
+          <PrimaryButton label={`${t('paywall.cta')} · ${selected.price}`} onPress={() => void buy()} loading={loading || phase === 'loading'} />
+        ) : null}
+        {!app.usage.isPro && phase !== 'loading' && !selected?.price ? (
+          <PrimaryButton tone="glass" label={t('paywall.retry')} onPress={loadPrices} />
         ) : null}
         {!available && app.mode === 'demo' ? (
           <PrimaryButton
@@ -143,7 +196,7 @@ export function PaywallScreen() {
           tone="glass"
           label={t('restore')}
           onPress={() =>
-            void app.restore().then((ok) => setMessage(ok ? t('paywall.restored') : t('paywall.unavailable')))
+            void app.restore().then((result) => setMessage(result.isPro ? t('paywall.restored') : t(paywallMessage(result.reason))))
           }
         />
         <AppText size={12} color={colors.soft} style={{ textAlign: 'center' }}>

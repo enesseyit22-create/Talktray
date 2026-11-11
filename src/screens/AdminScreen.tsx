@@ -9,7 +9,8 @@ import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { intlLocale } from '@/i18n/locale';
 import { parseFreeLimits, type FreeLimits } from '@/lib/free-limits';
-import { overrideIsActive, type ProPlan } from '@/lib/pro-override';
+import { accessView, type AccessFacts } from '@/lib/admin-access';
+import type { ProPlan } from '@/lib/pro-override';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -28,21 +29,21 @@ type Stats = {
   active_7d: number;
 };
 
-type AdminUser = {
+type AccessRow = AccessFacts & {
   id: string;
   email: string | null;
   username: string | null;
+  display_name?: string | null;
+};
+
+type AdminUser = AccessRow & {
   locale: string | null;
   created_at: string;
   last_activity: string | null;
   recording_count: number;
-  pro_override_until?: string | null;
 };
 
-type ActiveUser = {
-  id: string;
-  email: string | null;
-  username: string | null;
+type ActiveUser = AccessRow & {
   platform: string | null;
   last_seen_at: string;
 };
@@ -164,8 +165,10 @@ export function AdminScreen() {
       setProNotice(t('admin.proError'));
       return;
     }
-    const until = typeof data === 'string' ? data : null;
-    setUsers((current) => current.map((user) => (user.id === userId ? { ...user, pro_override_until: until } : user)));
+    const until = plan === 'revoke' ? null : plan === 'lifetime' ? 'infinity' : typeof data === 'string' && data.trim() ? data : null;
+    const patch = { pro_override_until: until, pro_override_plan: plan === 'revoke' ? null : plan };
+    setUsers((current) => current.map((user) => (user.id === userId ? { ...user, ...patch } : user)));
+    setActiveUsers((current) => current.map((user) => (user.id === userId ? { ...user, ...patch } : user)));
     setProFailed(false);
     setProNotice(t('admin.proSaved'));
   };
@@ -198,6 +201,47 @@ export function AdminScreen() {
     await Promise.all([load(query, 0, true), loadLimits()]);
     setRefreshing(false);
   };
+
+  const personName = (person: { display_name?: string | null; email: string | null; username: string | null; id: string }) =>
+    person.display_name || person.email || person.username || person.id;
+
+  const describe = (row: AccessFacts) => {
+    const view = accessView(row);
+    const gift = !view.giftKnown
+      ? null
+      : view.gift === 'none'
+        ? t('admin.proFree')
+        : view.gift === 'lifetime'
+          ? t('admin.giftedLifetime')
+          : view.gift === 'month'
+            ? `${t('admin.giftedMonth')} · ${t('admin.proUntil', { date: stamp(view.giftUntil) })}`
+            : view.gift === 'year'
+              ? `${t('admin.giftedYear')} · ${t('admin.proUntil', { date: stamp(view.giftUntil) })}`
+              : t('admin.giftedUntil', { date: stamp(view.giftUntil) });
+    const usage = !view.usage
+      ? null
+      : view.usage.kind === 'open'
+        ? t('admin.usageOpen', { count: view.usage.count })
+        : `${t(
+            view.usage.kind === 'fair' ? 'admin.usageFair' : view.usage.kind === 'trial' ? 'admin.usageTrial' : 'admin.usageMonth',
+            { count: view.usage.count, limit: view.usage.limit ?? 0 },
+          )} · ${t('admin.usageLeft', { count: view.usage.remaining ?? 0 })}`;
+    return { gift, store: view.store ? t('admin.storePro') : null, usage };
+  };
+
+  const grantChips = (userId: string) => (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+      {(['month', 'year', 'lifetime', 'revoke'] as const).map((plan) => (
+        <Chip
+          key={plan}
+          label={t(
+            plan === 'month' ? 'admin.grantMonth' : plan === 'year' ? 'admin.grantYear' : plan === 'lifetime' ? 'admin.grantLifetime' : 'admin.revokePro',
+          )}
+          onPress={() => void grantPro(userId, plan)}
+        />
+      ))}
+    </View>
+  );
 
   const cards = stats
     ? [
@@ -306,17 +350,32 @@ export function AdminScreen() {
               {t('admin.live')} · {activeUsers.length}
             </AppText>
             {activeUsers.length === 0 ? <EmptyState title={t('admin.liveEmpty')} body={t('admin.liveEmptyBody')} /> : null}
-            {activeUsers.map((person) => (
-              <GlassCard key={person.id} style={{ gap: 2 }}>
-                <AppText weight="bold">{person.email || person.username || person.id}</AppText>
-                <AppText size={13} color={colors.muted}>
-                  {[person.username ? `@${person.username}` : null, person.platform].filter(Boolean).join(' · ')}
-                </AppText>
-                <AppText size={12} color={colors.muted}>
-                  {t('admin.lastActive')}: {stamp(person.last_seen_at)}
-                </AppText>
-              </GlassCard>
-            ))}
+            {activeUsers.map((person) => {
+              const access = describe(person);
+              return (
+                <GlassCard key={person.id} style={{ gap: 2 }}>
+                  <AppText weight="bold">{personName(person)}</AppText>
+                  <AppText size={13} color={colors.muted}>
+                    {[person.username ? `@${person.username}` : null, person.platform].filter(Boolean).join(' · ')}
+                  </AppText>
+                  {access.gift ? <AppText size={13}>{access.gift}</AppText> : null}
+                  {access.store ? (
+                    <AppText size={13} color={colors.primary}>
+                      {access.store}
+                    </AppText>
+                  ) : null}
+                  {access.usage ? (
+                    <AppText size={13} color={colors.muted}>
+                      {access.usage}
+                    </AppText>
+                  ) : null}
+                  <AppText size={12} color={colors.muted}>
+                    {t('admin.lastActive')}: {stamp(person.last_seen_at)}
+                  </AppText>
+                  {grantChips(person.id)}
+                </GlassCard>
+              );
+            })}
             <AppText size={18} weight="extrabold">
               {t('admin.recentUsers')}
             </AppText>
@@ -333,43 +392,34 @@ export function AdminScreen() {
               placeholder={t('admin.search')}
             />
             {users.length === 0 ? <EmptyState title={t('admin.emptyUsers')} body={t('admin.emptyUsersBody')} /> : null}
-            {users.map((user) => (
-              <GlassCard key={user.id} style={{ gap: 2 }}>
-                <AppText weight="bold">{user.email || user.username || user.id}</AppText>
-                <AppText size={13} color={colors.muted}>
-                  {[user.username ? `@${user.username}` : null, user.locale, t('admin.recordingsCount', { count: user.recording_count })]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </AppText>
-                <AppText size={12} color={colors.muted}>
-                  {t('admin.lastActive')}: {stamp(user.last_activity || user.created_at)}
-                </AppText>
-                <AppText size={12} color={colors.muted}>
-                  {overrideIsActive(user.pro_override_until)
-                    ? user.pro_override_until?.toLowerCase() === 'infinity'
-                      ? t('admin.proLifetime')
-                      : t('admin.proUntil', { date: stamp(user.pro_override_until ?? null) })
-                    : t('admin.proFree')}
-                </AppText>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                  {(['month', 'year', 'lifetime', 'revoke'] as const).map((plan) => (
-                    <Chip
-                      key={plan}
-                      label={t(
-                        plan === 'month'
-                          ? 'admin.grantMonth'
-                          : plan === 'year'
-                            ? 'admin.grantYear'
-                            : plan === 'lifetime'
-                              ? 'admin.grantLifetime'
-                              : 'admin.revokePro',
-                      )}
-                      onPress={() => void grantPro(user.id, plan)}
-                    />
-                  ))}
-                </View>
-              </GlassCard>
-            ))}
+            {users.map((user) => {
+              const access = describe(user);
+              return (
+                <GlassCard key={user.id} style={{ gap: 2 }}>
+                  <AppText weight="bold">{personName(user)}</AppText>
+                  <AppText size={13} color={colors.muted}>
+                    {[user.username ? `@${user.username}` : null, user.locale, t('admin.recordingsCount', { count: user.recording_count })]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </AppText>
+                  <AppText size={12} color={colors.muted}>
+                    {t('admin.lastActive')}: {stamp(user.last_activity || user.created_at)}
+                  </AppText>
+                  {access.gift ? <AppText size={13}>{access.gift}</AppText> : null}
+                  {access.store ? (
+                    <AppText size={13} color={colors.primary}>
+                      {access.store}
+                    </AppText>
+                  ) : null}
+                  {access.usage ? (
+                    <AppText size={13} color={colors.muted}>
+                      {access.usage}
+                    </AppText>
+                  ) : null}
+                  {grantChips(user.id)}
+                </GlassCard>
+              );
+            })}
             {hasMore ? (
               <PrimaryButton
                 tone="glass"

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { factsFromRpc, nextMonthReset, usageMeter, usageProgress } from './usage-meter';
+import { factsFromRpc, giftUntilFromRpc, nextMonthReset, usageMeter, usageProgress } from './usage-meter';
 
 const base = {
   completedEver: 1,
@@ -43,6 +43,9 @@ describe('usageMeter', () => {
       ).completedEver,
     ).toBe(2);
     expect(factsFromRpc({ completed_ever: 'nope', free_month_limit: null }, base).freeMonthLimit).toBeNull();
+    expect(giftUntilFromRpc({ gift_until: 'infinity' })).toBe('infinity');
+    expect(giftUntilFromRpc({ gift_until: null })).toBeNull();
+    expect(giftUntilFromRpc({ completed_ever: 1 })).toBeUndefined();
   });
 
   it('resets at the next month in the user zone', () => {

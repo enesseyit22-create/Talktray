@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { overrideIsActive } from './pro-grant';
+import { isLifetimeGrant, normalizeOverrideUntil, overrideIsActive } from './pro-grant';
 
 describe('pro override', () => {
   const now = Date.parse('2026-11-11T12:00:00.000Z');
@@ -9,6 +9,8 @@ describe('pro override', () => {
     expect(overrideIsActive('2026-12-11T12:00:00.000Z', now)).toBe(true);
     expect(overrideIsActive('infinity', now)).toBe(true);
     expect(overrideIsActive('Infinity', now)).toBe(true);
+    expect(overrideIsActive('+infinity', now)).toBe(true);
+    expect(isLifetimeGrant(normalizeOverrideUntil(Number.POSITIVE_INFINITY))).toBe(true);
   });
 
   it('treats a past timestamp, null, and junk as inactive', () => {

@@ -1,3 +1,4 @@
+import { normalizeOverrideUntil } from '@/lib/pro-grant';
 import { PRO_FAIR_USE_RECORDINGS, RECORDINGS_BEFORE_PAYWALL } from '../../shared/parse/quota';
 import { zonedParts, zonedTimeToUtc } from '../../shared/parse/time';
 
@@ -79,4 +80,10 @@ export function factsFromRpc(value: unknown, fallback: UsageFacts): UsageFacts {
     freeMonthLimit,
     proMonthLimit: number('pro_month_limit', PRO_FAIR_USE_RECORDINGS),
   };
+}
+
+/** Undefined when this server build does not report gifts. Null means no active grant. */
+export function giftUntilFromRpc(value: unknown): string | null | undefined {
+  if (!value || typeof value !== 'object' || !('gift_until' in value)) return undefined;
+  return normalizeOverrideUntil((value as Record<string, unknown>).gift_until);
 }

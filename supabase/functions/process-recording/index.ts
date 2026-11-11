@@ -279,17 +279,47 @@ function secretKey() {
   return parsed.default ?? Object.values(parsed)[0] ?? '';
 }
 
+function normalizeUntil(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === 'number') return value === Number.POSITIVE_INFINITY ? 'infinity' : null;
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.toISOString() : null;
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
 function overrideActive(until: string | null | undefined): boolean {
   if (!until) return false;
-  if (until.toLowerCase() === 'infinity') return true;
+  const value = until.trim().toLowerCase();
+  if (value === 'infinity' || value === '+infinity') return true;
   const time = Date.parse(until);
   return Number.isFinite(time) && time > Date.now();
 }
 
-async function subscriberIsPro(admin: SupabaseClient, userId: string): Promise<boolean> {
+function missingOverrideColumn(error: { code?: string; message?: string }) {
+  if (error.code === 'PGRST204' || error.code === '42703') return true;
+  const message = error.message ?? '';
+  return /pro_override_until/i.test(message) && /schema cache|could not find|does not exist/i.test(message);
+}
+
+async function readGiftUntil(admin: SupabaseClient, userId: string): Promise<string | null> {
   const override = await admin.from('profiles').select('pro_override_until').eq('id', userId).maybeSingle();
-  const until = override.data && typeof override.data.pro_override_until === 'string' ? override.data.pro_override_until : null;
-  if (!override.error && overrideActive(until)) return true;
+  if (override.error) {
+    if (!missingOverrideColumn(override.error)) {
+      console.warn('[pro] override unread', override.error.code ?? '', (override.error.message ?? '').slice(0, 200));
+    }
+    return null;
+  }
+  const raw = override.data ? override.data.pro_override_until : null;
+  if (raw != null && typeof raw !== 'string' && typeof raw !== 'number' && !(raw instanceof Date)) {
+    console.warn('[pro] override type', typeof raw);
+  }
+  return normalizeUntil(raw);
+}
+
+async function subscriberIsPro(admin: SupabaseClient, userId: string): Promise<boolean> {
+  const until = await readGiftUntil(admin, userId);
+  if (overrideActive(until)) return true;
 
   const secret = Deno.env.get('REVENUECAT_SECRET_API_KEY');
   const entitlement = Deno.env.get('REVENUECAT_ENTITLEMENT_ID') ?? 'pro';

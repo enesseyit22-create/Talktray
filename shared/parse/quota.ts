@@ -1,5 +1,6 @@
 export const FREE_MONTHLY_RECORDINGS = 25;
 export const PRO_FAIR_USE_RECORDINGS = 300;
+/** Catalog list prices in USD. The paywall must not show these as the user's store price. */
 export const MONTHLY_PRICE = '$7.99';
 export const YEARLY_PRICE = '$49.99';
 export const ENTITLEMENT_ID = 'pro';

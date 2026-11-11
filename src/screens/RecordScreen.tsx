@@ -10,19 +10,21 @@ import { RecordOrb } from '@/components/RecordOrb';
 import { AppText, Field, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
+import { intlLocale } from '@/i18n/locale';
 import { errorText } from '@/lib/errors';
 import { formatDuration } from '@/lib/format';
+import { formatGrantDate, isLifetimeGrant } from '@/lib/pro-grant';
 import { consumeAutoRecord } from '@/lib/record-signal';
 import { useTheme } from '@/theme/ThemeProvider';
 import { shouldPresentPaywall } from '../../shared/parse/quota';
 
 export function RecordScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const orbSize = Math.min(250, Math.max(168, width - 72));
   const { colors } = useTheme();
-  const { usage, recordings, processThought, openSample } = useApp();
+  const { usage, recordings, processThought, openSample, giftUntil, profile } = useApp();
   const capture = useCapture();
   const { start } = capture;
   const params = useLocalSearchParams<{ autostart?: string }>();
@@ -102,7 +104,14 @@ export function RecordScreen() {
         <GlassCard>
           <AppText weight="semibold" color={colors.primary}>
             {usage.isPro
-              ? t('record.unlimited', { limit: usage.limit })
+              ? giftUntil
+                ? isLifetimeGrant(giftUntil)
+                  ? t('record.giftedLifetime', { limit: usage.limit })
+                  : t('record.giftedUntil', {
+                      date: formatGrantDate(giftUntil, intlLocale(locale), profile.timezone),
+                      limit: usage.limit,
+                    })
+                : t('record.unlimited', { limit: usage.limit })
               : usage.limit > 100_000
                 ? t('record.hint')
                 : t('record.remaining', { count: usage.count, limit: usage.limit })}

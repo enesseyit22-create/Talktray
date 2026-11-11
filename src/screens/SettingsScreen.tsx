@@ -12,7 +12,9 @@ import { tabBarClearance } from '@/components/GlassTabBar';
 import { AppText, Chip, Field, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { deviceLocale, LOCALES, LOCALE_LABELS, useI18n } from '@/i18n';
+import { intlLocale } from '@/i18n/locale';
 import { errorText } from '@/lib/errors';
+import { formatGrantDate, isLifetimeGrant } from '@/lib/pro-grant';
 import { PRIVACY_URL, SITE_ORIGIN, SUPPORT_EMAIL, TERMS_URL } from '@/lib/legal';
 import { supabase } from '@/lib/supabase';
 import { normalizeUsername, usernameProblem } from '@/lib/username';
@@ -34,6 +36,7 @@ export function SettingsScreen() {
   const [username, setUsername] = useState(app.profile.username ?? '');
   const [seenUsername, setSeenUsername] = useState(app.profile.username ?? '');
   const [accountError, setAccountError] = useState<string | null>(null);
+  const [planNote, setPlanNote] = useState<string | null>(null);
   const [savingAccount, setSavingAccount] = useState(false);
   const [zone, setZone] = useState(app.profile.timezone);
   const [seenZone, setSeenZone] = useState(app.profile.timezone);
@@ -288,10 +291,33 @@ export function SettingsScreen() {
         </Section>
 
         <Section title={t('settings.subscription')}>
-          <AppText weight="bold">{app.usage.isPro ? t('pro') : t('free')}</AppText>
+          <AppText weight="bold">
+            {app.giftUntil
+              ? isLifetimeGrant(app.giftUntil)
+                ? t('usage.giftedLifetime')
+                : t('usage.giftedUntil', {
+                    date: formatGrantDate(app.giftUntil, intlLocale(locale), app.profile.timezone),
+                  })
+              : app.usage.isPro
+                ? t('pro')
+                : t('free')}
+          </AppText>
           <UsageCard />
           {!app.usage.isPro ? <PrimaryButton label={t('upgrade')} onPress={() => router.push('/paywall')} /> : null}
-          <PrimaryButton tone="glass" label={t('restore')} onPress={() => void app.restore()} />
+          <PrimaryButton
+            tone="glass"
+            label={t('restore')}
+            onPress={() =>
+              void app.restore().then((result) =>
+                setPlanNote(
+                  result.isPro
+                    ? t('paywall.restored')
+                    : t(result.reason === 'restore_empty' ? 'paywall.restoreEmpty' : result.reason === 'network' ? 'paywall.network' : 'paywall.storeError'),
+                ),
+              )
+            }
+          />
+          {planNote ? <AppText color={colors.muted}>{planNote}</AppText> : null}
           <Row label={t('settings.manage')} onPress={() => void Linking.openURL(subscriptionUrl())} />
           <AppText size={13} color={colors.muted}>
             {t('settings.billingNote')}

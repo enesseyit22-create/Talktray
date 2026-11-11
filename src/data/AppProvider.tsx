@@ -12,7 +12,9 @@ import { processErrorKey } from '@/lib/errors';
 import { loadFreeLimits, zonedDayStart, zonedMonthStart, type FreeLimits } from '@/lib/free-limits';
 import { timeZoneForRequest } from '@/lib/format';
 import { createId } from '@/lib/id';
+import { overrideIsActive } from '@/lib/pro-grant';
 import { readOwnProOverride } from '@/lib/pro-override';
+import { mergeUsageState, nextGiftUntil } from '@/lib/pro-usage';
 import { supabase } from '@/lib/supabase';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
 import { exportItemToDevice } from '@/services/calendar';
@@ -25,8 +27,10 @@ import {
   loadStoreOffers,
   logOutPurchases,
   purchaseOffer,
+  readStorePro,
   restorePurchases,
 } from '@/services/purchases';
+import type { PurchaseResult, RestoreResult } from '@/services/billing-shared';
 import { syncWidgets } from '@/services/widget-sync';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
@@ -51,6 +55,8 @@ type AppValue = {
   items: InboxItem[];
   recordings: Recording[];
   usage: Usage;
+  /** Active admin gift. Null when there is no gift. A failed read keeps the previous value. */
+  giftUntil: string | null;
   draft: Draft | null;
   banner: string | null;
   finishOnboarding: () => Promise<void>;
@@ -78,8 +84,8 @@ type AppValue = {
   deleteItem: (id: string) => Promise<void>;
   clearSamples: () => Promise<void>;
   simulatePro: () => Promise<void>;
-  purchase: (plan: 'monthly' | 'yearly') => Promise<'pro' | 'cancelled' | 'unavailable'>;
-  restore: () => Promise<boolean>;
+  purchase: (plan: 'monthly' | 'yearly') => Promise<PurchaseResult>;
+  restore: () => Promise<RestoreResult>;
   clearBanner: () => void;
   openSample: (locale: Locale) => Promise<'review' | 'quota'>;
 };
@@ -133,7 +139,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
   const [draft, setDraft] = useState<Draft | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [giftUntil, setGiftUntil] = useState<string | null>(null);
   const storePro = useRef(false);
+  const giftUntilRef = useRef<string | null>(null);
+  const giftUserRef = useRef<string | null>(null);
 
   const applyProfile = useCallback(
     (next: Profile) => {
@@ -187,7 +196,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const store = await loadStoreOffers().catch(() => null);
       const storeIsPro = store?.isPro ?? false;
       storePro.current = storeIsPro;
-      const isPro = storeIsPro || (await readOwnProOverride(userId));
+      const previousGift = giftUserRef.current === userId ? giftUntilRef.current : null;
+      giftUserRef.current = userId;
+      const grant = await readOwnProOverride(userId);
+      if (giftUserRef.current !== userId) return;
+      const until = nextGiftUntil(previousGift, grant);
+      giftUntilRef.current = until;
       const limits = await loadFreeLimits().catch(() => null);
       const period = monthPeriod(new Date(), nextProfile.timezone);
       const count = (recordingRows ?? []).filter((row) => {
@@ -198,11 +212,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUser({ id: userId, email, provider: authProvider(sessionUser) });
         setItems((itemRows ?? []).map(mapItem));
         setRecordings((recordingRows ?? []).map(mapRecording));
+        setGiftUntil(until);
         setUsage({
           period,
           count,
-          limit: isPro ? recordingLimit(true) : freeMonthLimit(limits),
-          isPro,
+          limit: storeIsPro || overrideIsActive(until) ? recordingLimit(true) : freeMonthLimit(limits),
+          isPro: storeIsPro || overrideIsActive(until),
         });
         setAppMode('supabase');
       });
@@ -304,14 +319,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (mode !== 'supabase' || !user) return;
     let timer: ReturnType<typeof setInterval> | undefined;
     const beat = () => {
-      void touchPresence();
-      void readOwnProOverride(user.id).then((override) => {
+      void (async () => {
+        const userId = user.id;
+        const store = await readStorePro();
+        if (giftUserRef.current !== userId) return;
+        if (typeof store === 'boolean') storePro.current = store;
+        void touchPresence(storePro.current);
+        const grant = await readOwnProOverride(userId);
+        if (giftUserRef.current !== userId) return;
+        const until = nextGiftUntil(giftUntilRef.current, grant);
+        const giftChanged = giftUntilRef.current !== until;
+        giftUntilRef.current = until;
+        if (giftChanged) setGiftUntil(until);
+        if (grant.status === 'unknown' && typeof store !== 'boolean') return;
         setUsage((current) => {
-          const isPro = storePro.current || override;
+          const isPro = storePro.current || overrideIsActive(until);
           if (current.isPro === isPro) return current;
           return { ...current, isPro, limit: recordingLimit(isPro) };
         });
-      });
+      })();
     };
     const start = () => {
       if (timer) return;
@@ -409,6 +435,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       items,
       recordings,
       usage,
+      giftUntil,
       draft,
       banner,
       clearBanner: () => setBanner(null),
@@ -534,6 +561,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         if (mode === 'supabase') await supabase.auth.signOut();
         await logOutPurchases();
+        storePro.current = false;
+        giftUntilRef.current = null;
+        giftUserRef.current = null;
+        setGiftUntil(null);
         setUser(null);
         setItems([]);
         setRecordings([]);
@@ -549,6 +580,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         await logOutPurchases();
         await saveDemo(null);
+        storePro.current = false;
+        giftUntilRef.current = null;
+        giftUserRef.current = null;
+        setGiftUntil(null);
         setUser(null);
         setItems([]);
         setRecordings([]);
@@ -731,10 +766,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           usage?: { count: number; limit: number | null; isPro: boolean };
         };
         if (payload.usage) {
-          const nextLimit = payload.usage.isPro
-            ? recordingLimit(true)
-            : payload.usage.limit ?? Number.MAX_SAFE_INTEGER;
-          refreshUsage(payload.usage.count, payload.usage.isPro, usage.period, nextLimit);
+          const gifted = overrideIsActive(giftUntilRef.current);
+          if (payload.usage.isPro && !gifted) storePro.current = true;
+          const merged = mergeUsageState({
+            count: payload.usage.count,
+            serverIsPro: Boolean(payload.usage.isPro),
+            serverLimit: payload.usage.limit ?? null,
+            storeIsPro: storePro.current,
+            giftUntil: giftUntilRef.current,
+            proLimit: recordingLimit(true),
+          });
+          refreshUsage(merged.count, merged.isPro, usage.period, merged.limit);
         }
         setDraft({
           recordingId,
@@ -966,17 +1008,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           storePro.current = true;
           refreshUsage(usage.count, true);
         }
-        if (result.unavailable) return 'unavailable';
-        if (result.cancelled) return 'cancelled';
-        return result.isPro ? 'pro' : 'unavailable';
+        return result;
       },
       restore: async () => {
-        const isPro = await restorePurchases();
-        if (isPro) {
+        const result = await restorePurchases();
+        if (result.isPro) {
           storePro.current = true;
           refreshUsage(usage.count, true);
         }
-        return isPro;
+        return result;
       },
     };
   }, [
@@ -992,6 +1032,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ready,
     recordings,
     snapshotDemo,
+    giftUntil,
     usage,
     user,
   ]);
