@@ -63,11 +63,13 @@ export function ItemCard({
   item,
   timeZone,
   onPress,
+  onLongPress,
   onToggle,
 }: {
   item: InboxItem;
   timeZone: string;
   onPress?: () => void;
+  onLongPress?: () => void;
   onToggle?: () => void;
 }) {
   const { colors } = useTheme();
@@ -93,7 +95,7 @@ export function ItemCard({
   const accent = colors[item.type].icon;
 
   return (
-    <GlassCard onPress={onPress} padding={14}>
+    <GlassCard onPress={onPress} onLongPress={onLongPress} padding={14}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Pressable
           onPress={() => {

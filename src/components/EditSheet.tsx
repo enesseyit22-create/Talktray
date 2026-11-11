@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { OverdueBadge, overdueCaption } from '@/components/ItemCard';
+import { WhenField } from '@/components/WhenField';
 import { AppText, Chip, Field, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useI18n } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -143,6 +144,12 @@ export function EditSheet({
         <Chip label={t('tomorrow')} onPress={() => apply('yarın saat 9')} />
         <Chip label={t('edit.nextWeek')} onPress={() => apply('gelecek hafta')} />
       </View>
+      <WhenField
+        dueAt={item.dueAt}
+        allDay={item.allDay}
+        timeZone={timeZone}
+        onChange={(patch) => onChange(patch)}
+      />
       <PrimaryButton label={t('save')} onPress={onClose} />
       {onDelete ? <PrimaryButton label={t('delete')} tone="glass" onPress={onDelete} /> : null}
     </Sheet>

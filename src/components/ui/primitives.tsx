@@ -64,11 +64,13 @@ export function GlassCard({
   children,
   style,
   onPress,
+  onLongPress,
   padding = space.lg,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
+  onLongPress?: () => void;
   padding?: number;
 }) {
   const { colors, scheme } = useTheme();
@@ -90,13 +92,23 @@ export function GlassCard({
       {children}
     </BlurView>
   );
-  if (!onPress) return inner;
+  if (!onPress && !onLongPress) return inner;
   return (
     <Pressable
       onPress={() => {
+        if (!onPress) return;
         haptic('select');
         onPress();
       }}
+      onLongPress={
+        onLongPress
+          ? () => {
+              haptic('medium');
+              onLongPress();
+            }
+          : undefined
+      }
+      delayLongPress={350}
     >
       {inner}
     </Pressable>

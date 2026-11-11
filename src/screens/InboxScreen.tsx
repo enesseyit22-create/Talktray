@@ -11,9 +11,10 @@ import { ItemCard } from '@/components/ItemCard';
 import { useCapture } from '@/capture/CaptureProvider';
 import { RecordOrb } from '@/components/RecordOrb';
 import { EditSheet, type EditableItem } from '@/components/EditSheet';
-import { AppText, Chip, EmptyState, GlassCard, Sheet } from '@/components/ui/primitives';
+import { AppText, Chip, EmptyState, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import type { InboxItem } from '@/domain/types';
+import { errorText } from '@/lib/errors';
 import { formatClock, formatDuration, greetingKey, isOverdue } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { useI18n } from '@/i18n';
@@ -25,7 +26,7 @@ type Filter = 'today' | 'overdue' | 'reminders' | 'calendar' | 'shopping' | 'all
 export function InboxScreen() {
   const { t, locale } = useI18n();
   const { colors } = useTheme();
-  const { profile, items, recordings, updateItem, deleteItem, toggleComplete } = useApp();
+  const { profile, items, recordings, updateItem, deleteItem, deleteItems, deleteRecording, deleteAllRecordings, toggleComplete } = useApp();
   const capture = useCapture();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ item?: string | string[] }>();
@@ -35,6 +36,14 @@ export function InboxScreen() {
   const linked = linkedId ? items.find((item) => item.id === linkedId) ?? null : null;
   const editing = picked ?? linked;
   const [bell, setBell] = useState(false);
+  const [confirm, setConfirm] = useState<
+    | { kind: 'recording'; id: string }
+    | { kind: 'recordings' }
+    | { kind: 'item'; id: string }
+    | { kind: 'overdue' }
+    | null
+  >(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const now = useNow();
   const overdue = items
     .filter((item) => isOverdue(item, now, profile.timezone))
@@ -114,15 +123,23 @@ export function InboxScreen() {
         </ScrollView>
         {showOverdueSection ? (
           <View style={{ gap: 10 }}>
-            <AppText weight="bold" size={18} color={colors.danger}>
-              {t('overdue.section')}
-            </AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <AppText weight="bold" size={18} color={colors.danger}>
+                {t('overdue.section')}
+              </AppText>
+              <Pressable onPress={() => setConfirm({ kind: 'overdue' })} style={{ minHeight: 44, justifyContent: 'center' }}>
+                <AppText size={13} weight="semibold" color={colors.danger}>
+                  {t('history.pastClear')}
+                </AppText>
+              </Pressable>
+            </View>
             {overdue.map((item) => (
               <ItemCard
                 key={item.id}
                 item={item}
                 timeZone={profile.timezone}
                 onPress={() => setPicked(item)}
+                onLongPress={() => setConfirm({ kind: 'item', id: item.id })}
                 onToggle={() => void toggleComplete(item.id)}
               />
             ))}
@@ -154,13 +171,25 @@ export function InboxScreen() {
           <Stat value={String(activeTasks)} label={t('home.activeTasks')} tint={colors.shopping} />
           <Stat value={String(notesToday)} label={t('home.notesToday')} tint={colors.note} />
         </View>
-        <AppText weight="bold" size={18}>
-          {t('home.recent')}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <AppText weight="bold" size={18}>
+            {t('home.recent')}
+          </AppText>
+          {recordings.length ? (
+            <Pressable onPress={() => setConfirm({ kind: 'recordings' })} style={{ minHeight: 44, justifyContent: 'center' }}>
+              <AppText size={13} weight="semibold" color={colors.danger}>
+                {t('history.clear')}
+              </AppText>
+            </Pressable>
+          ) : null}
+        </View>
+        <AppText size={12} color={colors.muted}>
+          {t('history.hold')}
         </AppText>
-        {recordings.slice(0, 3).map((recording) => (
-          <GlassCard key={recording.id}>
+        {recordings.map((recording) => (
+          <GlassCard key={recording.id} onLongPress={() => setConfirm({ kind: 'recording', id: recording.id })}>
             <AppText weight="semibold" numberOfLines={2}>
-              {recording.transcript}
+              {recording.transcript || t('history.untitled')}
             </AppText>
             <AppText size={12} color={colors.muted}>
               {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
@@ -190,6 +219,64 @@ export function InboxScreen() {
           if (linkedId) router.setParams({ item: '' });
         }}
       />
+      <Sheet
+        visible={Boolean(confirm)}
+        onClose={() => {
+          setConfirm(null);
+          setConfirmError(null);
+        }}
+      >
+        <AppText size={20} weight="extrabold">
+          {t(
+            confirm?.kind === 'recordings'
+              ? 'history.clearTitle'
+              : confirm?.kind === 'overdue'
+                ? 'history.pastClearTitle'
+                : confirm?.kind === 'item'
+                  ? 'history.pastDeleteTitle'
+                  : 'history.deleteTitle',
+          )}
+        </AppText>
+        <AppText color={colors.muted}>
+          {t(
+            confirm?.kind === 'recordings'
+              ? 'history.clearBody'
+              : confirm?.kind === 'overdue'
+                ? 'history.pastClearBody'
+                : confirm?.kind === 'item'
+                  ? 'history.pastDeleteBody'
+                  : 'history.deleteBody',
+          )}
+        </AppText>
+        {confirmError ? <AppText color={colors.danger}>{confirmError}</AppText> : null}
+        <PrimaryButton
+          label={t('delete')}
+          onPress={() => {
+            const current = confirm;
+            if (!current) return;
+            setConfirmError(null);
+            const run =
+              current.kind === 'recording'
+                ? deleteRecording(current.id)
+                : current.kind === 'recordings'
+                  ? deleteAllRecordings()
+                  : current.kind === 'item'
+                    ? deleteItem(current.id)
+                    : deleteItems(overdue.map((item) => item.id));
+            void run
+              .then(() => setConfirm(null))
+              .catch((caught) => setConfirmError(errorText(caught, t('errors.generic'))));
+          }}
+        />
+        <PrimaryButton
+          tone="glass"
+          label={t('cancel')}
+          onPress={() => {
+            setConfirm(null);
+            setConfirmError(null);
+          }}
+        />
+      </Sheet>
       <Sheet visible={bell} onClose={() => setBell(false)}>
         <AppText size={20} weight="extrabold">
           {t('comingUp')}
