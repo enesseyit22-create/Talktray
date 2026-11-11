@@ -1,5 +1,6 @@
+import { Trash2 } from 'lucide-react-native';
 import { type ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { OverdueBadge, overdueCaption } from '@/components/ItemCard';
 import { WhenField } from '@/components/WhenField';
@@ -66,9 +67,21 @@ export function EditSheet({
   };
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <AppText size={20} weight="extrabold">
-        {t('edit.title')}
-      </AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <AppText size={20} weight="extrabold" style={{ flex: 1 }}>
+          {t('edit.title')}
+        </AppText>
+        {onDelete ? (
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={onDelete}
+            style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Trash2 color={colors.danger} size={20} />
+          </Pressable>
+        ) : null}
+      </View>
       {overdue ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <OverdueBadge />

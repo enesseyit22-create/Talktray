@@ -1,5 +1,6 @@
-import { Calendar, Check, ChevronRight, Clock, Leaf, ShoppingBag } from 'lucide-react-native';
+import { Calendar, Check, ChevronRight, Clock, Leaf, ShoppingBag, Trash2 } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 
 import { AppText, GlassCard } from '@/components/ui/primitives';
 import type { InboxItem } from '@/domain/types';
@@ -65,12 +66,14 @@ export function ItemCard({
   onPress,
   onLongPress,
   onToggle,
+  onDelete,
 }: {
   item: InboxItem;
   timeZone: string;
   onPress?: () => void;
   onLongPress?: () => void;
   onToggle?: () => void;
+  onDelete?: () => void;
 }) {
   const { colors } = useTheme();
   const { t, locale } = useI18n();
@@ -94,7 +97,7 @@ export function ItemCard({
           : t(`types.${item.type}`);
   const accent = colors[item.type].icon;
 
-  return (
+  const card = (
     <GlassCard onPress={onPress} onLongPress={onLongPress} padding={14}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Pressable
@@ -119,9 +122,44 @@ export function ItemCard({
               {time}
             </AppText>
           ) : null}
-          <ChevronRight color={colors.soft} size={16} />
+          {onDelete ? (
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={onDelete}
+              style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Trash2 color={colors.danger} size={18} />
+            </Pressable>
+          ) : (
+            <ChevronRight color={colors.soft} size={16} />
+          )}
         </View>
       </View>
     </GlassCard>
+  );
+
+  if (!onDelete) return card;
+  return (
+    <Swipeable
+      overshootRight={false}
+      renderRightActions={() => (
+        <Pressable
+          onPress={onDelete}
+          style={{
+            width: 88,
+            marginLeft: 8,
+            borderRadius: 22,
+            backgroundColor: colors.danger,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Trash2 color="#FFFFFF" size={20} />
+        </Pressable>
+      )}
+    >
+      {card}
+    </Swipeable>
   );
 }

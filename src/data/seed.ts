@@ -42,6 +42,7 @@ export function buildSeed(now: Date, timeZone: string, locale: 'en' | 'tr') {
       language: locale,
       durationMs: 8000 + index * 1300,
       status: 'ready',
+      storagePath: null,
       createdAt: at(now, timeZone, dayOffset, 9, Math.max(0, 50 - index)),
     };
   });

@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react-native';
+import { Bell, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -141,6 +141,7 @@ export function InboxScreen() {
                 onPress={() => setPicked(item)}
                 onLongPress={() => setConfirm({ kind: 'item', id: item.id })}
                 onToggle={() => void toggleComplete(item.id)}
+                onDelete={() => setConfirm({ kind: 'item', id: item.id })}
               />
             ))}
           </View>
@@ -163,6 +164,7 @@ export function InboxScreen() {
               timeZone={profile.timezone}
               onPress={() => setPicked(item)}
               onToggle={() => void toggleComplete(item.id)}
+              onDelete={() => setConfirm({ kind: 'item', id: item.id })}
             />
           ))
         )}
@@ -188,12 +190,24 @@ export function InboxScreen() {
         </AppText>
         {recordings.map((recording) => (
           <GlassCard key={recording.id} onLongPress={() => setConfirm({ kind: 'recording', id: recording.id })}>
-            <AppText weight="semibold" numberOfLines={2}>
-              {recording.transcript || t('history.untitled')}
-            </AppText>
-            <AppText size={12} color={colors.muted}>
-              {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
-            </AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <AppText weight="semibold" numberOfLines={2}>
+                  {recording.transcript || t('history.untitled')}
+                </AppText>
+                <AppText size={12} color={colors.muted}>
+                  {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
+                </AppText>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => setConfirm({ kind: 'recording', id: recording.id })}
+                style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Trash2 color={colors.danger} size={18} />
+              </Pressable>
+            </View>
           </GlassCard>
         ))}
       </ScrollView>
@@ -214,9 +228,7 @@ export function InboxScreen() {
         }}
         onDelete={() => {
           if (!editing) return;
-          void deleteItem(editing.id);
-          setPicked(null);
-          if (linkedId) router.setParams({ item: '' });
+          setConfirm({ kind: 'item', id: editing.id });
         }}
       />
       <Sheet
@@ -264,7 +276,13 @@ export function InboxScreen() {
                     ? deleteItem(current.id)
                     : deleteItems(overdue.map((item) => item.id));
             void run
-              .then(() => setConfirm(null))
+              .then(() => {
+                if (current.kind === 'item' && editing?.id === current.id) {
+                  setPicked(null);
+                  if (linkedId) router.setParams({ item: '' });
+                }
+                setConfirm(null);
+              })
               .catch((caught) => setConfirmError(errorText(caught, t('errors.generic'))));
           }}
         />
@@ -283,7 +301,7 @@ export function InboxScreen() {
         </AppText>
         {upcoming.length === 0 ? <AppText color={colors.muted}>{t('noUpcoming')}</AppText> : null}
         {upcoming.map((item) => (
-          <ItemCard key={item.id} item={item} timeZone={profile.timezone} />
+          <ItemCard key={item.id} item={item} timeZone={profile.timezone} onDelete={() => setConfirm({ kind: 'item', id: item.id })} />
         ))}
       </Sheet>
     </Aurora>

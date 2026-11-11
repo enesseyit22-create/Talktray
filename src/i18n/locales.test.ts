@@ -41,6 +41,9 @@ describe('locales', () => {
     expect(localeFromTag('pt', 'pt-PT')).toBe('pt-BR');
     expect(localeFromTag('ja', 'ja-JP')).toBe('ja');
     expect(localeFromTag('tr', 'tr-TR')).toBe('tr');
+    expect(localeFromTag(null, 'tr-TR')).toBe('tr');
+    expect(localeFromTag('in', 'in-ID')).toBe('id');
+    expect(localeFromTag('id', 'id-ID')).toBe('id');
     expect(localeFromTag('zh', 'zh-Hans')).toBe('en');
     expect(localeFromTag(null, null)).toBe('en');
   });

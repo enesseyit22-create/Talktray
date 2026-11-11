@@ -4,11 +4,12 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
-import { AppText, EmptyState, Field, GlassCard, PrimaryButton } from '@/components/ui/primitives';
+import { AppText, Chip, EmptyState, Field, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { intlLocale } from '@/i18n/locale';
 import { parseFreeLimits, type FreeLimits } from '@/lib/free-limits';
+import { overrideIsActive, type ProPlan } from '@/lib/pro-override';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -35,6 +36,15 @@ type AdminUser = {
   created_at: string;
   last_activity: string | null;
   recording_count: number;
+  pro_override_until?: string | null;
+};
+
+type ActiveUser = {
+  id: string;
+  email: string | null;
+  username: string | null;
+  platform: string | null;
+  last_seen_at: string;
 };
 
 type FailedRecording = {
@@ -69,6 +79,10 @@ export function AdminScreen() {
   });
   const [limitMessage, setLimitMessage] = useState<string | null>(null);
   const [savingLimits, setSavingLimits] = useState(false);
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
+  const [proNotice, setProNotice] = useState<string | null>(null);
+  const [proFailed, setProFailed] = useState(false);
+  const [busyUser, setBusyUser] = useState<string | null>(null);
   const request = useRef(0);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,9 +141,34 @@ export function AdminScreen() {
       setHasMore(page.length === PAGE);
       setOffset(nextOffset);
       setFailures((failedResult.data ?? []) as FailedRecording[]);
+      const activeResult = await supabase.rpc('admin_active_users', { p_within_seconds: 180 });
+      if (ticket !== request.current) return;
+      if (!activeResult.error) setActiveUsers((activeResult.data ?? []) as ActiveUser[]);
     },
     [t],
   );
+
+  const loadActive = useCallback(async () => {
+    const { data, error: activeError } = await supabase.rpc('admin_active_users', { p_within_seconds: 180 });
+    if (!activeError) setActiveUsers((data ?? []) as ActiveUser[]);
+  }, []);
+
+  const grantPro = async (userId: string, plan: ProPlan) => {
+    if (busyUser) return;
+    setBusyUser(userId);
+    setProNotice(null);
+    const { data, error: grantError } = await supabase.rpc('admin_set_pro_override', { p_user_id: userId, p_plan: plan });
+    setBusyUser(null);
+    if (grantError) {
+      setProFailed(true);
+      setProNotice(t('admin.proError'));
+      return;
+    }
+    const until = typeof data === 'string' ? data : null;
+    setUsers((current) => current.map((user) => (user.id === userId ? { ...user, pro_override_until: until } : user)));
+    setProFailed(false);
+    setProNotice(t('admin.proSaved'));
+  };
 
   useEffect(() => {
     let active = true;
@@ -147,6 +186,12 @@ export function AdminScreen() {
       active = false;
     };
   }, [load, loadLimits, t]);
+
+  useEffect(() => {
+    if (!allowed) return;
+    const timer = setInterval(() => void loadActive(), 20_000);
+    return () => clearInterval(timer);
+  }, [allowed, loadActive]);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -258,8 +303,24 @@ export function AdminScreen() {
               />
             </GlassCard>
             <AppText size={18} weight="extrabold">
+              {t('admin.live')} · {activeUsers.length}
+            </AppText>
+            {activeUsers.length === 0 ? <EmptyState title={t('admin.liveEmpty')} body={t('admin.liveEmptyBody')} /> : null}
+            {activeUsers.map((person) => (
+              <GlassCard key={person.id} style={{ gap: 2 }}>
+                <AppText weight="bold">{person.email || person.username || person.id}</AppText>
+                <AppText size={13} color={colors.muted}>
+                  {[person.username ? `@${person.username}` : null, person.platform].filter(Boolean).join(' · ')}
+                </AppText>
+                <AppText size={12} color={colors.muted}>
+                  {t('admin.lastActive')}: {stamp(person.last_seen_at)}
+                </AppText>
+              </GlassCard>
+            ))}
+            <AppText size={18} weight="extrabold">
               {t('admin.recentUsers')}
             </AppText>
+            {proNotice ? <AppText size={13} color={proFailed ? colors.danger : colors.muted}>{proNotice}</AppText> : null}
             <Field
               label={t('admin.search')}
               value={query}
@@ -283,6 +344,30 @@ export function AdminScreen() {
                 <AppText size={12} color={colors.muted}>
                   {t('admin.lastActive')}: {stamp(user.last_activity || user.created_at)}
                 </AppText>
+                <AppText size={12} color={colors.muted}>
+                  {overrideIsActive(user.pro_override_until)
+                    ? user.pro_override_until?.toLowerCase() === 'infinity'
+                      ? t('admin.proLifetime')
+                      : t('admin.proUntil', { date: stamp(user.pro_override_until ?? null) })
+                    : t('admin.proFree')}
+                </AppText>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                  {(['month', 'year', 'lifetime', 'revoke'] as const).map((plan) => (
+                    <Chip
+                      key={plan}
+                      label={t(
+                        plan === 'month'
+                          ? 'admin.grantMonth'
+                          : plan === 'year'
+                            ? 'admin.grantYear'
+                            : plan === 'lifetime'
+                              ? 'admin.grantLifetime'
+                              : 'admin.revokePro',
+                      )}
+                      onPress={() => void grantPro(user.id, plan)}
+                    />
+                  ))}
+                </View>
               </GlassCard>
             ))}
             {hasMore ? (
