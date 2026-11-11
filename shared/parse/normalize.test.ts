@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isRecordLink } from './links';
 import { normalizeExtraction, parseModelJson } from './normalize';
 import { buildExtractionMessages } from './prompt';
-import { evaluateQuota } from './quota';
+import { decideFreeRecording, evaluateQuota, shouldPresentPaywall } from './quota';
 import { zonedParts } from './time';
 
 const ctx = { now: new Date('2026-11-11T07:00:00.000Z'), timeZone: 'Europe/Istanbul' };
@@ -34,6 +34,94 @@ describe('quota', () => {
     expect(evaluateQuota(25, true).allowed).toBe(true);
     expect(evaluateQuota(300, true)).toMatchObject({ allowed: false, limit: 300, remaining: 0 });
   });
+
+  it('lets a new free user finish a few full recordings before the paywall', () => {
+    const tight = {
+      free_recordings_per_day: 0,
+      free_recordings_per_month: 0,
+      free_max_seconds_per_recording: 15,
+      free_max_items: 1,
+    };
+    expect(
+      decideFreeRecording({
+        isPro: false,
+        completedEver: 0,
+        completedToday: 0,
+        completedMonth: 0,
+        durationSeconds: 600,
+        itemCount: 40,
+        limits: tight,
+      }),
+    ).toEqual({ allowed: true, reason: null, enforceDurationCap: false });
+    expect(
+      decideFreeRecording({
+        isPro: false,
+        completedEver: 2,
+        completedToday: 2,
+        completedMonth: 2,
+        durationSeconds: 600,
+        itemCount: 40,
+        limits: tight,
+      }).allowed,
+    ).toBe(true);
+    expect(shouldPresentPaywall(0, false)).toBe(false);
+    expect(shouldPresentPaywall(2, false)).toBe(false);
+    expect(shouldPresentPaywall(3, false)).toBe(true);
+    expect(shouldPresentPaywall(25, true)).toBe(false);
+  });
+
+  it('applies the monthly cap only after those first recordings', () => {
+    const limits = {
+      free_recordings_per_day: null,
+      free_recordings_per_month: 25,
+      free_max_seconds_per_recording: 30,
+      free_max_items: null,
+    };
+    expect(
+      decideFreeRecording({
+        isPro: false,
+        completedEver: 3,
+        completedToday: 1,
+        completedMonth: 24,
+        durationSeconds: 10,
+        itemCount: 0,
+        limits,
+      }).allowed,
+    ).toBe(true);
+    expect(
+      decideFreeRecording({
+        isPro: false,
+        completedEver: 25,
+        completedToday: 1,
+        completedMonth: 25,
+        durationSeconds: 10,
+        itemCount: 0,
+        limits,
+      }),
+    ).toMatchObject({ allowed: false, reason: 'month' });
+    expect(
+      decideFreeRecording({
+        isPro: false,
+        completedEver: 4,
+        completedToday: 1,
+        completedMonth: 4,
+        durationSeconds: 45,
+        itemCount: 0,
+        limits,
+      }),
+    ).toMatchObject({ allowed: false, reason: 'seconds', enforceDurationCap: true });
+    expect(
+      decideFreeRecording({
+        isPro: true,
+        completedEver: 400,
+        completedToday: 40,
+        completedMonth: 400,
+        durationSeconds: 900,
+        itemCount: 100,
+        limits,
+      }),
+    ).toEqual({ allowed: true, reason: null, enforceDurationCap: false });
+  });
 });
 
 describe('prompt and links', () => {
@@ -50,8 +138,10 @@ describe('prompt and links', () => {
     expect(system).toContain('+03:00');
     expect(system).not.toContain('Z');
     expect(system).toContain('yarın');
+    expect(system).toContain('any language');
     expect(system).toContain('Turkish');
     expect(system).toContain('Never translate');
+    expect(system).toContain("the user's language is tr");
     expect(system).toContain('"type"');
     expect(system).toContain('reminder_offsets');
   });
@@ -64,8 +154,9 @@ describe('prompt and links', () => {
       timeZone: 'Asia/Tokyo',
       locale: 'ja',
     });
-    expect(system).toContain("user's language (ja)");
-    expect(system).not.toContain('Never translate');
+    expect(system).toContain("the user's language is ja");
+    expect(system).toContain('Never translate');
+    expect(system).toContain('any language');
   });
 
   it('recognizes record deep links', () => {

@@ -2,9 +2,9 @@
 
 Talktray is a voice inbox. You tap once, speak a thought, and the app turns it into tasks, reminders, calendar events, shopping items, and notes. You review the result, then it lands in lists you can finish, edit, or delete.
 
-The interface is a soft glass layout: pastel blobs, frosted cards, a raised record button, and a deep-indigo dark mode. Turkish and English ship together. The product is subscription-only. There are no ads.
+The interface is a soft glass layout: pastel blobs, frosted cards, a raised record button, and a deep-indigo dark mode. The app speaks ten languages, and a recording can be in any language. The product is subscription-only. There are no ads.
 
-Free accounts get **25 recordings per month**, enforced on the server. Pro is **$7.99/month** or **$49.99/year** (entitlement `pro`) with a **300 recording** fair-use cap.
+Free accounts get **25 recordings per month**, enforced on the server by `reserve_monthly_credit` and `process-recording`. The first 3 recordings are always full, so a new account sees tasks before the paywall. The paywall is not shown on launch. Pro is **$7.99/month** or **$49.99/year** (entitlement `pro`) with a **300 recording** fair-use cap.
 
 ## Run it here
 
@@ -56,8 +56,8 @@ These need a custom native binary. Expo Go does not include the widget extension
 - Lock screen circular widget (`accessoryCircular`)
 - Interactive App Intent that opens `talktray://record?autostart=1`
 - iOS 18 Control Center control
-- App Shortcut / Siri phrase **“Talktray ile kaydet”**, which can be assigned to the Action Button
-- Home screen quick action “Kaydet”
+- App Shortcut / Siri phrases **“New voice note with TalkTray”** and **“Talktray ile kaydet”**, which can be assigned to the Action Button
+- Home screen quick action “New voice note” (the in-app title follows the app language after launch)
 
 **Android** (`modules/talktray-capture`):
 

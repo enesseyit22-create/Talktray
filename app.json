@@ -3,7 +3,7 @@
     "name": "Talktray",
     "slug": "talktray",
     "owner": "fishmaps",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "talktray",
@@ -97,8 +97,8 @@
           "iosActions": [
             {
               "id": "record",
-              "title": "Kaydet",
-              "subtitle": "Talktray ile kaydet",
+              "title": "New voice note",
+              "subtitle": "Start a voice note",
               "icon": "symbol:mic.fill",
               "params": {
                 "href": "/record?autostart=1"

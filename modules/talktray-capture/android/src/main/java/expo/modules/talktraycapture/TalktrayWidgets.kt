@@ -56,7 +56,7 @@ object TalktrayWidgets {
       views.setTextViewText(R.id.today_count, prefs.getInt(TalktrayCaptureModule.KEY_TODAY, 0).toString())
       views.setTextViewText(
         R.id.open_tasks,
-        "${prefs.getInt(TalktrayCaptureModule.KEY_TASKS, 0)} görev",
+        context.getString(R.string.talktray_open_tasks, prefs.getInt(TalktrayCaptureModule.KEY_TASKS, 0)),
       )
     }
     manager.updateAppWidget(ids, views)

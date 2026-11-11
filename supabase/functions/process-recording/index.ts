@@ -1,13 +1,16 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   buildExtractionMessages,
+  decideFreeRecording,
   extractItems,
   localTimestamp,
   mergeSpokenOffsets,
   normalizeExtraction,
+  RECORDINGS_BEFORE_PAYWALL,
   safeTimeZone,
   zonedParts,
   zonedTimeToUtc,
+  type FreeLimitDecision,
 } from '../_shared/parse/index.ts';
 
 const corsHeaders = {
@@ -56,12 +59,12 @@ Deno.serve(async (req) => {
     const locale = resolveLocale(profile?.locale, body.locale);
     const now = body.now ? new Date(body.now) : new Date();
     const isPro = await subscriberIsPro(userId);
-    const limits = isPro ? null : await readFreeLimits(admin);
-    if (limits) {
-      const reason = await freeLimitReason(admin, userId, recordingId, Number(recording.duration_ms ?? 0), now, timeZone, limits);
-      if (reason) {
+    if (!isPro) {
+      const limits = await readFreeLimits(admin);
+      const decision = await freeDecision(admin, userId, recordingId, Number(recording.duration_ms ?? 0), now, timeZone, limits);
+      if (!decision.allowed) {
         await admin.from('recordings').update({ status: 'failed', error: 'quota_exceeded' }).eq('id', recordingId);
-        return json({ error: 'quota_exceeded', reason }, 402);
+        return json({ error: 'quota_exceeded', reason: decision.reason }, 402);
       }
     }
 
@@ -198,7 +201,7 @@ async function countRecordingsSince(
   return count ?? 0;
 }
 
-async function freeLimitReason(
+async function freeDecision(
   admin: ReturnType<typeof createClient>,
   userId: string,
   recordingId: string,
@@ -206,26 +209,62 @@ async function freeLimitReason(
   now: Date,
   timeZone: string,
   limits: FreeLimits,
-): Promise<string | null> {
-  if (
-    limits.free_max_seconds_per_recording != null &&
-    Math.floor(durationMs / 1000) > limits.free_max_seconds_per_recording
-  ) {
-    return 'seconds';
+): Promise<FreeLimitDecision> {
+  const ever = await countRecordingsSince(admin, userId, '1970-01-01T00:00:00.000Z', recordingId);
+  const durationSeconds = Math.floor(durationMs / 1000);
+  if (ever < RECORDINGS_BEFORE_PAYWALL) {
+    return decideFreeRecording({
+      isPro: false,
+      completedEver: ever,
+      completedToday: 0,
+      completedMonth: 0,
+      durationSeconds,
+      itemCount: 0,
+      limits,
+    });
   }
-  if (limits.free_recordings_per_day != null) {
-    const today = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'day'), recordingId);
-    if (today >= limits.free_recordings_per_day) return 'day';
-  }
-  if (limits.free_recordings_per_month != null) {
-    const month = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'month'), recordingId);
-    if (month >= limits.free_recordings_per_month) return 'month';
-  }
+  const today = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'day'), recordingId);
+  const monthStart = windowStart(now, timeZone, 'month');
+  const month = await countRecordingsSince(admin, userId, monthStart, recordingId);
+  let itemCount = 0;
   if (limits.free_max_items != null) {
     const { count } = await admin.from('items').select('id', { count: 'exact', head: true }).eq('user_id', userId);
-    if ((count ?? 0) >= limits.free_max_items) return 'items';
+    itemCount = count ?? 0;
   }
-  return null;
+  let decision = decideFreeRecording({
+    isPro: false,
+    completedEver: ever,
+    completedToday: today,
+    completedMonth: month,
+    durationSeconds,
+    itemCount,
+    limits,
+  });
+  if (decision.allowed || decision.reason === 'month') {
+    const reserved = await reserveMonthlyCredit(admin, userId, recordingId, monthStart);
+    if (reserved === 'blocked') {
+      decision = { allowed: false, reason: 'month', enforceDurationCap: true };
+    }
+  }
+  return decision;
+}
+
+/** Calls reserve_monthly_credit when it exists. Falls back to the shared TS decision if the migration is not applied yet. */
+async function reserveMonthlyCredit(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  recordingId: string,
+  periodStart: string,
+): Promise<'ok' | 'blocked' | 'unavailable'> {
+  const { data, error } = await admin.rpc('reserve_monthly_credit', {
+    p_user_id: userId,
+    p_recording_id: recordingId,
+    p_is_pro: false,
+    p_period_start: periodStart,
+  });
+  if (error) return 'unavailable';
+  const row = data as { allowed?: boolean } | null;
+  return row?.allowed === false ? 'blocked' : 'ok';
 }
 
 function publishableKey() {

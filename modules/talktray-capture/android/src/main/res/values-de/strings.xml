@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="talktray_widget_desc">Tippen, um eine Sprachnotiz zu starten.</string>
+  <string name="talktray_shortcut_short">Neue Sprachnotiz</string>
+  <string name="talktray_shortcut_long">Sprachnotiz starten</string>
+  <string name="talktray_widget_record">Neue Sprachnotiz</string>
+  <string name="talktray_open_tasks">%1$d offen</string>
+  <string name="talktray_open_tasks_zero">0 offen</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="talktray_widget_desc">Sesli not başlatmak için dokun.</string>
+  <string name="talktray_shortcut_short">Yeni sesli not</string>
+  <string name="talktray_shortcut_long">Yeni bir sesli not başlat</string>
+  <string name="talktray_widget_record">Yeni sesli not</string>
+  <string name="talktray_open_tasks">%1$d açık</string>
+  <string name="talktray_open_tasks_zero">0 açık</string>
+</resources>

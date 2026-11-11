@@ -10,9 +10,13 @@ export {
   MONTHLY_PRICE,
   PRO_FAIR_USE_RECORDINGS,
   YEARLY_PRICE,
+  RECORDINGS_BEFORE_PAYWALL,
+  decideFreeRecording,
   evaluateQuota,
   recordingLimit,
+  shouldPresentPaywall,
 } from './quota.ts';
+export type { FreeLimitDecision, FreeLimitInput, FreeLimitReason } from './quota.ts';
 export { fold, resolveRelativeDate } from './dates.ts';
 export { mergeSpokenOffsets, parseReminderOffsets } from './reminders.ts';
 export { deviceTimeZone, isSameZonedDay, localTimestamp, monthPeriod, safeTimeZone, zonedParts, zonedTimeToUtc } from './time.ts';

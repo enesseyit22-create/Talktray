@@ -1,6 +1,6 @@
 import { AudioLines, Mic } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -10,13 +10,15 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { AppText } from '@/components/ui/primitives';
-import { haptic } from '@/lib/haptics';
 import { useTheme } from '@/theme/ThemeProvider';
+import mark from '../../assets/brand/logo-1024.png';
 
 export function RecordOrb({
   size = 188,
   recording = false,
   label,
+  variant = 'mic',
+  accessibilityLabel = 'Record',
   onPress,
   onHoldStart,
   onHoldEnd,
@@ -24,6 +26,8 @@ export function RecordOrb({
   size?: number;
   recording?: boolean;
   label?: string;
+  variant?: 'mic' | 'logo';
+  accessibilityLabel?: string;
   onPress?: () => void;
   onHoldStart?: () => void;
   onHoldEnd?: () => void;
@@ -49,9 +53,10 @@ export function RecordOrb({
   }));
 
   return (
-    <View style={{ alignItems: 'center', gap: 10 }}>
-      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <View pointerEvents="box-none" style={{ alignItems: 'center', gap: 10 }}>
+      <View pointerEvents="box-none" style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
         <Animated.View
+          pointerEvents="none"
           style={[
             styles.ring,
             ringTwo,
@@ -59,6 +64,7 @@ export function RecordOrb({
           ]}
         />
         <Animated.View
+          pointerEvents="none"
           style={[
             styles.ring,
             ring,
@@ -82,29 +88,40 @@ export function RecordOrb({
             if (held.current) onHoldEnd?.();
           }}
           accessibilityRole="button"
-          accessibilityLabel="Record"
+          accessibilityLabel={accessibilityLabel}
+          accessibilityState={{ selected: recording }}
           testID="record-orb"
           onPress={() => {
             if (held.current) {
               held.current = false;
               return;
             }
-            haptic(recording ? 'medium' : 'light');
             onPress?.();
           }}
           style={[
             styles.core,
             {
-              width: size * 0.62,
-              height: size * 0.62,
+              width: size * (variant === 'logo' ? 0.78 : 0.62),
+              height: size * (variant === 'logo' ? 0.78 : 0.62),
               backgroundColor: scheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.78)',
               borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.95)',
               shadowColor: colors.shadow,
             },
           ]}
         >
-          <Mic color={colors.primary} size={size * 0.22} strokeWidth={2.2} />
-          {recording ? <Bars /> : <AudioLines color={colors.primary} size={18} strokeWidth={2.4} />}
+          {variant === 'logo' ? (
+            <Image
+              source={mark}
+              accessibilityIgnoresInvertColors
+              style={{ width: size * 0.5, height: size * 0.5 }}
+              resizeMode="contain"
+            />
+          ) : (
+            <>
+              <Mic color={colors.primary} size={size * 0.22} strokeWidth={2.2} />
+              {recording ? <Bars /> : <AudioLines color={colors.primary} size={18} strokeWidth={2.4} />}
+            </>
+          )}
         </Pressable>
       </View>
       {label ? (

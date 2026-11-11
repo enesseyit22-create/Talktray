@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AddToDeviceButton } from '@/components/AddToDeviceButton';
 import { Aurora } from '@/components/Aurora';
 import { EditSheet } from '@/components/EditSheet';
 import { TypeIcon } from '@/components/ItemCard';
@@ -64,7 +65,8 @@ export function ReviewScreen() {
         <PrimaryButton tone="glass" label={t('review.reparse')} onPress={app.reparseDraft} />
         {draft.items.length === 0 ? <AppText color={colors.muted}>{t('review.empty')}</AppText> : null}
         {draft.items.map((item) => (
-          <GlassCard key={item.localId} onPress={() => setEditing(item)}>
+          <View key={item.localId} style={{ gap: 8 }}>
+            <GlassCard onPress={() => setEditing(item)}>
             <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
               <TypeIcon type={item.type} />
               <View style={{ flex: 1, minWidth: 0 }}>
@@ -89,7 +91,14 @@ export function ReviewScreen() {
                 <Trash2 color={colors.danger} size={18} />
               </Pressable>
             </View>
-          </GlassCard>
+            </GlassCard>
+            <AddToDeviceButton
+              item={item}
+              timeZone={app.profile.timezone}
+              linkedId={item.calendarEventId}
+              onLinked={(calendarEventId) => app.updateDraftItem(item.localId, { calendarEventId })}
+            />
+          </View>
         ))}
         <PrimaryButton tone="glass" label={t('review.add')} onPress={app.addDraftItem} />
         <Pressable onPress={() => setExportCalendar((value) => !value)}>

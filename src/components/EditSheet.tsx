@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { View } from 'react-native';
 
+import { AddToDeviceButton } from '@/components/AddToDeviceButton';
 import { OverdueBadge, overdueCaption } from '@/components/ItemCard';
 import { AppText, Chip, Field, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useI18n } from '@/i18n';
@@ -29,6 +30,7 @@ export type EditableItem = {
   listName: string | null;
   reminderOffsets: number[] | null;
   completedAt?: string | null;
+  calendarEventId?: string | null;
 };
 
 export function EditSheet({
@@ -138,6 +140,12 @@ export function EditSheet({
         <Chip label={t('tomorrow')} onPress={() => apply('yarın saat 9')} />
         <Chip label={t('edit.nextWeek')} onPress={() => apply('gelecek hafta')} />
       </View>
+      <AddToDeviceButton
+        item={item}
+        timeZone={timeZone}
+        linkedId={item.calendarEventId}
+        onLinked={(calendarEventId) => onChange({ calendarEventId })}
+      />
       <PrimaryButton label={t('save')} onPress={onClose} />
       {onDelete ? <PrimaryButton label={t('delete')} tone="glass" onPress={onDelete} /> : null}
     </Sheet>

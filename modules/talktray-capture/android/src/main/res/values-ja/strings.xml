@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="talktray_widget_desc">タップして音声メモを開始します。</string>
+  <string name="talktray_shortcut_short">新しい音声メモ</string>
+  <string name="talktray_shortcut_long">音声メモを始める</string>
+  <string name="talktray_widget_record">新しい音声メモ</string>
+  <string name="talktray_open_tasks">%1$d 件未完了</string>
+  <string name="talktray_open_tasks_zero">0 件未完了</string>
+</resources>

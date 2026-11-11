@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="talktray_widget_desc">탭하여 음성 메모를 시작합니다.</string>
+  <string name="talktray_shortcut_short">새 음성 메모</string>
+  <string name="talktray_shortcut_long">음성 메모 시작</string>
+  <string name="talktray_widget_record">새 음성 메모</string>
+  <string name="talktray_open_tasks">미완료 %1$d</string>
+  <string name="talktray_open_tasks_zero">미완료 0</string>
+</resources>
