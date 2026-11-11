@@ -218,31 +218,31 @@ export function AdminScreen() {
           <>
             <GlassCard style={{ gap: 10 }}>
               <AppText size={18} weight="extrabold">
-                Free plan limits
+                {t('admin.limitsTitle')}
               </AppText>
               <AppText size={13} color={colors.muted}>
-                Leave a field blank for unlimited. Pro is not capped by these numbers.
+                {t('admin.limitsHint')}
               </AppText>
               {(
                 [
-                  ['free_recordings_per_day', 'Recordings per day'],
-                  ['free_recordings_per_month', 'Recordings per month'],
-                  ['free_max_seconds_per_recording', 'Max seconds per recording'],
-                  ['free_max_items', 'Max saved items'],
+                  ['free_recordings_per_day', 'admin.perDay'],
+                  ['free_recordings_per_month', 'admin.perMonth'],
+                  ['free_max_seconds_per_recording', 'admin.maxSeconds'],
+                  ['free_max_items', 'admin.maxItems'],
                 ] as const
               ).map(([key, label]) => (
                 <Field
                   key={key}
-                  label={label}
+                  label={t(label)}
                   value={limits[key]}
                   onChangeText={(value) => setLimits((current) => ({ ...current, [key]: value.replace(/[^\d]/g, '') }))}
                   autoCapitalize="none"
-                  placeholder="Unlimited"
+                  placeholder={t('admin.unlimited')}
                 />
               ))}
-              {limitMessage ? <AppText color={limitMessage === 'Saved' ? colors.success : colors.danger}>{limitMessage}</AppText> : null}
+              {limitMessage ? <AppText color={limitMessage === 'saved' ? colors.success : colors.danger}>{t(`admin.${limitMessage}`)}</AppText> : null}
               <PrimaryButton
-                label="Save limits"
+                label={t('admin.saveLimits')}
                 loading={savingLimits}
                 onPress={() => {
                   const payload = Object.fromEntries(
@@ -252,7 +252,7 @@ export function AdminScreen() {
                   setLimitMessage(null);
                   void supabase.rpc('admin_set_free_limits', { p: payload }).then(({ error: saveError }) => {
                     setSavingLimits(false);
-                    setLimitMessage(saveError ? 'Could not save limits.' : 'Saved');
+                    setLimitMessage(saveError ? 'saveFailed' : 'saved');
                   });
                 }}
               />
