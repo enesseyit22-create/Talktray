@@ -58,6 +58,8 @@ type AppValue = {
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   deleteAllRecordings: () => Promise<void>;
+  deleteRecording: (id: string) => Promise<void>;
+  deleteItems: (ids: string[]) => Promise<void>;
   updateProfile: (patch: Partial<Profile>) => Promise<void>;
   processThought: (input: { audioUri?: string | null; durationMs: number; transcript?: string }) => Promise<'review' | 'quota'>;
   updateDraftItem: (localId: string, patch: Partial<DraftItem>) => void;
@@ -498,10 +500,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
             profile,
             items,
             recordings: [],
-            usageCount: usage.count,
+            usageCount: 0,
             usagePeriod: usage.period,
             isPro: usage.isPro,
           });
+        }
+        refreshUsage(0, usage.isPro);
+      },
+      deleteRecording: async (id) => {
+        const nextRecordings = recordings.filter((recording) => recording.id !== id);
+        const nextItems = items.map((item) => (item.recordingId === id ? { ...item, recordingId: null } : item));
+        setRecordings(nextRecordings);
+        setItems(nextItems);
+        const counts = countCompleted(nextRecordings, profile.timezone);
+        refreshUsage(counts.month, usage.isPro);
+        if (mode === 'supabase' && user) {
+          const { data } = await supabase.from('recordings').select('storage_path').eq('id', id).maybeSingle();
+          const path = (data?.storage_path as string | null) || `${user.id}/${id}.m4a`;
+          await supabase.storage.from('recordings').remove([path]).catch(() => undefined);
+          const { error } = await supabase.from('recordings').delete().eq('id', id);
+          if (error) throw error;
+        } else if (user) {
+          await persistDemo({
+            user,
+            profile,
+            items: nextItems,
+            recordings: nextRecordings,
+            usageCount: counts.month,
+            usagePeriod: usage.period,
+            isPro: usage.isPro,
+          });
+        }
+      },
+      deleteItems: async (ids) => {
+        if (!ids.length) return;
+        const idSet = new Set(ids);
+        const nextItems = items.filter((item) => !idSet.has(item.id));
+        setItems(nextItems);
+        if (mode === 'supabase') {
+          const { error } = await supabase.from('items').delete().in('id', ids);
+          if (error) throw error;
+        } else if (user) {
+          await snapshotDemo({ items: nextItems });
         }
       },
       processThought: async (input) => {

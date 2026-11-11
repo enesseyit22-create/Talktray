@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, StatusBar, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StatusBar, Switch, View } from 'react-native';
 import { router } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +26,10 @@ export function ReviewScreen() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const draft = app.draft;
+  const saveable = draft?.items.some((item) => item.title.trim()) ?? false;
+  const dated = draft?.items.some(
+    (item) => item.dueAt && (item.type === 'event' || item.type === 'reminder' || item.type === 'task'),
+  ) ?? false;
 
   if (!draft) {
     return (
@@ -54,6 +58,7 @@ export function ReviewScreen() {
         <AppText size={28} weight="extrabold">
           {t('review.title')}
         </AppText>
+        <AppText color={colors.muted}>{t('review.subtitle')}</AppText>
         {draft.mocked ? <AppText color={colors.primary}>{t('review.mocked')}</AppText> : null}
         <Field
           label={t('review.transcript')}
@@ -62,8 +67,18 @@ export function ReviewScreen() {
           multiline
           autoCapitalize="sentences"
         />
-        <PrimaryButton tone="glass" label={t('review.reparse')} onPress={app.reparseDraft} />
-        {draft.items.length === 0 ? <AppText color={colors.muted}>{t('review.empty')}</AppText> : null}
+        {saveable ? (
+          <Pressable onPress={app.reparseDraft} style={{ minHeight: 44, justifyContent: 'center' }}>
+            <AppText weight="semibold" color={colors.primary}>
+              {t('review.reparse')}
+            </AppText>
+          </Pressable>
+        ) : (
+          <GlassCard style={{ gap: 8 }}>
+            <AppText weight="bold">{t('review.emptyTitle')}</AppText>
+            <AppText color={colors.muted}>{t('review.empty')}</AppText>
+          </GlassCard>
+        )}
         {draft.items.map((item) => (
           <GlassCard key={item.localId} onPress={() => setEditing(item)}>
             <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
@@ -92,28 +107,41 @@ export function ReviewScreen() {
             </View>
           </GlassCard>
         ))}
-        <PrimaryButton tone="glass" label={t('review.add')} onPress={app.addDraftItem} />
-        <Pressable onPress={() => setExportCalendar((value) => !value)}>
-          <GlassCard>
-            <AppText weight="semibold" color={exportCalendar ? colors.primary : colors.text}>
-              {exportCalendar ? '✓ ' : ''}
+        {saveable ? (
+          <PrimaryButton tone="glass" label={t('review.add')} onPress={app.addDraftItem} />
+        ) : (
+          <View style={{ gap: 8 }}>
+            <PrimaryButton label={t('review.recordAgain')} onPress={() => {
+              app.discardDraft();
+              router.replace('/record');
+            }} />
+            <PrimaryButton tone="glass" label={t('review.reparse')} onPress={app.reparseDraft} disabled={!draft.transcript.trim()} />
+            <PrimaryButton tone="glass" label={t('review.add')} onPress={app.addDraftItem} />
+          </View>
+        )}
+        {dated ? (
+          <View style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <AppText weight="semibold" style={{ flex: 1 }}>
               {t('review.export')}
             </AppText>
-          </GlassCard>
-        </Pressable>
-        <PrimaryButton
-          label={t('review.save')}
-          loading={saving}
-          onPress={() => {
-            setSaving(true);
-            setSaveError(null);
-            void app
-              .saveDraft(exportCalendar)
-              .then(() => router.replace('/'))
-              .catch((caught) => setSaveError(errorText(caught, t('errors.generic'))))
-              .finally(() => setSaving(false));
-          }}
-        />
+            <Switch value={exportCalendar} onValueChange={setExportCalendar} trackColor={{ true: colors.primary, false: colors.soft }} />
+          </View>
+        ) : null}
+        {saveable ? (
+          <PrimaryButton
+            label={t('review.save')}
+            loading={saving}
+            onPress={() => {
+              setSaving(true);
+              setSaveError(null);
+              void app
+                .saveDraft(exportCalendar)
+                .then(() => router.replace('/'))
+                .catch((caught) => setSaveError(errorText(caught, t('errors.generic'))))
+                .finally(() => setSaving(false));
+            }}
+          />
+        ) : null}
         {saveError ? <AppText color={colors.danger}>{saveError}</AppText> : null}
         <PrimaryButton
           tone="glass"
