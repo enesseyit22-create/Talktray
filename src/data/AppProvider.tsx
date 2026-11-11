@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
+import * as Linking from 'expo-linking';
 import { getCalendars } from 'expo-localization';
+import * as QuickActions from 'expo-quick-actions';
 import { AppState } from 'react-native';
 
 import { buildSeed } from '@/data/seed';
@@ -12,6 +14,7 @@ import { processErrorKey } from '@/lib/errors';
 import { loadFreeLimits, zonedDayStart, zonedMonthStart, type FreeLimits } from '@/lib/free-limits';
 import { timeZoneForRequest } from '@/lib/format';
 import { createId } from '@/lib/id';
+import { armAutoRecord } from '@/lib/record-signal';
 import { supabase } from '@/lib/supabase';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
 import { exportItemToDevice } from '@/services/calendar';
@@ -26,8 +29,10 @@ import {
 import { syncWidgets } from '@/services/widget-sync';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
+  decideFreeRecording,
   evaluateQuota,
   extractItems,
+  isRecordLink,
   monthPeriod,
   recordingLimit,
   SAMPLE_TRANSCRIPTS,
@@ -199,6 +204,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     (async () => {
+      await armLaunchCapture();
       const prefs = await loadPrefs();
       if (!active) return;
       setOnboardingDone(prefs.onboardingDone);
@@ -509,7 +515,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (!gate.allowed) return 'quota';
         } else if (!usage.isPro) {
           const limits = await loadFreeLimits().catch(() => null);
-          if (overFreeLimit(limits, recordings, items.length, profile.timezone)) return 'quota';
+          const counts = countCompleted(recordings, profile.timezone);
+          const decision = decideFreeRecording({
+            isPro: false,
+            completedEver: counts.ever,
+            completedToday: counts.today,
+            completedMonth: counts.month,
+            durationSeconds: Math.floor(input.durationMs / 1000),
+            itemCount: items.length,
+            limits,
+          });
+          if (!decision.allowed) return 'quota';
         }
         const now = new Date().toISOString();
         const spoken = input.transcript?.trim() ?? '';
@@ -682,12 +698,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             listName: entry.listName,
             reminderOffsets: entry.reminderOffsets,
             completedAt: null,
-            calendarEventId: null,
+            calendarEventId: entry.calendarEventId ?? null,
             notificationId: null,
             createdAt: now,
             updatedAt: now,
           };
-          if (exportCalendar && next.dueAt) {
+          if (exportCalendar && next.dueAt && !next.calendarEventId) {
             next.calendarEventId = await exportItemToDevice(next, profile.timezone).catch(() => null);
           }
           saved.push(next);
@@ -775,6 +791,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               list_name: updated.listName,
               reminder_offsets: updated.reminderOffsets,
               notification_id: updated.notificationId,
+              calendar_event_id: updated.calendarEventId,
             })
             .eq('id', id);
         } else if (user) {
@@ -865,26 +882,26 @@ function freeMonthLimit(limits: FreeLimits | null): number {
   return limits.free_recordings_per_month;
 }
 
-function overFreeLimit(limits: FreeLimits | null, recordings: Recording[], itemCount: number, timeZone: string): boolean {
-  const resolved: FreeLimits = limits ?? {
-    free_recordings_per_day: null,
-    free_recordings_per_month: 25,
-    free_max_seconds_per_recording: null,
-    free_max_items: null,
-  };
+function countCompleted(recordings: Recording[], timeZone: string) {
   const now = new Date();
   const active = recordings.filter((recording) => recording.status !== 'failed');
-  if (resolved.free_recordings_per_day != null) {
-    const start = zonedDayStart(now, timeZone).getTime();
-    const today = active.filter((recording) => new Date(recording.createdAt).getTime() >= start).length;
-    if (today >= resolved.free_recordings_per_day) return true;
+  const day = zonedDayStart(now, timeZone).getTime();
+  const month = zonedMonthStart(now, timeZone).getTime();
+  return {
+    ever: active.length,
+    today: active.filter((recording) => new Date(recording.createdAt).getTime() >= day).length,
+    month: active.filter((recording) => new Date(recording.createdAt).getTime() >= month).length,
+  };
+}
+
+async function armLaunchCapture() {
+  try {
+    const url = await Linking.getInitialURL();
+    if (isRecordLink(url)) armAutoRecord();
+  } catch {
+    // A shortcut can still arrive through the quick-action listener.
   }
-  if (resolved.free_recordings_per_month != null) {
-    const start = zonedMonthStart(now, timeZone).getTime();
-    const month = active.filter((recording) => new Date(recording.createdAt).getTime() >= start).length;
-    if (month >= resolved.free_recordings_per_month) return true;
-  }
-  return resolved.free_max_items != null && itemCount >= resolved.free_max_items;
+  if (QuickActions.initial?.id === 'record') armAutoRecord();
 }
 
 function mapItem(row: Record<string, unknown>): InboxItem {

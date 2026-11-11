@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="talktray_widget_desc">Ketuk untuk mulai catatan suara.</string>
+  <string name="talktray_shortcut_short">Catatan suara baru</string>
+  <string name="talktray_shortcut_long">Mulai catatan suara</string>
+  <string name="talktray_widget_record">Catatan suara baru</string>
+  <string name="talktray_open_tasks">%1$d terbuka</string>
+  <string name="talktray_open_tasks_zero">0 terbuka</string>
+</resources>

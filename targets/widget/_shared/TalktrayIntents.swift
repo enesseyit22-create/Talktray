@@ -2,8 +2,8 @@ import AppIntents
 import WidgetKit
 
 struct RecordTalktrayIntent: AppIntent {
-  static var title: LocalizedStringResource = "Talktray ile kaydet"
-  static var description = IntentDescription("Opens Talktray and starts a voice note.")
+  static var title: LocalizedStringResource = "New voice note"
+  static var description = IntentDescription("Opens TalkTray and starts a voice note.")
   static var openAppWhenRun: Bool = true
 
   @MainActor
@@ -23,8 +23,9 @@ struct TalktrayShortcuts: AppShortcutsProvider {
         "Talktray ile kaydet",
         "\(.applicationName) ile kaydet",
         "Record a thought with \(.applicationName)",
+        "New voice note with \(.applicationName)",
       ],
-      shortTitle: "Kaydet",
+      shortTitle: "New voice note",
       systemImageName: "mic.fill"
     )
   }

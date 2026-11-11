@@ -47,7 +47,7 @@ struct TalktrayHomeWidget: Widget {
         }
     }
     .configurationDisplayName("Talktray")
-    .description("Bir dokunuşla kaydet.")
+    .description("Start a voice note")
     .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular])
   }
 }
@@ -74,7 +74,7 @@ struct TalktrayWidgetView: View {
           Text("\(entry.snapshot.todayCount)")
             .font(.system(size: 34, weight: .bold))
             .foregroundStyle(Color(red: 0.16, green: 0.14, blue: 0.32))
-          Text("Bugün · \(entry.snapshot.openTasks) görev")
+          Text("Today · \(entry.snapshot.openTasks) open")
             .font(.subheadline)
             .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.58))
         }
@@ -84,10 +84,10 @@ struct TalktrayWidgetView: View {
     default:
       VStack(spacing: 10) {
         MicButton()
-        Text("Kaydet")
+        Text("New voice note")
           .font(.headline)
           .foregroundStyle(Color(red: 0.16, green: 0.14, blue: 0.32))
-        Text("\(entry.snapshot.todayCount) bugün")
+        Text("\(entry.snapshot.todayCount) today")
           .font(.caption)
           .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.58))
       }
@@ -138,10 +138,10 @@ struct TalktrayRecordControl: ControlWidget {
   var body: some ControlWidgetConfiguration {
     StaticControlConfiguration(kind: Self.kind) {
       ControlWidgetButton(action: RecordTalktrayIntent()) {
-        Label("Kaydet", systemImage: "mic.fill")
+        Label("New voice note", systemImage: "mic.fill")
       }
     }
     .displayName("Talktray")
-    .description("Bir düşünce kaydet.")
+    .description("Start a voice note.")
   }
 }

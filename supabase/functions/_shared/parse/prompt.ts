@@ -6,10 +6,7 @@ export function buildExtractionMessages(input: {
   locale: string;
 }): { system: string; user: string } {
   const locale = input.locale || 'en';
-  const voice =
-    locale === 'en' || locale === 'tr'
-      ? 'The speaker may use Turkish, English, or a mix. Keep every title in the source language. Never translate.'
-      : `Write titles, notes, and list names in the user's language (${locale}). Stay faithful to what was said. Keep a person's name as spoken.`;
+  const voice = `The speaker may use any language, not only Turkish or English. Detect the language from the words. Write titles, notes, and list names in the source language (the user's language is ${locale}). Never translate. Keep a person's name as spoken.`;
   const system = `You extract structured inbox items from a voice transcript.
 ${voice}
 Current local time: ${input.nowIso}

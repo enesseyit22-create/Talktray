@@ -38,7 +38,7 @@ export type Usage = {
   isPro: boolean;
 };
 
-export type DraftItem = ParsedItem & { localId: string };
+export type DraftItem = ParsedItem & { localId: string; calendarEventId?: string | null };
 
 export type Draft = {
   recordingId: string;

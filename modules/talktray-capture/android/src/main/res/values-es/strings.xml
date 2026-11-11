@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="talktray_widget_desc">Toca para empezar una nota de voz.</string>
+  <string name="talktray_shortcut_short">Nueva nota de voz</string>
+  <string name="talktray_shortcut_long">Empieza una nota de voz</string>
+  <string name="talktray_widget_record">Nueva nota de voz</string>
+  <string name="talktray_open_tasks">%1$d abiertas</string>
+  <string name="talktray_open_tasks_zero">0 abiertas</string>
+</resources>
