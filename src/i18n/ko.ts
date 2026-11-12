@@ -246,7 +246,7 @@ export const ko: Dictionary = {
     perMonth: '{price}/월',
     equiv: '약 {price}/월',
     cta: '계속',
-    legal: '구독은 App Store 또는 Google Play에서 취소할 때까지 갱신됩니다. Pro에는 월 300건의 공정 사용 한도가 있습니다.',
+    legal: '구독은 App Store 또는 Google Play에서 취소할 때까지 갱신됩니다. Pro에는 월 1000건의 공정 사용 한도가 있습니다.',
     current: 'Pro를 이용 중입니다',
     demoPurchase: '데모에서 Pro 체험',
     unavailable: '구매를 완료하지 못했습니다. 잠시 후 다시 시도하세요.',

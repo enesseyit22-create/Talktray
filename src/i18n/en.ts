@@ -244,7 +244,7 @@ export const en = {
     perMonth: '{price}/mo',
     equiv: 'About {price}/month',
     cta: 'Continue',
-    legal: 'Payment is charged to your Apple ID or Google Play account. The plan renews automatically unless you cancel at least 24 hours before the period ends. Pro includes a 300 recording fair-use cap.',
+    legal: 'Payment is charged to your Apple ID or Google Play account. The plan renews automatically unless you cancel at least 24 hours before the period ends. Pro includes a 1000 recording fair-use cap.',
     billedMonthly: 'Monthly. Auto-renews until you cancel.',
     billedYearly: 'Yearly. Auto-renews until you cancel.',
     terms: 'Terms of Use',

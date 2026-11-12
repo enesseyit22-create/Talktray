@@ -246,7 +246,7 @@ export const es: Dictionary = {
     perMonth: '{price}/mes',
     equiv: 'Unos {price}/mes',
     cta: 'Continuar',
-    legal: 'La suscripción se renueva hasta que la canceles en el App Store o en Google Play. Pro incluye un tope de uso justo de 300 grabaciones.',
+    legal: 'La suscripción se renueva hasta que la canceles en el App Store o en Google Play. Pro incluye un tope de uso justo de 1000 grabaciones.',
     current: 'Estás en Pro',
     demoPurchase: 'Simular Pro en la demo',
     unavailable: 'No se pudo completar la compra. Inténtalo de nuevo en un momento.',

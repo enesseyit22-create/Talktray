@@ -1,4 +1,5 @@
 import { isLifetimeGrant, overrideIsActive } from '@/lib/pro-grant';
+import { PRO_FAIR_USE_RECORDINGS } from '../../shared/parse/quota';
 
 export type AccessFacts = {
   pro_override_until?: string | null;
@@ -56,7 +57,8 @@ export function accessView(row: AccessFacts, nowMs = Date.now()): AccessView {
   const month = count(row.completed_month);
   let usage: AccessUsage | null = null;
   if (ever != null && month != null) {
-    const proLimit = count(row.pro_month_limit) ?? 300;
+    // The fair-use cap is the app constant. Older usage payloads still echo 300.
+    const proLimit = PRO_FAIR_USE_RECORDINGS;
     const pro = active || store;
     if (pro) {
       usage = { kind: 'fair', count: month, limit: proLimit, remaining: Math.max(0, proLimit - month) };

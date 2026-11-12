@@ -9,6 +9,7 @@ import { loadFreeLimits, zonedMonthStart } from '@/lib/free-limits';
 import { supabase } from '@/lib/supabase';
 import { formatGrantDate, isLifetimeGrant, overrideIsActive } from '@/lib/pro-grant';
 import { factsFromRecordings, factsFromRpc, giftUntilFromRpc, nextMonthReset, usageMeter, usageProgress, type UsageFacts } from '@/lib/usage-meter';
+import { PRO_FAIR_USE_RECORDINGS } from '../../shared/parse/quota';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export function UsageCard() {
@@ -44,13 +45,13 @@ export function UsageCard() {
   }, [app.mode, app.profile.timezone, app.recordings, app.usage.count, app.usage.isPro, stamp]);
 
   const base = remote?.stamp === stamp ? remote.facts : local;
-  const facts: UsageFacts = app.usage.isPro
-    ? { ...base, proMonthLimit: app.usage.limit }
-    : { ...base, freeMonthLimit: app.usage.limit > 100_000 ? null : app.usage.limit };
   const remoteGift = remote?.stamp === stamp ? remote.gift : undefined;
   const giftUntil = overrideIsActive(app.giftUntil) ? app.giftUntil : overrideIsActive(remoteGift) ? remoteGift : app.giftUntil ?? remoteGift ?? null;
   const gifted = overrideIsActive(giftUntil);
   const pro = app.usage.isPro || gifted;
+  const facts: UsageFacts = pro
+    ? { ...base, proMonthLimit: PRO_FAIR_USE_RECORDINGS }
+    : { ...base, freeMonthLimit: app.usage.limit > 100_000 ? null : app.usage.limit };
   const meter = usageMeter(pro, facts);
   const label = pro && meter.kind === 'month'
     ? t('usage.proFair', { count: meter.count, limit: meter.limit })

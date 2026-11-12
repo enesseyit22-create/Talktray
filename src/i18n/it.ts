@@ -246,7 +246,7 @@ export const it: Dictionary = {
     perMonth: '{price}/mese',
     equiv: 'Circa {price}/mese',
     cta: 'Continua',
-    legal: 'L’abbonamento si rinnova finché non lo annulli sull’App Store o su Google Play. Pro include un tetto di uso equo di 300 registrazioni.',
+    legal: 'L’abbonamento si rinnova finché non lo annulli sull’App Store o su Google Play. Pro include un tetto di uso equo di 1000 registrazioni.',
     current: 'Sei su Pro',
     demoPurchase: 'Simula Pro nella demo',
     unavailable: 'L’acquisto non è andato a buon fine. Riprova tra un momento.',

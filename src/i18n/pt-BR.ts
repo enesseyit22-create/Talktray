@@ -246,7 +246,7 @@ export const ptBR: Dictionary = {
     perMonth: '{price}/mês',
     equiv: 'Cerca de {price}/mês',
     cta: 'Continuar',
-    legal: 'A assinatura renova até você cancelar na App Store ou no Google Play. O Pro inclui um limite de uso justo de 300 gravações.',
+    legal: 'A assinatura renova até você cancelar na App Store ou no Google Play. O Pro inclui um limite de uso justo de 1000 gravações.',
     current: 'Você está no Pro',
     demoPurchase: 'Simular o Pro na demo',
     unavailable: 'A compra não foi concluída. Tente de novo em instantes.',

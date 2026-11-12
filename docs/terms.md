@@ -20,7 +20,7 @@ Talktray Pro is an auto-renewing subscription offered through the App Store or G
 - Payment is charged to your Apple ID or Google Play account.
 - The plan renews for the same period unless you cancel at least 24 hours before the current period ends.
 - You manage or cancel the subscription in your App Store or Google Play account settings. Deleting the Talktray account does not cancel a store subscription by itself.
-- Talktray Pro includes a fair-use cap of 300 recordings in a month. The free inbox includes 25 recordings in a month.
+- Talktray Pro includes a fair-use cap of 1000 recordings in a month. The free inbox includes 25 recordings in a month.
 
 ## Acceptable use
 

@@ -246,7 +246,7 @@ export const de: Dictionary = {
     perMonth: '{price}/Mon.',
     equiv: 'Etwa {price}/Monat',
     cta: 'Weiter',
-    legal: 'Das Abo verlängert sich, bis du es im App Store oder bei Google Play kündigst. Pro enthält eine Fair-Use-Grenze von 300 Aufnahmen.',
+    legal: 'Das Abo verlängert sich, bis du es im App Store oder bei Google Play kündigst. Pro enthält eine Fair-Use-Grenze von 1000 Aufnahmen.',
     current: 'Du bist bei Pro',
     demoPurchase: 'Pro in der Demo simulieren',
     unavailable: 'Der Kauf konnte nicht abgeschlossen werden. Versuch es gleich noch einmal.',

@@ -5,7 +5,7 @@ import { accessView } from '@/lib/admin-access';
 const now = Date.parse('2026-11-11T12:00:00.000Z');
 
 describe('admin access view', () => {
-  it('shows a gifted month as Pro fair use, not the free cap', () => {
+  it('shows a gifted month as the 1000 fair-use cap, even when the payload still says 300', () => {
     const view = accessView(
       {
         pro_override_until: '2026-12-11T12:00:00.000Z',
@@ -20,7 +20,7 @@ describe('admin access view', () => {
       now,
     );
     expect(view.gift).toBe('month');
-    expect(view.usage).toEqual({ kind: 'fair', count: 4, limit: 300, remaining: 296 });
+    expect(view.usage).toEqual({ kind: 'fair', count: 4, limit: 1000, remaining: 996 });
   });
 
   it('treats lifetime and +infinity as a gift that does not use the free quota', () => {
@@ -35,7 +35,7 @@ describe('admin access view', () => {
     );
     expect(view.gift).toBe('lifetime');
     expect(view.usage?.kind).toBe('fair');
-    expect(view.usage?.limit).toBe(300);
+    expect(view.usage?.limit).toBe(1000);
   });
 
   it('keeps store Pro on the fair-use meter', () => {

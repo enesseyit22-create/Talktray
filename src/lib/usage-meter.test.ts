@@ -7,7 +7,7 @@ const base = {
   completedMonth: 1,
   trialLimit: 3,
   freeMonthLimit: 25 as number | null,
-  proMonthLimit: 300,
+  proMonthLimit: 1000,
 };
 
 describe('usageMeter', () => {
@@ -24,7 +24,7 @@ describe('usageMeter', () => {
     expect(usageMeter(true, { ...base, completedEver: 10, completedMonth: 4 })).toEqual({
       kind: 'month',
       count: 4,
-      limit: 300,
+      limit: 1000,
     });
   });
 
@@ -38,11 +38,12 @@ describe('usageMeter', () => {
   it('reads the caller usage payload and falls back on junk', () => {
     expect(
       factsFromRpc(
-        { completed_ever: 2, completed_month: 2, trial_limit: 3, free_month_limit: 25, pro_month_limit: 300 },
+        { completed_ever: 2, completed_month: 2, trial_limit: 3, free_month_limit: 25, pro_month_limit: 1000 },
         base,
       ).completedEver,
     ).toBe(2);
     expect(factsFromRpc({ completed_ever: 'nope', free_month_limit: null }, base).freeMonthLimit).toBeNull();
+    expect(factsFromRpc({}, base).proMonthLimit).toBe(1000);
     expect(giftUntilFromRpc({ gift_until: 'infinity' })).toBe('infinity');
     expect(giftUntilFromRpc({ gift_until: null })).toBeNull();
     expect(giftUntilFromRpc({ completed_ever: 1 })).toBeUndefined();

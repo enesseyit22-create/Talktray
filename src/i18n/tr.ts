@@ -246,7 +246,7 @@ export const tr: Dictionary = {
     perMonth: '{price}/ay',
     equiv: 'Yaklaşık {price}/ay',
     cta: 'Devam',
-    legal: 'Abonelik, App Store veya Google Play’den iptal edene kadar yenilenir. Pro’da ayda 300 kayıtlık adil kullanım sınırı vardır.',
+    legal: 'Abonelik, App Store veya Google Play’den iptal edene kadar yenilenir. Pro’da ayda 1000 kayıtlık adil kullanım sınırı vardır.',
     current: 'Pro’dasın',
     demoPurchase: 'Demoda Pro’yu dene',
     unavailable: 'Satın alma tamamlanamadı. Biraz sonra yeniden dene.',

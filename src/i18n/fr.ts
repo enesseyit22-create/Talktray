@@ -246,7 +246,7 @@ export const fr: Dictionary = {
     perMonth: '{price}/mois',
     equiv: 'Environ {price}/mois',
     cta: 'Continuer',
-    legal: 'L’abonnement se renouvelle jusqu’à annulation dans l’App Store ou Google Play. Pro inclut un plafond d’usage raisonnable de 300 enregistrements.',
+    legal: 'L’abonnement se renouvelle jusqu’à annulation dans l’App Store ou Google Play. Pro inclut un plafond d’usage raisonnable de 1000 enregistrements.',
     current: 'Tu es sur Pro',
     demoPurchase: 'Simuler Pro dans la démo',
     unavailable: 'L’achat n’a pas abouti. Réessaie dans un instant.',

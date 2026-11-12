@@ -246,7 +246,7 @@ export const ja: Dictionary = {
     perMonth: '{price}/月',
     equiv: 'およそ {price}/月',
     cta: '続ける',
-    legal: 'サブスクリプションは、App StoreまたはGoogle Playで解約するまで更新されます。Proには月300件のフェアユース上限があります。',
+    legal: 'サブスクリプションは、App StoreまたはGoogle Playで解約するまで更新されます。Proには月1000件のフェアユース上限があります。',
     current: 'Proを利用中です',
     demoPurchase: 'デモでProを試す',
     unavailable: '購入を完了できませんでした。しばらくしてからもう一度お試しください。',

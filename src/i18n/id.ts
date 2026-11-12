@@ -246,7 +246,7 @@ export const id: Dictionary = {
     perMonth: '{price}/bln',
     equiv: 'Sekitar {price}/bulan',
     cta: 'Lanjut',
-    legal: 'Langganan diperpanjang sampai kamu membatalkannya di App Store atau Google Play. Pro mencakup batas penggunaan wajar 300 rekaman.',
+    legal: 'Langganan diperpanjang sampai kamu membatalkannya di App Store atau Google Play. Pro mencakup batas penggunaan wajar 1000 rekaman.',
     current: 'Kamu sedang di Pro',
     demoPurchase: 'Simulasikan Pro di demo',
     unavailable: 'Pembelian tidak selesai. Coba lagi sebentar lagi.',
