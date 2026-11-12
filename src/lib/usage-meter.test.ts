@@ -11,12 +11,12 @@ const base = {
 };
 
 describe('usageMeter', () => {
-  it('shows the free trial until three recordings are used', () => {
-    expect(usageMeter(false, base)).toEqual({ kind: 'trial', count: 1, limit: 3 });
-    expect(usageMeter(false, { ...base, completedEver: 3, completedMonth: 3 })).toEqual({
+  it('shows the monthly free cap, including during the first recordings', () => {
+    expect(usageMeter(false, base)).toEqual({ kind: 'month', count: 1, limit: 25 });
+    expect(usageMeter(false, { ...base, completedEver: 1, completedMonth: 1, freeMonthLimit: 10 })).toEqual({
       kind: 'month',
-      count: 3,
-      limit: 25,
+      count: 1,
+      limit: 10,
     });
   });
 

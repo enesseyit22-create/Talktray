@@ -48,12 +48,20 @@ describe('admin access view', () => {
     expect(view.usage?.kind).toBe('fair');
   });
 
-  it('shows the free trial only when the person is not Pro', () => {
+  it('shows the free monthly cap, not the paywall gate of 3', () => {
     const view = accessView(
       { pro_override_until: null, store_is_pro: false, completed_ever: 1, completed_month: 1, free_month_limit: 25, trial_limit: 3 },
       now,
     );
-    expect(view.usage).toEqual({ kind: 'trial', count: 1, limit: 3, remaining: 2 });
+    expect(view.usage).toEqual({ kind: 'month', count: 1, limit: 25, remaining: 24 });
+  });
+
+  it('uses an admin-changed free cap for a new account', () => {
+    const view = accessView(
+      { pro_override_until: null, store_is_pro: false, completed_ever: 1, completed_month: 1, free_month_limit: 10, trial_limit: 3 },
+      now,
+    );
+    expect(view.usage).toEqual({ kind: 'month', count: 1, limit: 10, remaining: 9 });
   });
 
   it('does not invent Free when the live list is still the old shape', () => {

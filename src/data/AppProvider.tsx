@@ -9,12 +9,13 @@ import type { Draft, DraftItem, InboxItem, Profile, Recording, SessionUser, Usag
 import { asLocale, deviceLocale, resolveLocalePreference, translate, useI18n, type Locale } from '@/i18n';
 import { isSupabaseConfigured } from '@/lib/config';
 import { processErrorKey } from '@/lib/errors';
-import { loadFreeLimits, zonedDayStart, zonedMonthStart, type FreeLimits } from '@/lib/free-limits';
+import { ACCESS_REFRESH_MS, subscribeAccessChanges } from '@/lib/access-sync';
+import { loadFreeLimits, readFreeLimits, zonedDayStart, zonedMonthStart, type FreeLimits } from '@/lib/free-limits';
 import { timeZoneForRequest } from '@/lib/format';
 import { createId } from '@/lib/id';
 import { overrideIsActive } from '@/lib/pro-grant';
 import { readOwnProOverride } from '@/lib/pro-override';
-import { mergeUsageState, nextGiftUntil } from '@/lib/pro-usage';
+import { mergeUsageState, nextGiftUntil, nextPlanLimit } from '@/lib/pro-usage';
 import { supabase } from '@/lib/supabase';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
 import { exportItemToDevice } from '@/services/calendar';
@@ -237,7 +238,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const preview = process.env.EXPO_PUBLIC_PREVIEW === '1';
       const previewLocale = asLocale(process.env.EXPO_PUBLIC_PREVIEW_LOCALE || locale);
       if (preview) {
-        const name = process.env.EXPO_PUBLIC_PREVIEW_NAME || 'Enes';
+        const name = process.env.EXPO_PUBLIC_PREVIEW_NAME || 'TalkTray';
         const timeZone = phoneTimeZone();
         const seeded = buildSeed(new Date(), timeZone, previewLocale === 'tr' ? 'tr' : 'en');
         const nextProfile = {
@@ -246,7 +247,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           localePreference: prefs.localePreference,
         };
         applyProfile(nextProfile);
-        setUser({ id: 'preview', email: 'enes@talktray.app' });
+        setUser({ id: 'preview', email: 'preview@example.com' });
         setItems(seeded.items);
         setRecordings(seeded.recordings);
         setUsage({
@@ -317,46 +318,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (mode !== 'supabase' || !user) return;
-    let timer: ReturnType<typeof setInterval> | undefined;
-    const beat = () => {
+    const userId = user.id;
+    let stopped = false;
+    let accessTimer: ReturnType<typeof setInterval> | undefined;
+    let presenceTimer: ReturnType<typeof setInterval> | undefined;
+
+    const refreshAccess = () => {
       void (async () => {
-        const userId = user.id;
-        const store = await readStorePro();
-        if (giftUserRef.current !== userId) return;
-        if (typeof store === 'boolean') storePro.current = store;
-        void touchPresence(storePro.current);
-        const grant = await readOwnProOverride(userId);
-        if (giftUserRef.current !== userId) return;
+        const [grant, limits] = await Promise.all([
+          readOwnProOverride(userId),
+          readFreeLimits().catch(() => null),
+        ]);
+        if (stopped || giftUserRef.current !== userId) return;
         const until = nextGiftUntil(giftUntilRef.current, grant);
-        const giftChanged = giftUntilRef.current !== until;
-        giftUntilRef.current = until;
-        if (giftChanged) setGiftUntil(until);
-        if (grant.status === 'unknown' && typeof store !== 'boolean') return;
+        if (giftUntilRef.current !== until) {
+          giftUntilRef.current = until;
+          setGiftUntil(until);
+        }
+        if (grant.status === 'unknown' && !limits) return;
         setUsage((current) => {
           const isPro = storePro.current || overrideIsActive(until);
-          if (current.isPro === isPro) return current;
-          return { ...current, isPro, limit: recordingLimit(isPro) };
+          const limit = nextPlanLimit({
+            isPro,
+            wasPro: current.isPro,
+            currentLimit: current.limit,
+            freeMonthLimit: limits ? limits.free_recordings_per_month : undefined,
+          });
+          if (current.isPro === isPro && current.limit === limit) return current;
+          return { ...current, isPro, limit };
         });
       })();
     };
+
+    const beatPresence = () => {
+      void (async () => {
+        const store = await readStorePro();
+        if (stopped || giftUserRef.current !== userId) return;
+        if (typeof store === 'boolean') storePro.current = store;
+        void touchPresence(storePro.current);
+        refreshAccess();
+      })();
+    };
+
     const start = () => {
-      if (timer) return;
-      beat();
-      timer = setInterval(beat, 60_000);
+      if (accessTimer) return;
+      beatPresence();
+      accessTimer = setInterval(refreshAccess, ACCESS_REFRESH_MS);
+      presenceTimer = setInterval(beatPresence, 60_000);
     };
     const stop = () => {
-      if (!timer) return;
-      clearInterval(timer);
-      timer = undefined;
+      if (accessTimer) clearInterval(accessTimer);
+      if (presenceTimer) clearInterval(presenceTimer);
+      accessTimer = undefined;
+      presenceTimer = undefined;
     };
     if (AppState.currentState === 'active') start();
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') start();
       else stop();
     });
+    const unsubscribe = subscribeAccessChanges(userId, refreshAccess);
     return () => {
+      stopped = true;
       stop();
       sub.remove();
+      unsubscribe();
     };
   }, [mode, user]);
 
@@ -492,7 +518,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const seeded = existing ?? null;
         const nextProfile: Profile = {
           ...(seeded?.profile ?? defaultProfile(locale, timeZone)),
-          displayName: name.trim() || seeded?.profile.displayName || 'Enes',
+          displayName: name.trim() || seeded?.profile.displayName || 'TalkTray',
           timezone: timeZone,
           locale,
           localePreference: profile.localePreference,
@@ -525,7 +551,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       signIn: async (email, password) => {
         if (!isSupabaseConfigured) {
-          await actions.current?.enterDemo(email.split('@')[0] || 'Enes', email);
+          await actions.current?.enterDemo(email.split('@')[0] || 'TalkTray', email);
           return;
         }
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -546,7 +572,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
           return 'confirm';
         }
-        await actions.current?.enterDemo(name || email.split('@')[0] || 'Enes', email);
+        await actions.current?.enterDemo(name || email.split('@')[0] || 'TalkTray', email);
         return 'session';
       },
       signInApple: async () => {

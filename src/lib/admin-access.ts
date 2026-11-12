@@ -57,12 +57,9 @@ export function accessView(row: AccessFacts, nowMs = Date.now()): AccessView {
   let usage: AccessUsage | null = null;
   if (ever != null && month != null) {
     const proLimit = count(row.pro_month_limit) ?? 300;
-    const trialLimit = count(row.trial_limit) ?? 3;
     const pro = active || store;
     if (pro) {
       usage = { kind: 'fair', count: month, limit: proLimit, remaining: Math.max(0, proLimit - month) };
-    } else if (ever < trialLimit) {
-      usage = { kind: 'trial', count: ever, limit: trialLimit, remaining: Math.max(0, trialLimit - ever) };
     } else if ('free_month_limit' in row && row.free_month_limit == null) {
       usage = { kind: 'open', count: month, limit: null, remaining: null };
     } else {

@@ -73,6 +73,7 @@ export const de: Dictionary = {
     checkEmail: 'Prüfe deine E-Mail, bestätige das Konto und melde dich dann an.',
     invalid: 'Gib eine gültige E-Mail und ein Passwort mit mindestens 6 Zeichen ein.',
     namePlaceholder: 'Lena',
+    emailPlaceholder: 'du@beispiel.de',
     failed: 'Die Anmeldung hat nicht geklappt. Prüfe die Angaben und versuch es noch einmal.',
     oauthNeedsKeys: 'Apple und Google brauchen ein eingerichtetes Supabase-Projekt. Die Demo-Inbox geht trotzdem.',
     appleIos: 'Mit Apple anmelden gibt es auf dem iPhone.',
@@ -237,7 +238,8 @@ export const de: Dictionary = {
   },
   paywall: {
     title: 'TalkTray Pro',
-    subtitle: 'Sprich weiter. Der kostenlose Eingang hält 25 Aufnahmen im Monat.',
+    subtitle: 'Sprich weiter. Der kostenlose Eingang hält {limit} Aufnahmen im Monat.',
+    subtitleOpen: 'Sprich weiter. Der kostenlose Eingang hat kein monatliches Aufnahmelimit.',
     monthly: 'Monatlich',
     yearly: 'Jährlich',
     best: 'Bester Preis',

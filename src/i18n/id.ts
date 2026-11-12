@@ -73,6 +73,7 @@ export const id: Dictionary = {
     checkEmail: 'Cek email untuk mengonfirmasi akun, lalu masuk.',
     invalid: 'Masukkan email yang valid dan kata sandi minimal 6 karakter.',
     namePlaceholder: 'Sari',
+    emailPlaceholder: 'kamu@contoh.com',
     failed: 'Masuk tidak berhasil. Periksa datanya dan coba lagi.',
     oauthNeedsKeys: 'Masuk dengan Apple dan Google butuh proyek Supabase yang sudah diatur. Kotak demo tetap bisa dipakai.',
     appleIos: 'Masuk dengan Apple tersedia di iPhone.',
@@ -237,7 +238,8 @@ export const id: Dictionary = {
   },
   paywall: {
     title: 'TalkTray Pro',
-    subtitle: 'Terus berbicara. Kotak gratis menampung 25 rekaman sebulan.',
+    subtitle: 'Terus berbicara. Kotak gratis menampung {limit} rekaman sebulan.',
+    subtitleOpen: 'Terus berbicara. Kotak gratis tidak punya batas rekaman bulanan.',
     monthly: 'Bulanan',
     yearly: 'Tahunan',
     best: 'Paling hemat',

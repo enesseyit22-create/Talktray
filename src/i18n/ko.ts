@@ -73,6 +73,7 @@ export const ko: Dictionary = {
     checkEmail: '메일을 확인해 계정을 승인한 뒤 로그인하세요.',
     invalid: '올바른 이메일과 6자 이상의 비밀번호를 입력하세요.',
     namePlaceholder: '민지',
+    emailPlaceholder: 'you@example.com',
     failed: '로그인되지 않았습니다. 내용을 확인하고 다시 시도하세요.',
     oauthNeedsKeys: 'Apple과 Google 로그인은 설정된 Supabase 프로젝트가 필요합니다. 데모 받은함은 그대로 쓸 수 있어요.',
     appleIos: 'Apple 로그인은 iPhone에서 사용할 수 있습니다.',
@@ -237,7 +238,8 @@ export const ko: Dictionary = {
   },
   paywall: {
     title: 'TalkTray Pro',
-    subtitle: '계속 말하세요. 무료 받은함은 한 달에 25건입니다.',
+    subtitle: '계속 말하세요. 무료 받은함은 한 달에 {limit}건입니다.',
+    subtitleOpen: '계속 말하세요. 무료 받은함에는 월간 녹음 한도가 없습니다.',
     monthly: '월간',
     yearly: '연간',
     best: '가장 알찬 선택',

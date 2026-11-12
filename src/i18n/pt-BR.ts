@@ -73,6 +73,7 @@ export const ptBR: Dictionary = {
     checkEmail: 'Confira seu e-mail para confirmar a conta e depois entre.',
     invalid: 'Use um e-mail válido e uma senha com pelo menos 6 caracteres.',
     namePlaceholder: 'Ana',
+    emailPlaceholder: 'voce@exemplo.com',
     failed: 'Não deu para entrar. Confira os dados e tente de novo.',
     oauthNeedsKeys: 'Apple e Google pedem um projeto Supabase configurado. Você ainda pode usar a caixa de demo.',
     appleIos: 'Entrar com a Apple está disponível no iPhone.',
@@ -237,7 +238,8 @@ export const ptBR: Dictionary = {
   },
   paywall: {
     title: 'TalkTray Pro',
-    subtitle: 'Continue falando. A caixa grátis guarda 25 gravações por mês.',
+    subtitle: 'Continue falando. A caixa grátis guarda {limit} gravações por mês.',
+    subtitleOpen: 'Continue falando. A caixa grátis não tem limite mensal de gravações.',
     monthly: 'Mensal',
     yearly: 'Anual',
     best: 'Melhor valor',

@@ -73,6 +73,7 @@ export const it: Dictionary = {
     checkEmail: 'Controlla l’email per confermare l’account, poi entra.',
     invalid: 'Inserisci un’email valida e una password di almeno 6 caratteri.',
     namePlaceholder: 'Giulia',
+    emailPlaceholder: 'tu@esempio.it',
     failed: 'L’accesso non è andato a buon fine. Controlla i dati e riprova.',
     oauthNeedsKeys: 'Apple e Google chiedono un progetto Supabase configurato. Puoi comunque usare l’inbox demo.',
     appleIos: 'L’accesso con Apple è disponibile su iPhone.',
@@ -237,7 +238,8 @@ export const it: Dictionary = {
   },
   paywall: {
     title: 'TalkTray Pro',
-    subtitle: 'Continua a parlare. L’inbox gratuita tiene 25 registrazioni al mese.',
+    subtitle: 'Continua a parlare. L’inbox gratuita tiene {limit} registrazioni al mese.',
+    subtitleOpen: 'Continua a parlare. L’inbox gratuita non ha un tetto mensile di registrazioni.',
     monthly: 'Mensile',
     yearly: 'Annuale',
     best: 'Più conveniente',

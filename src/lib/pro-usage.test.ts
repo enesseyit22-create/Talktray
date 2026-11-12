@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { mergeUsageState, nextGiftUntil } from '@/lib/pro-usage';
+import { mergeUsageState, nextGiftUntil, nextPlanLimit } from '@/lib/pro-usage';
 
 describe('gifted usage', () => {
   it('keeps a gift when the profile read fails', () => {
@@ -20,6 +20,24 @@ describe('gifted usage', () => {
         proLimit: 300,
       }),
     ).toEqual({ count: 8, isPro: true, limit: 300 });
+  });
+
+  it('keeps an admin free cap when the limits read fails', () => {
+    expect(
+      nextPlanLimit({ isPro: false, wasPro: false, currentLimit: 10, freeMonthLimit: undefined }),
+    ).toBe(10);
+  });
+
+  it('shows an admin free cap, an open cap, and Pro fair use', () => {
+    expect(nextPlanLimit({ isPro: false, wasPro: false, currentLimit: 25, freeMonthLimit: 40 })).toBe(40);
+    expect(nextPlanLimit({ isPro: false, wasPro: false, currentLimit: 25, freeMonthLimit: null })).toBe(
+      Number.MAX_SAFE_INTEGER,
+    );
+    expect(nextPlanLimit({ isPro: true, wasPro: false, currentLimit: 25, freeMonthLimit: 40 })).toBe(300);
+  });
+
+  it('does not keep the Pro cap after a gift ends without a fresh free read', () => {
+    expect(nextPlanLimit({ isPro: false, wasPro: true, currentLimit: 300, freeMonthLimit: undefined })).toBe(25);
   });
 
   it('uses the free cap only when the gift has ended and the store is not Pro', () => {
