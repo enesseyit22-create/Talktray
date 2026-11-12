@@ -5,7 +5,7 @@ import { accessView } from '@/lib/admin-access';
 const now = Date.parse('2026-11-11T12:00:00.000Z');
 
 describe('admin access view', () => {
-  it('shows a gifted month as Pro fair use, not the free cap', () => {
+  it('shows a gifted month as the 1000 fair-use cap, even when the payload still says 300', () => {
     const view = accessView(
       {
         pro_override_until: '2026-12-11T12:00:00.000Z',
@@ -20,7 +20,7 @@ describe('admin access view', () => {
       now,
     );
     expect(view.gift).toBe('month');
-    expect(view.usage).toEqual({ kind: 'fair', count: 4, limit: 300, remaining: 296 });
+    expect(view.usage).toEqual({ kind: 'fair', count: 4, limit: 1000, remaining: 996 });
   });
 
   it('treats lifetime and +infinity as a gift that does not use the free quota', () => {
@@ -35,7 +35,7 @@ describe('admin access view', () => {
     );
     expect(view.gift).toBe('lifetime');
     expect(view.usage?.kind).toBe('fair');
-    expect(view.usage?.limit).toBe(300);
+    expect(view.usage?.limit).toBe(1000);
   });
 
   it('keeps store Pro on the fair-use meter', () => {
@@ -48,12 +48,20 @@ describe('admin access view', () => {
     expect(view.usage?.kind).toBe('fair');
   });
 
-  it('shows the free trial only when the person is not Pro', () => {
+  it('shows the free monthly cap, not the paywall gate of 3', () => {
     const view = accessView(
       { pro_override_until: null, store_is_pro: false, completed_ever: 1, completed_month: 1, free_month_limit: 25, trial_limit: 3 },
       now,
     );
-    expect(view.usage).toEqual({ kind: 'trial', count: 1, limit: 3, remaining: 2 });
+    expect(view.usage).toEqual({ kind: 'month', count: 1, limit: 25, remaining: 24 });
+  });
+
+  it('uses an admin-changed free cap for a new account', () => {
+    const view = accessView(
+      { pro_override_until: null, store_is_pro: false, completed_ever: 1, completed_month: 1, free_month_limit: 10, trial_limit: 3 },
+      now,
+    );
+    expect(view.usage).toEqual({ kind: 'month', count: 1, limit: 10, remaining: 9 });
   });
 
   it('does not invent Free when the live list is still the old shape', () => {

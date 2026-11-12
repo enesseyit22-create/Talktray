@@ -47,7 +47,14 @@ export function zonedMonthStart(now: Date, timeZone: string): Date {
 }
 
 export async function loadFreeLimits(): Promise<FreeLimits> {
+  const loaded = await readFreeLimits();
+  return loaded ?? DEFAULT_FREE_LIMITS;
+}
+
+/** Null when the read failed, so a caller can keep the cap already on screen. */
+export async function readFreeLimits(): Promise<FreeLimits | null> {
   const { data, error } = await supabase.from('app_settings').select('value').eq('key', 'free_limits').maybeSingle();
-  if (error || !data) return DEFAULT_FREE_LIMITS;
+  if (error) return null;
+  if (!data) return DEFAULT_FREE_LIMITS;
   return parseFreeLimits(data.value);
 }

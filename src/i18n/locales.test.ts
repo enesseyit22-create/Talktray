@@ -36,6 +36,18 @@ describe('locales', () => {
     }
   });
 
+  it('keeps the sign-in hint generic and the free quota parameterized', () => {
+    for (const locale of LOCALES) {
+      const auth = dictionaries[locale].auth;
+      expect(auth.emailPlaceholder.toLowerCase(), locale).not.toContain('enes');
+      expect(auth.emailPlaceholder.toLowerCase(), locale).not.toContain('talktray.app');
+      expect(auth.namePlaceholder.toLowerCase(), locale).not.toContain('enes');
+      expect(dictionaries[locale].paywall.subtitle, locale).toContain('{limit}');
+      expect(dictionaries[locale].paywall.subtitle, locale).not.toMatch(/25/);
+      expect(dictionaries[locale].paywall.subtitleOpen.length, locale).toBeGreaterThan(0);
+    }
+  });
+
   it('maps Portuguese tags to pt-BR and unknown languages to English', () => {
     expect(localeFromTag('pt', 'pt-BR')).toBe('pt-BR');
     expect(localeFromTag('pt', 'pt-PT')).toBe('pt-BR');

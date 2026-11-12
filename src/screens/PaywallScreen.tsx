@@ -129,7 +129,11 @@ export function PaywallScreen() {
             {t('paywall.title')}
           </AppText>
           <AppText color={colors.muted} style={{ textAlign: 'center', alignSelf: 'stretch' }}>
-            {app.usage.isPro ? giftLine || t('paywall.current') : t('paywall.subtitle')}
+            {app.usage.isPro
+              ? giftLine || t('paywall.current')
+              : app.usage.limit > 100_000
+                ? t('paywall.subtitleOpen')
+                : t('paywall.subtitle', { limit: app.usage.limit })}
           </AppText>
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>

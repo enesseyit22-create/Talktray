@@ -22,11 +22,13 @@ export type UsageMeter =
   | { kind: 'month'; count: number; limit: number }
   | { kind: 'open'; count: number; limit: null };
 
-/** What the profile card shows. Matches process-recording: 3 full free recordings, then the monthly free cap. Pro shows the 300 fair-use cap. */
+/**
+ * What the profile card and paywall count. Free accounts show the monthly free
+ * cap from settings (25 unless an admin changed it, or open when that cap is
+ * unset). Pro, including an admin gift, shows the fair-use cap. The first few
+ * recordings still skip enforcement; that gate is not a separate displayed quota.
+ */
 export function usageMeter(isPro: boolean, facts: UsageFacts): UsageMeter {
-  if (!isPro && facts.completedEver < facts.trialLimit) {
-    return { kind: 'trial', count: facts.completedEver, limit: facts.trialLimit };
-  }
   if (isPro) return { kind: 'month', count: facts.completedMonth, limit: facts.proMonthLimit };
   if (facts.freeMonthLimit == null) return { kind: 'open', count: facts.completedMonth, limit: null };
   return { kind: 'month', count: facts.completedMonth, limit: facts.freeMonthLimit };

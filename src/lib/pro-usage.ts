@@ -1,4 +1,26 @@
 import { overrideIsActive, type ProOverrideSnapshot } from '@/lib/pro-grant';
+import { recordingLimit } from '../../shared/parse/quota';
+
+/**
+ * Limit to show for the current plan.
+ * A failed free-limit read keeps the number already on screen.
+ * Leaving Pro without a fresh free cap falls back to the default monthly cap,
+ * not the Pro fair-use number.
+ */
+export function nextPlanLimit(input: {
+  isPro: boolean;
+  wasPro: boolean;
+  currentLimit: number;
+  /** Undefined when the free-limits read failed. Null means no monthly cap. */
+  freeMonthLimit: number | null | undefined;
+}): number {
+  if (input.isPro) return recordingLimit(true);
+  if (input.freeMonthLimit === undefined) {
+    return input.wasPro ? recordingLimit(false) : input.currentLimit;
+  }
+  if (input.freeMonthLimit == null) return Number.MAX_SAFE_INTEGER;
+  return input.freeMonthLimit;
+}
 
 /** Keep a known gift when the profile read fails. An explicit inactive result clears it. */
 export function nextGiftUntil(previous: string | null, snap: ProOverrideSnapshot): string | null {
