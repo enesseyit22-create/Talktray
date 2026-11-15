@@ -265,7 +265,7 @@ export const ptBR: Dictionary = {
     trialCta: 'Teste {days} dias grátis',
     trialTermsMonthly: '{days} dias grátis, depois {price} por mês. Cancele antes do fim do teste e nada é cobrado.',
     trialTermsYearly: '{days} dias grátis, depois {price} por ano. Cancele antes do fim do teste e nada é cobrado.',
-    legal: 'A assinatura renova até você cancelar na App Store ou no Google Play. O Pro inclui um limite de uso justo de 300 gravações.',
+    legal: 'A assinatura renova até você cancelar na App Store ou no Google Play. O Pro inclui um limite de uso justo de 1000 gravações.',
     current: 'Você está no Pro',
     demoPurchase: 'Simular o Pro na demo',
     unavailable: 'As compras funcionam numa compilação de desenvolvimento com as chaves do RevenueCat. Estes são os planos a criar.',
@@ -302,7 +302,7 @@ export const ptBR: Dictionary = {
   errors: {
     generic: 'Algo deu errado. Tente de novo.',
     quota: 'Você já usou as gravações grátis deste mês.',
-    quotaPro: 'Você atingiu o limite de uso justo de 300 gravações deste mês. Ele renova no próximo mês.',
+    quotaPro: 'Você atingiu o limite de uso justo de 1000 gravações deste mês. Ele renova no próximo mês.',
     network: 'Não foi possível alcançar o servidor.',
     saveFailed: 'Não foi possível salvar a alteração. Verifique sua conexão e tente de novo.',
     process: 'Não foi possível organizar esta gravação. Tente de novo.',

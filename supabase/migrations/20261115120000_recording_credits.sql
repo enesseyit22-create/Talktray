@@ -50,7 +50,7 @@ $$;
 
 -- Atomically checks the monthly cap and takes one credit for the recording.
 -- Free: first 3 credits ever are always allowed, then free_limits.free_recordings_per_month
--- (25 when unset, no cap when null). Pro: 300 a month fair use.
+-- (25 when unset, no cap when null). Pro: 1000 a month fair use.
 -- A recording that already holds a credit is refused with reason 'repeat', so one credit
 -- cannot be reused by pointing the same recording at new audio.
 create or replace function public.reserve_recording_credit(
@@ -90,7 +90,7 @@ begin
   where user_id = p_user_id and created_at >= period_start;
 
   if p_is_pro then
-    plan_limit := 300;
+    plan_limit := 1000;
   else
     select value into limits from public.app_settings where key = 'free_limits';
     if limits is null or not (limits ? 'free_recordings_per_month') then
@@ -170,7 +170,7 @@ begin
     'completed_month', month_count,
     'trial_limit', 3,
     'free_month_limit', free_limit,
-    'pro_month_limit', 300
+    'pro_month_limit', 1000
   );
 end;
 $$;

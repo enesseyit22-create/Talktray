@@ -265,7 +265,7 @@ export const tr: Dictionary = {
     trialCta: '{days} gün ücretsiz dene',
     trialTermsMonthly: '{days} gün ücretsiz, sonra aylık {price}. Deneme bitmeden iptal edersen ücret alınmaz.',
     trialTermsYearly: '{days} gün ücretsiz, sonra yıllık {price}. Deneme bitmeden iptal edersen ücret alınmaz.',
-    legal: 'Abonelik, App Store veya Google Play’den iptal edene kadar yenilenir. Pro’da ayda 300 kayıtlık adil kullanım sınırı vardır.',
+    legal: 'Abonelik, App Store veya Google Play’den iptal edene kadar yenilenir. Pro’da ayda 1000 kayıtlık adil kullanım sınırı vardır.',
     current: 'Pro’dasın',
     demoPurchase: 'Demoda Pro’yu dene',
     unavailable: 'Satın alma, RevenueCat anahtarları olan bir geliştirme derlemesinde çalışır. Aşağıdaki planlar oluşturulacak olanlar.',
@@ -302,7 +302,7 @@ export const tr: Dictionary = {
   errors: {
     generic: 'Bir şey ters gitti. Yeniden dene.',
     quota: 'Bu ayki ücretsiz kayıtların bitti.',
-    quotaPro: 'Bu ayki 300 kayıtlık adil kullanım sınırına ulaştın. Gelecek ay yenilenir.',
+    quotaPro: 'Bu ayki 1000 kayıtlık adil kullanım sınırına ulaştın. Gelecek ay yenilenir.',
     network: 'Sunucuya ulaşılamadı.',
     saveFailed: 'Bu değişiklik kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
     process: 'Bu kayıt ayıklanamadı. Yeniden dene.',

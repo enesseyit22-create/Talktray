@@ -265,7 +265,7 @@ export const ja: Dictionary = {
     trialCta: '{days}日間無料で試す',
     trialTermsMonthly: '{days}日間無料、その後は月額{price}。無料期間中に解約すれば料金はかかりません。',
     trialTermsYearly: '{days}日間無料、その後は年額{price}。無料期間中に解約すれば料金はかかりません。',
-    legal: 'サブスクリプションは、App StoreまたはGoogle Playで解約するまで更新されます。Proには月300件のフェアユース上限があります。',
+    legal: 'サブスクリプションは、App StoreまたはGoogle Playで解約するまで更新されます。Proには月1000件のフェアユース上限があります。',
     current: 'Proを利用中です',
     demoPurchase: 'デモでProを試す',
     unavailable: '購入はRevenueCatのキーが入った開発ビルドで動きます。下のプランをストアに作成してください。',
@@ -302,7 +302,7 @@ export const ja: Dictionary = {
   errors: {
     generic: 'うまくいきませんでした。もう一度どうぞ。',
     quota: '今月の無料録音を使い切りました。',
-    quotaPro: '今月のフェアユース上限（300件）に達しました。来月リセットされます。',
+    quotaPro: '今月のフェアユース上限（1000件）に達しました。来月リセットされます。',
     network: 'サーバーに届きませんでした。',
     saveFailed: '変更を保存できませんでした。接続を確認してもう一度お試しください。',
     process: 'この録音を仕分けられませんでした。もう一度どうぞ。',

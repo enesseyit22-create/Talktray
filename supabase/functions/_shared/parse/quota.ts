@@ -1,5 +1,5 @@
 export const FREE_MONTHLY_RECORDINGS = 25;
-export const PRO_FAIR_USE_RECORDINGS = 300;
+export const PRO_FAIR_USE_RECORDINGS = 1000;
 /** Longest single Pro recording. Longer takes stop and are sent automatically. */
 export const PRO_MAX_SECONDS_PER_RECORDING = 600;
 export const MONTHLY_PRICE = '$7.99';

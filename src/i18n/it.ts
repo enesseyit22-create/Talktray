@@ -265,7 +265,7 @@ export const it: Dictionary = {
     trialCta: 'Prova {days} giorni gratis',
     trialTermsMonthly: '{days} giorni gratis, poi {price} al mese. Se annulli prima della fine della prova non paghi nulla.',
     trialTermsYearly: '{days} giorni gratis, poi {price} all’anno. Se annulli prima della fine della prova non paghi nulla.',
-    legal: 'L’abbonamento si rinnova finché non lo annulli sull’App Store o su Google Play. Pro include un tetto di uso equo di 300 registrazioni.',
+    legal: 'L’abbonamento si rinnova finché non lo annulli sull’App Store o su Google Play. Pro include un tetto di uso equo di 1000 registrazioni.',
     current: 'Sei su Pro',
     demoPurchase: 'Simula Pro nella demo',
     unavailable: 'Gli acquisti funzionano in una build di sviluppo con le chiavi RevenueCat. Questi sono i piani da creare.',
@@ -302,7 +302,7 @@ export const it: Dictionary = {
   errors: {
     generic: 'Qualcosa è andato storto. Riprova.',
     quota: 'Hai usato le registrazioni gratuite di questo mese.',
-    quotaPro: 'Hai raggiunto il limite di uso corretto di 300 registrazioni di questo mese. Si rinnova il mese prossimo.',
+    quotaPro: 'Hai raggiunto il limite di uso corretto di 1000 registrazioni di questo mese. Si rinnova il mese prossimo.',
     network: 'Il server non ha risposto.',
     saveFailed: 'Impossibile salvare la modifica. Controlla la connessione e riprova.',
     process: 'Questa registrazione non si è potuta sistemare. Riprova.',

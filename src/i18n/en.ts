@@ -263,7 +263,7 @@ export const en = {
     trialCta: 'Try {days} days free',
     trialTermsMonthly: '{days} days free, then {price} a month. Cancel before the trial ends and you won’t be charged.',
     trialTermsYearly: '{days} days free, then {price} a year. Cancel before the trial ends and you won’t be charged.',
-    legal: 'Payment is charged to your Apple ID or Google Play account. The plan renews automatically unless you cancel at least 24 hours before the period ends. Pro includes a 300 recording fair-use cap.',
+    legal: 'Payment is charged to your Apple ID or Google Play account. The plan renews automatically unless you cancel at least 24 hours before the period ends. Pro includes a 1000 recording fair-use cap.',
     billedMonthly: 'Monthly. Auto-renews until you cancel.',
     billedYearly: 'Yearly. Auto-renews until you cancel.',
     terms: 'Terms of Use',
@@ -300,7 +300,7 @@ export const en = {
   errors: {
     generic: 'Something went wrong. Try again.',
     quota: 'You’ve used this month’s free recordings.',
-    quotaPro: 'You reached this month’s fair-use limit of 300 recordings. It resets next month.',
+    quotaPro: 'You reached this month’s fair-use limit of 1000 recordings. It resets next month.',
     network: 'The server could not be reached.',
     saveFailed: 'Couldn’t save that change. Check your connection and try again.',
     process: 'This recording could not be sorted. Try again.',

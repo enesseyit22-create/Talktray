@@ -265,7 +265,7 @@ export const fr: Dictionary = {
     trialCta: 'Essaie {days} jours gratuits',
     trialTermsMonthly: '{days} jours offerts, puis {price} par mois. Annule avant la fin de l’essai et tu ne paies rien.',
     trialTermsYearly: '{days} jours offerts, puis {price} par an. Annule avant la fin de l’essai et tu ne paies rien.',
-    legal: 'L’abonnement se renouvelle jusqu’à annulation dans l’App Store ou Google Play. Pro inclut un plafond d’usage raisonnable de 300 enregistrements.',
+    legal: 'L’abonnement se renouvelle jusqu’à annulation dans l’App Store ou Google Play. Pro inclut un plafond d’usage raisonnable de 1000 enregistrements.',
     current: 'Tu es sur Pro',
     demoPurchase: 'Simuler Pro dans la démo',
     unavailable: 'Les achats fonctionnent dans un build de développement avec les clés RevenueCat. Voici les offres à créer.',
@@ -302,7 +302,7 @@ export const fr: Dictionary = {
   errors: {
     generic: 'Quelque chose a coincé. Réessaie.',
     quota: 'Tu as utilisé les enregistrements gratuits de ce mois.',
-    quotaPro: 'Tu as atteint la limite d’usage raisonnable de 300 enregistrements ce mois-ci. Elle se renouvelle le mois prochain.',
+    quotaPro: 'Tu as atteint la limite d’usage raisonnable de 1000 enregistrements ce mois-ci. Elle se renouvelle le mois prochain.',
     network: 'Le serveur n’a pas répondu.',
     saveFailed: 'Impossible d’enregistrer cette modification. Vérifie ta connexion et réessaie.',
     process: 'Cet enregistrement n’a pas pu être trié. Réessaie.',

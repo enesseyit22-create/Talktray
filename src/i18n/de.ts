@@ -265,7 +265,7 @@ export const de: Dictionary = {
     trialCta: '{days} Tage gratis testen',
     trialTermsMonthly: '{days} Tage gratis, danach {price} pro Monat. Kündigst du vor Ende des Tests, zahlst du nichts.',
     trialTermsYearly: '{days} Tage gratis, danach {price} pro Jahr. Kündigst du vor Ende des Tests, zahlst du nichts.',
-    legal: 'Das Abo verlängert sich, bis du es im App Store oder bei Google Play kündigst. Pro enthält eine Fair-Use-Grenze von 300 Aufnahmen.',
+    legal: 'Das Abo verlängert sich, bis du es im App Store oder bei Google Play kündigst. Pro enthält eine Fair-Use-Grenze von 1000 Aufnahmen.',
     current: 'Du bist bei Pro',
     demoPurchase: 'Pro in der Demo simulieren',
     unavailable: 'Käufe laufen in einem Development-Build mit RevenueCat-Schlüsseln. Das sind die Tarife, die angelegt werden.',
@@ -302,7 +302,7 @@ export const de: Dictionary = {
   errors: {
     generic: 'Da ist etwas schiefgelaufen. Versuch es noch einmal.',
     quota: 'Die kostenlosen Aufnahmen dieses Monats sind aufgebraucht.',
-    quotaPro: 'Du hast das Fair-Use-Limit von 300 Aufnahmen für diesen Monat erreicht. Es wird nächsten Monat zurückgesetzt.',
+    quotaPro: 'Du hast das Fair-Use-Limit von 1000 Aufnahmen für diesen Monat erreicht. Es wird nächsten Monat zurückgesetzt.',
     network: 'Der Server war nicht erreichbar.',
     saveFailed: 'Die Änderung konnte nicht gespeichert werden. Prüfe deine Verbindung und versuche es erneut.',
     process: 'Diese Aufnahme konnte nicht sortiert werden. Versuch es noch einmal.',

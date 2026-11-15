@@ -265,7 +265,7 @@ export const ko: Dictionary = {
     trialCta: '{days}일 무료 체험',
     trialTermsMonthly: '{days}일 무료, 이후 월 {price}. 체험 기간이 끝나기 전에 취소하면 요금이 청구되지 않아요.',
     trialTermsYearly: '{days}일 무료, 이후 연 {price}. 체험 기간이 끝나기 전에 취소하면 요금이 청구되지 않아요.',
-    legal: '구독은 App Store 또는 Google Play에서 취소할 때까지 갱신됩니다. Pro에는 월 300건의 공정 사용 한도가 있습니다.',
+    legal: '구독은 App Store 또는 Google Play에서 취소할 때까지 갱신됩니다. Pro에는 월 1000건의 공정 사용 한도가 있습니다.',
     current: 'Pro를 이용 중입니다',
     demoPurchase: '데모에서 Pro 체험',
     unavailable: '구매는 RevenueCat 키가 있는 개발 빌드에서 동작합니다. 아래 요금제를 스토어에 만드세요.',
@@ -302,7 +302,7 @@ export const ko: Dictionary = {
   errors: {
     generic: '문제가 생겼습니다. 다시 시도하세요.',
     quota: '이번 달 무료 녹음을 모두 사용했습니다.',
-    quotaPro: '이번 달 공정 사용 한도인 300개 녹음에 도달했어요. 다음 달에 초기화돼요.',
+    quotaPro: '이번 달 공정 사용 한도인 1000개 녹음에 도달했어요. 다음 달에 초기화돼요.',
     network: '서버에 연결하지 못했습니다.',
     saveFailed: '변경 사항을 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
     process: '이 녹음을 정리하지 못했습니다. 다시 시도하세요.',

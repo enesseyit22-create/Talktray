@@ -28,11 +28,11 @@ describe('normalizeExtraction', () => {
 });
 
 describe('quota', () => {
-  it('enforces 25 free recordings and a 300 pro fair-use cap', () => {
+  it('enforces 25 free recordings and a 1000 pro fair-use cap', () => {
     expect(evaluateQuota(24, false).allowed).toBe(true);
     expect(evaluateQuota(25, false)).toMatchObject({ allowed: false, limit: 25, remaining: 0 });
     expect(evaluateQuota(25, true).allowed).toBe(true);
-    expect(evaluateQuota(300, true)).toMatchObject({ allowed: false, limit: 300, remaining: 0 });
+    expect(evaluateQuota(1000, true)).toMatchObject({ allowed: false, limit: 1000, remaining: 0 });
   });
 
   it('lets a new free user finish three full recordings before the paywall', () => {

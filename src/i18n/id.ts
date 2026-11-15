@@ -265,7 +265,7 @@ export const id: Dictionary = {
     trialCta: 'Coba gratis {days} hari',
     trialTermsMonthly: 'Gratis {days} hari, lalu {price} per bulan. Batalkan sebelum masa coba berakhir agar tidak ditagih.',
     trialTermsYearly: 'Gratis {days} hari, lalu {price} per tahun. Batalkan sebelum masa coba berakhir agar tidak ditagih.',
-    legal: 'Langganan diperpanjang sampai kamu membatalkannya di App Store atau Google Play. Pro mencakup batas penggunaan wajar 300 rekaman.',
+    legal: 'Langganan diperpanjang sampai kamu membatalkannya di App Store atau Google Play. Pro mencakup batas penggunaan wajar 1000 rekaman.',
     current: 'Kamu sedang di Pro',
     demoPurchase: 'Simulasikan Pro di demo',
     unavailable: 'Pembelian berjalan di build pengembangan dengan kunci RevenueCat. Paket di bawah ini yang perlu dibuat.',
@@ -302,7 +302,7 @@ export const id: Dictionary = {
   errors: {
     generic: 'Ada yang tidak beres. Coba lagi.',
     quota: 'Rekaman gratis bulan ini sudah habis.',
-    quotaPro: 'Kamu sudah mencapai batas pemakaian wajar 300 rekaman bulan ini. Batas direset bulan depan.',
+    quotaPro: 'Kamu sudah mencapai batas pemakaian wajar 1000 rekaman bulan ini. Batas direset bulan depan.',
     network: 'Server tidak dapat dihubungi.',
     saveFailed: 'Perubahan tidak tersimpan. Periksa koneksi lalu coba lagi.',
     process: 'Rekaman ini tidak bisa dirapikan. Coba lagi.',
