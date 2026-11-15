@@ -230,6 +230,7 @@ export const ko: Dictionary = {
     monthly: '월간',
     yearly: '연간',
     best: '가장 알찬 선택',
+    save: '{pct}% 할인',
     perMonth: '{price}/월',
     equiv: '약 {price}/월',
     cta: '계속',

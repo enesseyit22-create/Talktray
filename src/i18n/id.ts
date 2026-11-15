@@ -230,6 +230,7 @@ export const id: Dictionary = {
     monthly: 'Bulanan',
     yearly: 'Tahunan',
     best: 'Paling hemat',
+    save: 'Hemat {pct}%',
     perMonth: '{price}/bln',
     equiv: 'Sekitar {price}/bulan',
     cta: 'Lanjut',

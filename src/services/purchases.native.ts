@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import Purchases, { LOG_LEVEL, PACKAGE_TYPE, PURCHASES_ERROR_CODE } from 'react-native-purchases';
 
-import { ENTITLEMENT_ID, MONTHLY_PRICE, YEARLY_PRICE } from '../../shared/parse/quota';
+import { ENTITLEMENT_ID } from '../../shared/parse/quota';
 import { priceLabel, yearlyPerMonthLabel } from '@/lib/store-price';
 import {
   fallbackOffers,
@@ -53,7 +53,7 @@ export async function loadStoreOffers(): Promise<{
   isPro: boolean;
 }> {
   const ready = await configurePurchases();
-  if (!ready) return { available: false, offers: fallbackOffers, isPro: false };
+  if (!ready) return { available: false, offers: fallbackOffers(), isPro: false };
   try {
     const offerings = await Purchases.getOfferings();
     const offering = offerings.all[REVENUECAT_OFFERING_ID] ?? offerings.current;
@@ -64,23 +64,30 @@ export async function loadStoreOffers(): Promise<{
     const yearly =
       packages.find((pkg) => pkg.identifier === REVENUECAT_ANNUAL_PACKAGE) ??
       packages.find((pkg) => pkg.packageType === PACKAGE_TYPE.ANNUAL);
+    const local = fallbackOffers();
+    const [localMonthly, localYearly] = [local[0]!, local[1]!];
+    // Mixing a store price with a local fallback would compare two currencies, so the
+    // fallback amount is only used when the store returned neither product.
+    const storeAmounts = Boolean(monthly?.product || yearly?.product);
     const offers: StoreOffer[] = [
       {
         id: 'monthly',
-        price: priceLabel(monthly?.product, MONTHLY_PRICE),
+        price: priceLabel(monthly?.product, localMonthly.price),
         title: 'Monthly',
         perMonth: null,
+        amount: storeAmounts ? (monthly?.product.price ?? null) : localMonthly.amount,
       },
       {
         id: 'yearly',
-        price: priceLabel(yearly?.product, YEARLY_PRICE),
+        price: priceLabel(yearly?.product, localYearly.price),
         title: 'Yearly',
-        perMonth: yearlyPerMonthLabel(yearly?.product),
+        perMonth: yearly?.product ? yearlyPerMonthLabel(yearly.product) : localYearly.perMonth,
+        amount: storeAmounts ? (yearly?.product.price ?? null) : localYearly.amount,
       },
     ];
     return { available: true, offers, isPro: await readPro() };
   } catch {
-    return { available: false, offers: fallbackOffers, isPro: false };
+    return { available: false, offers: fallbackOffers(), isPro: false };
   }
 }
 

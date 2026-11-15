@@ -230,6 +230,7 @@ export const ptBR: Dictionary = {
     monthly: 'Mensal',
     yearly: 'Anual',
     best: 'Melhor valor',
+    save: 'Economize {pct}%',
     perMonth: '{price}/mês',
     equiv: 'Cerca de {price}/mês',
     cta: 'Continuar',

@@ -1,4 +1,7 @@
-import { ENTITLEMENT_ID, MONTHLY_PRICE, YEARLY_PRICE } from '../../shared/parse/quota';
+import { getLocales } from 'expo-localization';
+
+import { ENTITLEMENT_ID } from '../../shared/parse/quota';
+import { formatMoney, regionalPrice } from '@/lib/regional-price';
 
 /** Public SDK keys. Used when EXPO_PUBLIC_REVENUECAT_* is unset. */
 export const REVENUECAT_IOS_SDK_KEY = 'appl_RgzWQMZehRfiafWyReOAOBMlTgD';
@@ -34,9 +37,32 @@ export type StoreOffer = {
   title: string;
   /** Localized monthly equivalent for a yearly plan. Null when the store did not provide one. */
   perMonth: string | null;
+  /** Numeric price in the offer's currency, used for the yearly saving badge. */
+  amount: number | null;
 };
 
-export const fallbackOffers: StoreOffer[] = [
-  { id: 'monthly', price: MONTHLY_PRICE, title: 'Monthly', perMonth: null },
-  { id: 'yearly', price: YEARLY_PRICE, title: 'Yearly', perMonth: null },
-];
+/** The device region and language, e.g. TR / tr-TR. */
+export function deviceRegion(): { regionCode: string | null; languageTag: string | null } {
+  try {
+    const first = getLocales()[0];
+    return { regionCode: first?.regionCode ?? null, languageTag: first?.languageTag ?? null };
+  } catch {
+    return { regionCode: null, languageTag: null };
+  }
+}
+
+/** Offers in the device region's currency, shown until the store answers with its own prices. */
+export function fallbackOffers(region = deviceRegion()): StoreOffer[] {
+  const local = regionalPrice(region.regionCode);
+  const money = (amount: number) => formatMoney(amount, local.currency, region.languageTag);
+  return [
+    { id: 'monthly', price: money(local.monthly), title: 'Monthly', perMonth: null, amount: local.monthly },
+    {
+      id: 'yearly',
+      price: money(local.yearly),
+      title: 'Yearly',
+      perMonth: money(Math.round((local.yearly / 12) * 100) / 100),
+      amount: local.yearly,
+    },
+  ];
+}

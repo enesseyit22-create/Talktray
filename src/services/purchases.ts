@@ -12,7 +12,7 @@ export async function loadStoreOffers(): Promise<{
   offers: StoreOffer[];
   isPro: boolean;
 }> {
-  return { available: false, offers: fallbackOffers, isPro: false };
+  return { available: false, offers: fallbackOffers(), isPro: false };
 }
 
 export async function purchaseOffer(

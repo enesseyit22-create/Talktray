@@ -228,6 +228,7 @@ export const en = {
     monthly: 'Monthly',
     yearly: 'Yearly',
     best: 'Best value',
+    save: 'Save {pct}%',
     perMonth: '{price}/mo',
     equiv: 'About {price}/month',
     cta: 'Continue',

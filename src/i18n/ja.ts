@@ -230,6 +230,7 @@ export const ja: Dictionary = {
     monthly: '月額',
     yearly: '年額',
     best: 'いちばんお得',
+    save: '{pct}%お得',
     perMonth: '{price}/月',
     equiv: 'およそ {price}/月',
     cta: '続ける',

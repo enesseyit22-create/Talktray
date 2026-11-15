@@ -230,6 +230,7 @@ export const tr: Dictionary = {
     monthly: 'Aylık',
     yearly: 'Yıllık',
     best: 'En iyi değer',
+    save: '%{pct} tasarruf',
     perMonth: '{price}/ay',
     equiv: 'Yaklaşık {price}/ay',
     cta: 'Devam',

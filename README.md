@@ -6,6 +6,8 @@ The interface is a soft glass layout: pastel blobs, frosted cards, a raised reco
 
 Free accounts get **25 recordings per month**, enforced on the server. Pro is **$7.99/month** or **$49.99/year** (entitlement `pro`) with a **300 recording** fair-use cap.
 
+The paywall shows the App Store / Google Play price in the buyer's own currency. Until the store answers (web, demo, offline) it shows the regional price from `src/lib/regional-price.ts` (for example ₺199,99/ay and ₺1.299,99/yıl in Turkey). Keep that table equal to the per-country prices set in App Store Connect and Google Play.
+
 ## Run it here
 
 ```bash

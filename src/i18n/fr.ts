@@ -230,6 +230,7 @@ export const fr: Dictionary = {
     monthly: 'Mensuel',
     yearly: 'Annuel',
     best: 'Meilleur prix',
+    save: '−{pct} %',
     perMonth: '{price}/mois',
     equiv: 'Environ {price}/mois',
     cta: 'Continuer',

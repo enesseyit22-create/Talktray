@@ -10,6 +10,7 @@ import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal';
 import { sheetTopInset } from '@/lib/layout';
+import { yearlySavingsPercent } from '@/lib/regional-price';
 import { loadStoreOffers, type StoreOffer } from '@/services/purchases';
 import { fallbackOffers } from '@/services/billing-shared';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -19,7 +20,7 @@ export function PaywallScreen() {
   const { colors } = useTheme();
   const app = useApp();
   const insets = useSafeAreaInsets();
-  const [offers, setOffers] = useState<StoreOffer[]>(fallbackOffers);
+  const [offers, setOffers] = useState<StoreOffer[]>(() => fallbackOffers());
   const [available, setAvailable] = useState(false);
   const [plan, setPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [message, setMessage] = useState<string | null>(null);
@@ -32,6 +33,10 @@ export function PaywallScreen() {
     });
   }, []);
 
+  const savings = yearlySavingsPercent(
+    offers.find((offer) => offer.id === 'monthly')?.amount,
+    offers.find((offer) => offer.id === 'yearly')?.amount,
+  );
   const selected = offers.find((offer) => offer.id === plan) ?? offers[1] ?? offers[0];
   const buy = async () => {
     setLoading(true);
@@ -96,7 +101,7 @@ export function PaywallScreen() {
                 >
                   {offer.id === 'yearly' ? (
                     <AppText size={12} weight="bold" color={colors.primary}>
-                      {t('paywall.best')}
+                      {savings ? t('paywall.save', { pct: savings }) : t('paywall.best')}
                     </AppText>
                   ) : (
                     <AppText size={12}> </AppText>
