@@ -251,7 +251,7 @@ export const tr: Dictionary = {
     demoPurchase: 'Demoda Pro’yu dene',
     unavailable: 'Satın alma, RevenueCat anahtarları olan bir geliştirme derlemesinde çalışır. Aşağıdaki planlar oluşturulacak olanlar.',
     f1: 'Adil kullanım sınırlı, limitsiz hissi veren kayıt',
-    f2: 'Aynı düşüncede herhangi bir dil',
+    f2: '10 dakikaya kadar uzun kayıtlar',
     f3: 'Kayıtlarını istediğin zaman yeniden dinle',
     f4: 'Reklam yok. Yalnızca abonelik.',
     billedMonthly: 'Aylık. İptal edene kadar otomatik yenilenir.',

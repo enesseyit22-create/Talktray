@@ -251,7 +251,7 @@ export const it: Dictionary = {
     demoPurchase: 'Simula Pro nella demo',
     unavailable: 'Gli acquisti funzionano in una build di sviluppo con le chiavi RevenueCat. Questi sono i piani da creare.',
     f1: 'Registrazioni che sembrano illimitate, con un tetto di uso equo',
-    f2: 'Qualsiasi lingua nello stesso pensiero',
+    f2: 'Registrazioni fino a 10 minuti',
     f3: 'Riascolta le tue registrazioni quando vuoi',
     f4: 'Niente pubblicità. Solo abbonamento.',
     billedMonthly: 'Mensile. Si rinnova finché non annulli.',

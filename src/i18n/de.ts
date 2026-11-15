@@ -251,7 +251,7 @@ export const de: Dictionary = {
     demoPurchase: 'Pro in der Demo simulieren',
     unavailable: 'Käufe laufen in einem Development-Build mit RevenueCat-Schlüsseln. Das sind die Tarife, die angelegt werden.',
     f1: 'Aufnahmen, die sich unbegrenzt anfühlen, mit Fair-Use-Grenze',
-    f2: 'Jede Sprache im selben Gedanken',
+    f2: 'Aufnahmen bis zu 10 Minuten',
     f3: 'Deine Aufnahmen jederzeit erneut anhören',
     f4: 'Keine Werbung. Nur das Abo.',
     billedMonthly: 'Monatlich. Verlängert sich, bis du kündigst.',

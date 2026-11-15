@@ -6,6 +6,7 @@ import {
   localTimestamp,
   mergeSpokenOffsets,
   normalizeExtraction,
+  PRO_MAX_SECONDS_PER_RECORDING,
   RECORDINGS_BEFORE_PAYWALL,
   safeTimeZone,
   zonedParts,
@@ -63,6 +64,10 @@ Deno.serve(async (req) => {
     const serverNow = new Date();
     const isPro = await subscriberIsPro(userId);
 
+    // A little slack over the app's own auto-stop for timer drift.
+    if (isPro && Number(recording.duration_ms ?? 0) > (PRO_MAX_SECONDS_PER_RECORDING + 15) * 1000) {
+      return await refuse(admin, recordingId, 'seconds');
+    }
     if (!isPro) {
       const limits = await readFreeLimits(admin);
       const reason = await freeLimitReason(admin, userId, Number(recording.duration_ms ?? 0), serverNow, timeZone, limits);

@@ -251,7 +251,7 @@ export const ptBR: Dictionary = {
     demoPurchase: 'Simular o Pro na demo',
     unavailable: 'As compras funcionam numa compilação de desenvolvimento com as chaves do RevenueCat. Estes são os planos a criar.',
     f1: 'Gravações com cara de ilimitadas, com um teto de uso justo',
-    f2: 'Qualquer idioma no mesmo pensamento',
+    f2: 'Gravações de até 10 minutos',
     f3: 'Ouça suas gravações de novo quando quiser',
     f4: 'Sem anúncios. Só assinatura.',
     billedMonthly: 'Mensal. Renova sozinho até você cancelar.',

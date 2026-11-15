@@ -11,7 +11,7 @@ import { AppText, Field, GlassCard, PrimaryButton } from '@/components/ui/primit
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { errorText } from '@/lib/errors';
-import { formatDuration } from '@/lib/format';
+import { recordingClock } from '@/lib/format';
 import { consumeAutoRecord } from '@/lib/record-signal';
 import { useTheme } from '@/theme/ThemeProvider';
 import { shouldPresentPaywall } from '../../shared/parse/quota';
@@ -93,7 +93,7 @@ export function RecordScreen() {
             size={orbSize}
             recording={capture.isRecording}
             accessibilityLabel={t('tabs.record')}
-            label={capture.isRecording ? formatDuration(capture.durationMillis) : undefined}
+            label={capture.isRecording ? recordingClock(capture.durationMillis, capture.maxSeconds) : undefined}
             onPress={() => void capture.toggle()}
             onHoldStart={() => void capture.start()}
             onHoldEnd={() => void capture.stopAndSubmit()}

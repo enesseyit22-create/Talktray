@@ -251,7 +251,7 @@ export const es: Dictionary = {
     demoPurchase: 'Simular Pro en la demo',
     unavailable: 'Las compras funcionan en una compilación de desarrollo con las claves de RevenueCat. Estos son los planes que hay que crear.',
     f1: 'Grabaciones que se sienten ilimitadas, con un tope de uso justo',
-    f2: 'Cualquier idioma en el mismo pensamiento',
+    f2: 'Grabaciones de hasta 10 minutos',
     f3: 'Vuelve a escuchar tus grabaciones cuando quieras',
     f4: 'Sin anuncios. Solo suscripción.',
     billedMonthly: 'Mensual. Se renueva solo hasta que lo canceles.',

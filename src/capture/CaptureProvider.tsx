@@ -13,11 +13,13 @@ import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { errorText } from '@/lib/errors';
 import { loadFreeLimits, type FreeLimits } from '@/lib/free-limits';
-import { RECORDINGS_BEFORE_PAYWALL, shouldPresentPaywall } from '../../shared/parse/quota';
+import { PRO_MAX_SECONDS_PER_RECORDING, RECORDINGS_BEFORE_PAYWALL, shouldPresentPaywall } from '../../shared/parse/quota';
 
 type CaptureValue = {
   isRecording: boolean;
   durationMillis: number;
+  /** Longest allowed take in seconds for this account, or null for no limit. */
+  maxSeconds: number | null;
   busy: boolean;
   error: string | null;
   start: () => Promise<void>;
@@ -53,8 +55,11 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
   const capping = useRef(false);
 
   const completedEver = recordings.filter((recording) => recording.status !== 'failed').length;
-  const maxSeconds =
-    usage.isPro || completedEver < RECORDINGS_BEFORE_PAYWALL ? null : limits?.free_max_seconds_per_recording ?? null;
+  const maxSeconds = usage.isPro
+    ? PRO_MAX_SECONDS_PER_RECORDING
+    : completedEver < RECORDINGS_BEFORE_PAYWALL
+      ? null
+      : limits?.free_max_seconds_per_recording ?? null;
 
   useEffect(() => {
     if (usage.isPro) return;
@@ -162,13 +167,14 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
     () => ({
       isRecording: state.isRecording,
       durationMillis: state.durationMillis,
+      maxSeconds,
       busy,
       error,
       start,
       stopAndSubmit,
       toggle,
     }),
-    [busy, error, start, state.durationMillis, state.isRecording, stopAndSubmit, toggle],
+    [busy, error, maxSeconds, start, state.durationMillis, state.isRecording, stopAndSubmit, toggle],
   );
 
   return <CaptureContext.Provider value={value}>{children}</CaptureContext.Provider>;

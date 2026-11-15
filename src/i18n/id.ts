@@ -251,7 +251,7 @@ export const id: Dictionary = {
     demoPurchase: 'Simulasikan Pro di demo',
     unavailable: 'Pembelian berjalan di build pengembangan dengan kunci RevenueCat. Paket di bawah ini yang perlu dibuat.',
     f1: 'Rekaman yang terasa leluasa, dengan batas penggunaan wajar',
-    f2: 'Bahasa apa pun dalam satu pikiran',
+    f2: 'Rekaman hingga 10 menit',
     f3: 'Dengarkan lagi rekamanmu kapan saja',
     f4: 'Tanpa iklan. Hanya langganan.',
     billedMonthly: 'Bulanan. Diperpanjang otomatis sampai kamu membatalkan.',

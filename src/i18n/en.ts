@@ -253,7 +253,7 @@ export const en = {
     demoPurchase: 'Simulate Pro in demo',
     unavailable: 'Purchases run in a development build with RevenueCat keys. The plans below are the ones to create.',
     f1: 'Unlimited-feeling recordings, with a fair-use cap',
-    f2: 'Any language, in the same thought',
+    f2: 'Recordings up to 10 minutes long',
     f3: 'Listen to your recordings again',
     f4: 'No ads. Subscription only.',
     restored: 'Purchases restored',

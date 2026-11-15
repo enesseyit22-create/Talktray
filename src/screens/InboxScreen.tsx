@@ -17,7 +17,7 @@ import { AppText, Chip, EmptyState, GlassCard, PrimaryButton, Sheet } from '@/co
 import { useApp } from '@/data/AppProvider';
 import type { InboxItem } from '@/domain/types';
 import { errorText } from '@/lib/errors';
-import { formatDuration, greetingKey, isOverdue } from '@/lib/format';
+import { greetingKey, isOverdue, recordingClock } from '@/lib/format';
 import { searchItems, searchRecordings } from '@/lib/search';
 import { useNow } from '@/lib/useNow';
 import { useRecordingPlayback } from '@/playback/useRecordingPlayback';
@@ -114,7 +114,7 @@ export function InboxScreen() {
             size={176}
             recording={capture.isRecording}
             accessibilityLabel={t('tabs.record')}
-            label={capture.isRecording ? formatDuration(capture.durationMillis) : capture.busy ? t('record.processing') : undefined}
+            label={capture.isRecording ? recordingClock(capture.durationMillis, capture.maxSeconds) : capture.busy ? t('record.processing') : undefined}
             onPress={() => void capture.toggle()}
             onHoldStart={() => void capture.start()}
             onHoldEnd={() => void capture.stopAndSubmit()}

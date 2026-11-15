@@ -251,7 +251,7 @@ export const fr: Dictionary = {
     demoPurchase: 'Simuler Pro dans la démo',
     unavailable: 'Les achats fonctionnent dans un build de développement avec les clés RevenueCat. Voici les offres à créer.',
     f1: 'Des enregistrements qui semblent illimités, avec un plafond raisonnable',
-    f2: 'N’importe quelle langue dans la même pensée',
+    f2: 'Enregistrements jusqu’à 10 minutes',
     f3: 'Réécoute tes enregistrements quand tu veux',
     f4: 'Pas de pub. Seulement l’abonnement.',
     billedMonthly: 'Mensuel. Se renouvelle jusqu’à annulation.',

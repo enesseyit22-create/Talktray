@@ -251,7 +251,7 @@ export const ko: Dictionary = {
     demoPurchase: '데모에서 Pro 체험',
     unavailable: '구매는 RevenueCat 키가 있는 개발 빌드에서 동작합니다. 아래 요금제를 스토어에 만드세요.',
     f1: '공정 사용 한도 안에서, 넉넉하게 느껴지는 녹음',
-    f2: '한 생각 안에 어떤 언어든',
+    f2: '최대 10분 녹음',
     f3: '녹음을 언제든 다시 듣기',
     f4: '광고 없음. 구독만.',
     billedMonthly: '월간. 취소할 때까지 자동 갱신됩니다.',
