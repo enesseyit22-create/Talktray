@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react-native';
+import { Bell, ChevronRight, Users } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -163,6 +163,17 @@ export function InboxScreen() {
               <Chip key={key} label={t(`filters.${key}`)} active={filter === key} onPress={() => setFilter(key)} />
             ))}
           </ScrollView>
+          {filter === 'shopping' ? (
+            <GlassCard onPress={() => router.push('/lists')} padding={14}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Users color={colors.primary} size={18} />
+                <AppText weight="semibold" style={{ flex: 1 }}>
+                  {t('shared.open')}
+                </AppText>
+                <ChevronRight color={colors.soft} size={16} />
+              </View>
+            </GlassCard>
+          ) : null}
           {showOverdueSection ? (
             <View style={{ gap: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>

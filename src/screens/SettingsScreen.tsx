@@ -412,6 +412,9 @@ export function SettingsScreen() {
           <Row label={t('settings.openSettings')} onPress={() => void Linking.openSettings()} />
         </Section>
 
+        <Section title={t('shared.title')}>
+          <Row label={t('shared.open')} onPress={() => router.push('/lists')} />
+        </Section>
         <Section title={t('settings.privacy')}>
           <Row label={t('paywall.privacy')} onPress={() => void Linking.openURL(PRIVACY_URL)} />
           <Row label={t('paywall.terms')} onPress={() => void Linking.openURL(TERMS_URL)} />
