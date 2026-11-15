@@ -143,6 +143,7 @@ declare
   month_count integer;
   limits jsonb;
   free_limit integer;
+  gift_until timestamptz;
 begin
   if uid is null then
     raise exception 'unauthenticated' using errcode = '42501';
@@ -165,12 +166,17 @@ begin
     free_limit := (limits ->> 'free_recordings_per_month')::integer;
   end if;
 
+  -- Admin-gifted Pro (profiles.pro_override_until). The app reads these two fields.
+  select pro_override_until into gift_until from public.profiles where id = uid;
+
   return jsonb_build_object(
     'completed_ever', ever_count,
     'completed_month', month_count,
     'trial_limit', 3,
     'free_month_limit', free_limit,
-    'pro_month_limit', 1000
+    'pro_month_limit', 1000,
+    'gift_until', gift_until,
+    'gift_active', gift_until is not null and gift_until > now()
   );
 end;
 $$;
