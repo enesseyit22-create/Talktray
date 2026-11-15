@@ -1,5 +1,5 @@
 import { Check, Sparkles } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StatusBar, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,48 +8,98 @@ import { Aurora } from '@/components/Aurora';
 import { AppText, GlassCard, PrimaryButton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
+import { intlLocale } from '@/i18n/locale';
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal';
 import { sheetTopInset } from '@/lib/layout';
-import { yearlySavingsPercent } from '@/lib/regional-price';
+import { yearlySavingsPercent } from '@/lib/store-price';
+import { formatGrantDate, isLifetimeGrant } from '@/lib/pro-grant';
 import { loadStoreOffers, type StoreOffer } from '@/services/purchases';
 import { fallbackOffers } from '@/services/billing-shared';
 import { useTheme } from '@/theme/ThemeProvider';
 
+function paywallMessage(reason: string): string {
+  switch (reason) {
+    case 'cancelled':
+      return 'paywall.cancelled';
+    case 'plans_missing':
+    case 'no_offering':
+      return 'paywall.plansMissing';
+    case 'network':
+      return 'paywall.network';
+    case 'pending':
+      return 'paywall.pending';
+    case 'already_owned':
+      return 'paywall.alreadyOwned';
+    case 'not_allowed':
+      return 'paywall.notAllowed';
+    case 'entitlement_pending':
+      return 'paywall.entitlementPending';
+    case 'restore_empty':
+      return 'paywall.restoreEmpty';
+    case 'ok':
+      return 'paywall.restored';
+    default:
+      return 'paywall.storeError';
+  }
+}
+
 export function PaywallScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { colors } = useTheme();
   const app = useApp();
   const insets = useSafeAreaInsets();
-  const [offers, setOffers] = useState<StoreOffer[]>(() => fallbackOffers());
+  const [offers, setOffers] = useState<StoreOffer[]>(fallbackOffers);
   const [available, setAvailable] = useState(false);
+  const [phase, setPhase] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [plan, setPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    void loadStoreOffers().then((result) => {
-      setOffers(result.offers);
-      setAvailable(result.available);
-    });
+  const applyOffers = useCallback((result: Awaited<ReturnType<typeof loadStoreOffers>>) => {
+    setOffers(result.offers);
+    setAvailable(result.available);
+    setPhase(result.reason === 'ok' ? 'ready' : 'unavailable');
+    if (result.reason === 'ok') setMessage(null);
   }, []);
 
+  const loadPrices = useCallback(() => {
+    setPhase('loading');
+    void loadStoreOffers().then(applyOffers);
+  }, [applyOffers]);
+
+  useEffect(() => {
+    let active = true;
+    void loadStoreOffers().then((result) => {
+      if (active) applyOffers(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [applyOffers]);
+
+  const selected = offers.find((offer) => offer.id === plan) ?? offers[1] ?? offers[0];
   const savings = yearlySavingsPercent(
     offers.find((offer) => offer.id === 'monthly')?.amount,
     offers.find((offer) => offer.id === 'yearly')?.amount,
   );
-  const selected = offers.find((offer) => offer.id === plan) ?? offers[1] ?? offers[0];
   const buy = async () => {
     setLoading(true);
     setMessage(null);
     const result = await app.purchase(plan);
     setLoading(false);
-    if (result === 'pro') {
+    if (result.isPro) {
       router.back();
       return;
     }
-    if (result === 'cancelled') setMessage(t('paywall.cancelled'));
-    else setMessage(t('paywall.unavailable'));
+    setMessage(t(paywallMessage(result.reason)));
   };
+  const giftLine = app.giftUntil
+    ? isLifetimeGrant(app.giftUntil)
+      ? t('paywall.giftedLifetime')
+      : t('paywall.giftedCurrent', {
+          date: formatGrantDate(app.giftUntil, intlLocale(locale), app.profile.timezone),
+        })
+    : null;
 
   return (
     <Aurora>
@@ -84,7 +134,11 @@ export function PaywallScreen() {
             {t('paywall.title')}
           </AppText>
           <AppText color={colors.muted} style={{ textAlign: 'center', alignSelf: 'stretch' }}>
-            {app.usage.isPro ? t('paywall.current') : t('paywall.subtitle')}
+            {app.usage.isPro
+              ? giftLine || t('paywall.current')
+              : app.usage.limit > 100_000
+                ? t('paywall.subtitleOpen')
+                : t('paywall.subtitle', { limit: app.usage.limit })}
           </AppText>
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -108,7 +162,7 @@ export function PaywallScreen() {
                   )}
                   <AppText weight="bold">{t(offer.id === 'yearly' ? 'paywall.yearly' : 'paywall.monthly')}</AppText>
                   <AppText size={26} weight="extrabold">
-                    {offer.price}
+                    {offer.price ?? (phase === 'loading' ? '…' : t('paywall.priceMissing'))}
                   </AppText>
                   {offer.trialDays ? (
                     <AppText size={12} weight="bold" color={colors.success}>
@@ -139,18 +193,18 @@ export function PaywallScreen() {
           ))}
         </GlassCard>
         {message ? <AppText color={colors.primary}>{message}</AppText> : null}
-        {!app.usage.isPro ? (
+        {!app.usage.isPro && selected?.price ? (
           <View style={{ gap: 8 }}>
             <PrimaryButton
               label={
-                selected?.trialDays
+                selected.trialDays
                   ? t('paywall.trialCta', { days: selected.trialDays })
-                  : `${t('paywall.cta')} · ${selected?.price ?? ''}`
+                  : `${t('paywall.cta')} · ${selected.price}`
               }
               onPress={() => void buy()}
-              loading={loading}
+              loading={loading || phase === 'loading'}
             />
-            {selected?.trialDays ? (
+            {selected.trialDays ? (
               <AppText size={13} color={colors.muted} style={{ textAlign: 'center' }}>
                 {t(selected.id === 'yearly' ? 'paywall.trialTermsYearly' : 'paywall.trialTermsMonthly', {
                   days: selected.trialDays,
@@ -159,6 +213,9 @@ export function PaywallScreen() {
               </AppText>
             ) : null}
           </View>
+        ) : null}
+        {!app.usage.isPro && phase !== 'loading' && !selected?.price ? (
+          <PrimaryButton tone="glass" label={t('paywall.retry')} onPress={loadPrices} />
         ) : null}
         {!available && app.mode === 'demo' ? (
           <PrimaryButton
@@ -171,7 +228,7 @@ export function PaywallScreen() {
           tone="glass"
           label={t('restore')}
           onPress={() =>
-            void app.restore().then((ok) => setMessage(ok ? t('paywall.restored') : t('paywall.unavailable')))
+            void app.restore().then((result) => setMessage(result.isPro ? t('paywall.restored') : t(paywallMessage(result.reason))))
           }
         />
         <AppText size={12} color={colors.soft} style={{ textAlign: 'center' }}>

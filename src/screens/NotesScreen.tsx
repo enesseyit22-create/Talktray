@@ -3,6 +3,7 @@ import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
+import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { EditSheet } from '@/components/EditSheet';
 import { tabBarClearance } from '@/components/GlassTabBar';
 import { ItemCard } from '@/components/ItemCard';
@@ -19,6 +20,7 @@ export function NotesScreen() {
   const { items, profile, updateItem, deleteItem } = useApp();
   const [editing, setEditing] = useState<InboxItem | null>(null);
   const [query, setQuery] = useState('');
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const allNotes = items.filter((item) => item.type === 'note');
   const notes = searchItems(allNotes, query);
   return (
@@ -36,7 +38,7 @@ export function NotesScreen() {
           )
         ) : null}
         {notes.map((item) => (
-          <ItemCard key={item.id} item={item} timeZone={profile.timezone} onPress={() => setEditing(item)} />
+          <ItemCard key={item.id} item={item} timeZone={profile.timezone} onPress={() => setEditing(item)} onDelete={() => setPendingId(item.id)} />
         ))}
       </ScrollView>
       <EditSheet
@@ -52,8 +54,19 @@ export function NotesScreen() {
         }}
         onDelete={() => {
           if (!editing) return;
-          void deleteItem(editing.id);
-          setEditing(null);
+          setPendingId(editing.id);
+        }}
+      />
+      <ConfirmDelete
+        visible={pendingId != null}
+        title={t('confirmDelete.itemTitle')}
+        body={t('confirmDelete.itemBody')}
+        onCancel={() => setPendingId(null)}
+        onConfirm={() => {
+          if (!pendingId) return;
+          void deleteItem(pendingId);
+          if (editing?.id === pendingId) setEditing(null);
+          setPendingId(null);
         }}
       />
     </Aurora>

@@ -136,6 +136,7 @@ export function InboxScreen() {
                 timeZone={profile.timezone}
                 onPress={() => setPicked(item)}
                 onToggle={() => void toggleComplete(item.id)}
+                onDelete={() => setConfirm({ kind: 'item', id: item.id })}
               />
             ))}
             {foundRecordings.map((recording) => (
@@ -146,6 +147,7 @@ export function InboxScreen() {
                 playback={playback}
                 isPro={usage.isPro}
                 lines={3}
+                onDelete={() => setConfirm({ kind: 'recording', id: recording.id })}
               />
             ))}
           </View>
@@ -181,6 +183,7 @@ export function InboxScreen() {
                   onPress={() => setPicked(item)}
                   onLongPress={() => setConfirm({ kind: 'item', id: item.id })}
                   onToggle={() => void toggleComplete(item.id)}
+                  onDelete={() => setConfirm({ kind: 'item', id: item.id })}
                 />
               ))}
             </View>
@@ -203,6 +206,7 @@ export function InboxScreen() {
                 timeZone={profile.timezone}
                 onPress={() => setPicked(item)}
                 onToggle={() => void toggleComplete(item.id)}
+                onDelete={() => setConfirm({ kind: 'item', id: item.id })}
               />
             ))
           )}
@@ -234,6 +238,7 @@ export function InboxScreen() {
               playback={playback}
               isPro={usage.isPro}
               onLongPress={() => setConfirm({ kind: 'recording', id: recording.id })}
+              onDelete={() => setConfirm({ kind: 'recording', id: recording.id })}
             />
           ))}
           </>
@@ -256,9 +261,7 @@ export function InboxScreen() {
         }}
         onDelete={() => {
           if (!editing) return;
-          void deleteItem(editing.id);
-          setPicked(null);
-          if (linkedId) router.setParams({ item: '' });
+          setConfirm({ kind: 'item', id: editing.id });
         }}
       />
       <Sheet
@@ -306,7 +309,13 @@ export function InboxScreen() {
                     ? deleteItem(current.id)
                     : deleteItems(overdue.map((item) => item.id));
             void run
-              .then(() => setConfirm(null))
+              .then(() => {
+                if (current.kind === 'item' && editing?.id === current.id) {
+                  setPicked(null);
+                  if (linkedId) router.setParams({ item: '' });
+                }
+                setConfirm(null);
+              })
               .catch((caught) => setConfirmError(errorText(caught, t('errors.generic'))));
           }}
         />
@@ -325,7 +334,7 @@ export function InboxScreen() {
         </AppText>
         {upcoming.length === 0 ? <AppText color={colors.muted}>{t('noUpcoming')}</AppText> : null}
         {upcoming.map((item) => (
-          <ItemCard key={item.id} item={item} timeZone={profile.timezone} />
+          <ItemCard key={item.id} item={item} timeZone={profile.timezone} onDelete={() => setConfirm({ kind: 'item', id: item.id })} />
         ))}
       </Sheet>
     </Aurora>

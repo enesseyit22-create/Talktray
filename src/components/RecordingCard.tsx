@@ -1,4 +1,4 @@
-import { Lock, Pause, Play } from 'lucide-react-native';
+import { Lock, Pause, Play, Trash2 } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { AppText, GlassCard } from '@/components/ui/primitives';
@@ -14,6 +14,7 @@ export function RecordingCard({
   playback,
   isPro,
   onLongPress,
+  onDelete,
   lines = 2,
 }: {
   recording: Recording;
@@ -21,6 +22,7 @@ export function RecordingCard({
   playback: ReturnType<typeof useRecordingPlayback>;
   isPro: boolean;
   onLongPress?: () => void;
+  onDelete?: () => void;
   lines?: number;
 }) {
   const { t, locale } = useI18n();
@@ -75,6 +77,17 @@ export function RecordingCard({
             </AppText>
           ) : null}
         </View>
+        {onDelete ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('delete')}
+            hitSlop={8}
+            onPress={onDelete}
+            style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Trash2 color={colors.danger} size={18} />
+          </Pressable>
+        ) : null}
       </View>
       {progress > 0 ? (
         <View style={{ height: 3, borderRadius: 2, marginTop: 10, backgroundColor: colors.glassBorder, overflow: 'hidden' }}>

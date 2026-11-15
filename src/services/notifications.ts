@@ -1,14 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 import type { InboxItem } from '@/domain/types';
 import { translate } from '@/i18n/translate';
-import { planReminders } from '@/lib/reminder-plan';
 import { digestStats, nextDigestAt } from '@/lib/weekly-digest';
+import { planReminders, scheduledFireAt, type PlannedReminder } from '@/services/reminder-schedule';
 
 const STORE = 'talktray.notificationIds';
-const DIGEST_STORE = 'talktray.weeklyDigestId';
 const CHANNEL = 'reminders';
 
 if (Platform.OS === 'ios' || Platform.OS === 'android') {
@@ -41,6 +40,36 @@ export async function requestReminderPermission(): Promise<boolean> {
   return next.granted;
 }
 
+const EXACT_PROMPT = 'talktray.exactAlarmPrompted';
+
+function notificationsAllowed(status: Notifications.NotificationPermissionsStatus): boolean {
+  if (status.granted) return true;
+  const ios = status.ios?.status;
+  return (
+    ios === Notifications.IosAuthorizationStatus.AUTHORIZED ||
+    ios === Notifications.IosAuthorizationStatus.PROVISIONAL ||
+    ios === Notifications.IosAuthorizationStatus.EPHEMERAL
+  );
+}
+
+/** Opens the Android screen where the user allows exact alarms. The manifest permission is already in the installed build. */
+export async function openExactAlarmSettings(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    await Linking.sendIntent('android.settings.REQUEST_SCHEDULE_EXACT_ALARM');
+  } catch {
+    await Linking.openSettings();
+  }
+}
+
+export async function promptExactAlarmOnce(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  const seen = await AsyncStorage.getItem(EXACT_PROMPT);
+  if (seen) return;
+  await AsyncStorage.setItem(EXACT_PROMPT, '1');
+  await openExactAlarmSettings();
+}
+
 function bodyFor(offset: number, title: string, locale: string) {
   if (offset <= 0) return translate(locale, 'notifications.now', { title });
   if (offset === 60) return translate(locale, 'notifications.inHour', { title });
@@ -63,24 +92,42 @@ async function saveMap(map: Record<string, string[]>) {
   await AsyncStorage.setItem(STORE, JSON.stringify(map));
 }
 
-async function scheduleOne(item: InboxItem, offset: number, when: Date, locale: string): Promise<string | null> {
+async function scheduleOne(plan: PlannedReminder, locale: string): Promise<boolean> {
+  const channelId = Platform.OS === 'android' ? CHANNEL : undefined;
+  const content = {
+    title: plan.title,
+    body: bodyFor(plan.offset, plan.title, locale),
+    data: { itemId: plan.itemId, url: `talktray://item/${plan.itemId}` },
+    sound: 'default' as const,
+  };
   try {
-    return await Notifications.scheduleNotificationAsync({
-      content: {
-        title: item.title,
-        body: bodyFor(offset, item.title, locale),
-        data: { itemId: item.id, url: `talktray://item/${item.id}` },
-        sound: 'default',
-      },
+    await Notifications.scheduleNotificationAsync({
+      identifier: plan.id,
+      content,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: when,
-        channelId: CHANNEL,
+        date: plan.fireAt,
+        ...(channelId ? { channelId } : {}),
       },
     });
+    return true;
   } catch (error) {
-    console.warn('[notifications] schedule failed', item.id, offset, error);
-    return null;
+    const seconds = Math.max(1, Math.round((plan.fireAt - Date.now()) / 1000));
+    try {
+      await Notifications.scheduleNotificationAsync({
+        identifier: plan.id,
+        content,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds,
+          ...(channelId ? { channelId } : {}),
+        },
+      });
+      return true;
+    } catch (again) {
+      console.warn('[notifications] schedule failed', plan.id, error, again);
+      return false;
+    }
   }
 }
 
@@ -96,20 +143,33 @@ export async function syncItemNotifications(items: InboxItem[], locale: string, 
   syncing = true;
   try {
     await ensureReminderChannel(locale);
-    const granted = (await Notifications.getPermissionsAsync()).granted;
+    const allowed = notificationsAllowed(await Notifications.getPermissionsAsync());
     const previous = await loadMap();
     for (const ids of Object.values(previous)) {
-      for (const id of ids) await Notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
-    }
-    const next: Record<string, string[]> = {};
-    if (granted) {
-      // Soonest first and capped, so iOS's 64-notification limit never drops a near reminder.
-      for (const entry of planReminders(items, defaultOffsets, new Date())) {
-        const id = await scheduleOne(entry.item, entry.offset, entry.fireAt, locale);
-        if (id) (next[entry.item.id] ??= []).push(id);
+      for (const id of ids) {
+        if (!id.startsWith('tt:')) await Notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
       }
     }
-    await saveMap(next);
+    if (Object.keys(previous).length) await saveMap({});
+
+    const planned = allowed ? planReminders(items, defaultOffsets, Date.now()) : [];
+    const existing = await Notifications.getAllScheduledNotificationsAsync();
+    const plannedIds = new Set(planned.map((item) => item.id));
+    for (const request of existing) {
+      if (!request.identifier.startsWith('tt:')) continue;
+      if (!plannedIds.has(request.identifier)) {
+        await Notifications.cancelScheduledNotificationAsync(request.identifier).catch(() => undefined);
+      }
+    }
+    const existingById = new Map(existing.map((request) => [request.identifier, request]));
+    for (const item of planned) {
+      const current = existingById.get(item.id);
+      const when = current ? scheduledFireAt(current.trigger) : null;
+      const sameTime = when != null && Math.abs(when - item.fireAt) < 1500;
+      if (sameTime && current?.content.title === item.title) continue;
+      if (current) await Notifications.cancelScheduledNotificationAsync(item.id).catch(() => undefined);
+      await scheduleOne(item, locale);
+    }
   } catch (error) {
     console.warn('[notifications] sync failed', error);
   } finally {
@@ -161,12 +221,29 @@ export function listenForNotificationTaps(open: (itemId: string) => void) {
   return () => sub.remove();
 }
 
+export async function cancelRemindersForItem(itemId: string): Promise<void> {
+  if (Platform.OS === 'web' || !itemId) return;
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  const prefix = `tt:${itemId}:`;
+  await Promise.all(
+    scheduled
+      .filter((request) => {
+        const dataId = request.content.data?.itemId;
+        return request.identifier === itemId || request.identifier.startsWith(prefix) || dataId === itemId;
+      })
+      .map((request) => Notifications.cancelScheduledNotificationAsync(request.identifier).catch(() => undefined)),
+  );
+}
+
 export async function cancelItemNotification(id: string | null) {
   if (Platform.OS === 'web' || !id) return;
   await Notifications.cancelScheduledNotificationAsync(id).catch((error) => {
     console.warn('[notifications] cancel failed', id, error);
   });
 }
+
+/** Fixed id, outside the tt: reminder namespace, so reminder syncs never touch it. */
+const DIGEST_ID = 'digest:weekly';
 
 /**
  * One notification on Sunday evening with last week's finished items and next week's plan.
@@ -175,10 +252,8 @@ export async function cancelItemNotification(id: string | null) {
 export async function syncWeeklyDigest(items: InboxItem[], locale: string, timeZone: string, enabled: boolean) {
   if (Platform.OS === 'web') return;
   try {
-    const previous = await AsyncStorage.getItem(DIGEST_STORE);
-    if (previous) await Notifications.cancelScheduledNotificationAsync(previous).catch(() => undefined);
-    await AsyncStorage.removeItem(DIGEST_STORE);
-    if (!enabled || !(await Notifications.getPermissionsAsync()).granted) return;
+    await Notifications.cancelScheduledNotificationAsync(DIGEST_ID).catch(() => undefined);
+    if (!enabled || !notificationsAllowed(await Notifications.getPermissionsAsync())) return;
     const at = nextDigestAt(new Date(), timeZone);
     const { done, upcoming } = digestStats(items, at);
     if (done === 0 && upcoming === 0) return;
@@ -186,11 +261,18 @@ export async function syncWeeklyDigest(items: InboxItem[], locale: string, timeZ
       done > 0
         ? translate(locale, 'digest.body', { done, upcoming })
         : translate(locale, 'digest.bodyAhead', { upcoming });
-    const id = await Notifications.scheduleNotificationAsync({
+    const channelId = Platform.OS === 'android' ? CHANNEL : undefined;
+    const seconds = Math.max(60, Math.round((at.getTime() - Date.now()) / 1000));
+    await Notifications.scheduleNotificationAsync({
+      identifier: DIGEST_ID,
       content: { title: translate(locale, 'digest.title'), body, sound: 'default' },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL },
+      // Interval, like the reminder fallback, so Android needs no exact-alarm permission for it.
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        ...(channelId ? { channelId } : {}),
+      },
     });
-    await AsyncStorage.setItem(DIGEST_STORE, id);
   } catch (error) {
     console.warn('[notifications] weekly digest failed', error);
   }

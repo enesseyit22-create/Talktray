@@ -1,7 +1,4 @@
-import { getLocales } from 'expo-localization';
-
 import { ENTITLEMENT_ID } from '../../shared/parse/quota';
-import { formatMoney, regionalPrice } from '@/lib/regional-price';
 
 /** Public SDK keys. Used when EXPO_PUBLIC_REVENUECAT_* is unset. */
 export const REVENUECAT_IOS_SDK_KEY = 'appl_RgzWQMZehRfiafWyReOAOBMlTgD';
@@ -33,38 +30,50 @@ export type PlanId = 'monthly' | 'yearly';
 
 export type StoreOffer = {
   id: PlanId;
-  price: string;
+  /** Localized store price. Null until StoreKit or Play returns one. */
+  price: string | null;
   title: string;
   /** Localized monthly equivalent for a yearly plan. Null when the store did not provide one. */
   perMonth: string | null;
-  /** Numeric price in the offer's currency, used for the yearly saving badge. */
-  amount: number | null;
-  /** Free trial length for this account. Only set when the store confirmed eligibility. */
+  /** Numeric store price, only for the yearly saving badge. Never shown as a price. */
+  amount?: number | null;
+  /** Free trial days, only when the store confirmed this account can still take the trial. */
   trialDays?: number | null;
 };
 
-/** The device region and language, e.g. TR / tr-TR. */
-export function deviceRegion(): { regionCode: string | null; languageTag: string | null } {
-  try {
-    const first = getLocales()[0];
-    return { regionCode: first?.regionCode ?? null, languageTag: first?.languageTag ?? null };
-  } catch {
-    return { regionCode: null, languageTag: null };
-  }
-}
+/** Empty prices. The paywall must not invent a currency while the store is loading or unavailable. */
+export const fallbackOffers: StoreOffer[] = [
+  { id: 'monthly', price: null, title: 'Monthly', perMonth: null },
+  { id: 'yearly', price: null, title: 'Yearly', perMonth: null },
+];
 
-/** Offers in the device region's currency, shown until the store answers with its own prices. */
-export function fallbackOffers(region = deviceRegion()): StoreOffer[] {
-  const local = regionalPrice(region.regionCode);
-  const money = (amount: number) => formatMoney(amount, local.currency, region.languageTag);
-  return [
-    { id: 'monthly', price: money(local.monthly), title: 'Monthly', perMonth: null, amount: local.monthly },
-    {
-      id: 'yearly',
-      price: money(local.yearly),
-      title: 'Yearly',
-      perMonth: money(Math.round((local.yearly / 12) * 100) / 100),
-      amount: local.yearly,
-    },
-  ];
-}
+export type OfferLoadReason = 'ok' | 'not_configured' | 'network' | 'no_offering' | 'plans_missing' | 'store';
+
+export type OfferLoad = {
+  available: boolean;
+  offers: StoreOffer[];
+  isPro: boolean;
+  reason: OfferLoadReason;
+};
+
+export type PurchaseReason =
+  | 'ok'
+  | 'cancelled'
+  | 'not_configured'
+  | 'plans_missing'
+  | 'network'
+  | 'pending'
+  | 'already_owned'
+  | 'not_allowed'
+  | 'store'
+  | 'entitlement_pending';
+
+export type PurchaseResult = {
+  isPro: boolean;
+  reason: PurchaseReason;
+};
+
+export type RestoreResult = {
+  isPro: boolean;
+  reason: 'ok' | 'restore_empty' | 'not_configured' | 'network' | 'store';
+};

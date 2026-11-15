@@ -11,12 +11,14 @@ import { Logo, WidgetPreview } from '@/components/Brand';
 import { tabBarClearance } from '@/components/GlassTabBar';
 import { AppText, Chip, Field, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
-import { LOCALES, LOCALE_LABELS, useI18n } from '@/i18n';
+import { deviceLocale, LOCALES, LOCALE_LABELS, useI18n } from '@/i18n';
+import { intlLocale } from '@/i18n/locale';
 import { errorText } from '@/lib/errors';
+import { formatGrantDate, isLifetimeGrant } from '@/lib/pro-grant';
 import { PRIVACY_URL, SITE_ORIGIN, SUPPORT_EMAIL, TERMS_URL } from '@/lib/legal';
 import { supabase } from '@/lib/supabase';
 import { normalizeUsername, usernameProblem } from '@/lib/username';
-import { sendTestNotification } from '@/services/notifications';
+import { openExactAlarmSettings, sendTestNotification } from '@/services/notifications';
 import { useTheme, type ThemeMode } from '@/theme/ThemeProvider';
 import { useUpdates } from '@/updates/UpdateProvider';
 import { isSameZonedDay } from '../../shared/parse/time';
@@ -34,6 +36,7 @@ export function SettingsScreen() {
   const [username, setUsername] = useState(app.profile.username ?? '');
   const [seenUsername, setSeenUsername] = useState(app.profile.username ?? '');
   const [accountError, setAccountError] = useState<string | null>(null);
+  const [planNote, setPlanNote] = useState<string | null>(null);
   const [savingAccount, setSavingAccount] = useState(false);
   const [zone, setZone] = useState(app.profile.timezone);
   const [seenZone, setSeenZone] = useState(app.profile.timezone);
@@ -143,7 +146,9 @@ export function SettingsScreen() {
       });
     } catch (caught) {
       const code = caught && typeof caught === 'object' && 'code' in caught ? String((caught as { code: string }).code) : '';
-      setAccountError(code === '23505' ? t('settings.usernameTaken') : errorText(caught, t('errors.generic')));
+      if (code === '23505') setAccountError(t('settings.usernameTaken'));
+      else if (code === 'PROFILE_NOT_SAVED') setAccountError(t('settings.profileNotSaved'));
+      else setAccountError(errorText(caught, t('settings.profileNotSaved')));
     } finally {
       setSavingAccount(false);
     }
@@ -156,22 +161,35 @@ export function SettingsScreen() {
     }
     setZoneError(null);
     setZone(next);
-    await app.updateProfile({ timezone: next });
+    try {
+      await app.updateProfile({ timezone: next });
+    } catch (caught) {
+      setZone(app.profile.timezone);
+      setZoneError(errorText(caught, t('settings.profileNotSaved')));
+    }
+  };
+
+  const persist = (patch: Parameters<typeof app.updateProfile>[0]) => {
+    void app.updateProfile(patch).catch((caught) => setActionError(errorText(caught, t('settings.profileNotSaved'))));
   };
 
   const toggleNotifications = async (enabled: boolean) => {
-    if (!enabled) {
-      await app.updateProfile({ notificationsEnabled: false });
-      return;
+    try {
+      if (!enabled) {
+        await app.updateProfile({ notificationsEnabled: false });
+        return;
+      }
+      const result = await Notifications.requestPermissionsAsync();
+      const state: Perm = result.granted ? 'granted' : result.canAskAgain === false ? 'denied' : 'undetermined';
+      setNotice(state);
+      if (!result.granted) {
+        await Linking.openSettings();
+        return;
+      }
+      await app.updateProfile({ notificationsEnabled: true });
+    } catch (caught) {
+      setActionError(errorText(caught, t('settings.profileNotSaved')));
     }
-    const result = await Notifications.requestPermissionsAsync();
-    const state: Perm = result.granted ? 'granted' : result.canAskAgain === false ? 'denied' : 'undetermined';
-    setNotice(state);
-    if (!result.granted) {
-      await Linking.openSettings();
-      return;
-    }
-    await app.updateProfile({ notificationsEnabled: true });
   };
 
   const exportData = async () => {
@@ -251,7 +269,7 @@ export function SettingsScreen() {
               setUsername(value.toLowerCase());
             }}
             autoCapitalize="none"
-            placeholder="enes"
+            placeholder={t('settings.usernamePlaceholder')}
           />
           <AppText size={13} color={usernameState === 'taken' || usernameState === 'invalid' ? colors.danger : colors.muted}>
             {usernameState === 'checking'
@@ -273,10 +291,33 @@ export function SettingsScreen() {
         </Section>
 
         <Section title={t('settings.subscription')}>
-          <AppText weight="bold">{app.usage.isPro ? t('pro') : t('free')}</AppText>
+          <AppText weight="bold">
+            {app.giftUntil
+              ? isLifetimeGrant(app.giftUntil)
+                ? t('usage.giftedLifetime')
+                : t('usage.giftedUntil', {
+                    date: formatGrantDate(app.giftUntil, intlLocale(locale), app.profile.timezone),
+                  })
+              : app.usage.isPro
+                ? t('pro')
+                : t('free')}
+          </AppText>
           <UsageCard />
           {!app.usage.isPro ? <PrimaryButton label={t('upgrade')} onPress={() => router.push('/paywall')} /> : null}
-          <PrimaryButton tone="glass" label={t('restore')} onPress={() => void app.restore()} />
+          <PrimaryButton
+            tone="glass"
+            label={t('restore')}
+            onPress={() =>
+              void app.restore().then((result) =>
+                setPlanNote(
+                  result.isPro
+                    ? t('paywall.restored')
+                    : t(result.reason === 'restore_empty' ? 'paywall.restoreEmpty' : result.reason === 'network' ? 'paywall.network' : 'paywall.storeError'),
+                ),
+              )
+            }
+          />
+          {planNote ? <AppText color={colors.muted}>{planNote}</AppText> : null}
           <Row label={t('settings.manage')} onPress={() => void Linking.openURL(subscriptionUrl())} />
           <AppText size={13} color={colors.muted}>
             {t('settings.billingNote')}
@@ -286,12 +327,17 @@ export function SettingsScreen() {
         <Section title={t('settings.preferences')}>
           <AppText weight="bold">{t('profile.language')}</AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <PrimaryButton
+              tone={app.profile.localePreference === 'system' ? 'solid' : 'glass'}
+              label={t('profile.languageSystem')}
+              onPress={() => persist({ localePreference: 'system', locale: deviceLocale() })}
+            />
             {LOCALES.map((code) => (
               <PrimaryButton
                 key={code}
-                tone={locale === code ? 'solid' : 'glass'}
+                tone={app.profile.localePreference === code ? 'solid' : 'glass'}
                 label={LOCALE_LABELS[code]}
-                onPress={() => void app.updateProfile({ locale: code })}
+                onPress={() => persist({ localePreference: code, locale: code })}
               />
             ))}
           </View>
@@ -302,7 +348,7 @@ export function SettingsScreen() {
                 key={mode}
                 tone={app.profile.theme === mode ? 'solid' : 'glass'}
                 label={t(`profile.${mode}`)}
-                onPress={() => void app.updateProfile({ theme: mode })}
+                onPress={() => persist({ theme: mode })}
               />
             ))}
           </View>
@@ -329,13 +375,21 @@ export function SettingsScreen() {
                       ? app.profile.reminderOffsets.filter((value) => value !== offset)
                       : [...app.profile.reminderOffsets, offset].sort((a, b) => a - b);
                     if (!next.length) return;
-                    void app.updateProfile({ reminderOffsets: next });
+                    persist({ reminderOffsets: next });
                   }}
                 />
               );
             })}
           </View>
           <Toggle label={t('profile.notifications')} value={app.profile.notificationsEnabled} onChange={(value) => void toggleNotifications(value)} />
+          {Platform.OS === 'android' ? (
+            <>
+              <AppText size={13} color={colors.muted}>
+                {t('settings.exactAlarmBody')}
+              </AppText>
+              <Row label={t('settings.exactAlarm')} onPress={() => void openExactAlarmSettings()} />
+            </>
+          ) : null}
           <PrimaryButton
             tone="glass"
             label={t('settings.testNotification')}
@@ -352,7 +406,7 @@ export function SettingsScreen() {
           <Toggle
             label={t('profile.calendar')}
             value={app.profile.exportToCalendar}
-            onChange={(exportToCalendar) => void app.updateProfile({ exportToCalendar })}
+            onChange={(exportToCalendar) => persist({ exportToCalendar })}
           />
           <Info label={t('settings.microphone')} value={t(mic === 'granted' ? 'settings.microphoneGranted' : mic === 'denied' ? 'settings.microphoneDenied' : 'settings.microphoneUndetermined')} />
           <Row label={t('settings.openSettings')} onPress={() => void Linking.openSettings()} />

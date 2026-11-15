@@ -40,3 +40,11 @@ export function freeTrialDays(intro: IntroPrice | null | undefined): number | nu
   if (!unit || !Number.isFinite(units) || units <= 0) return null;
   return unit * units;
 }
+
+/** Whole-percent saving of the yearly plan against twelve monthly payments. Null when not a saving. */
+export function yearlySavingsPercent(monthly: number | null | undefined, yearly: number | null | undefined): number | null {
+  if (!monthly || !yearly || !Number.isFinite(monthly) || !Number.isFinite(yearly)) return null;
+  if (monthly <= 0 || yearly <= 0) return null;
+  const pct = Math.floor((1 - yearly / (monthly * 12)) * 100);
+  return pct >= 5 ? pct : null;
+}

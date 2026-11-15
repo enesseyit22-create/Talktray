@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { freeTrialDays, priceLabel, yearlyPerMonthLabel } from '@/lib/store-price';
+import { freeTrialDays, priceLabel, yearlyPerMonthLabel, yearlySavingsPercent } from '@/lib/store-price';
 
 describe('store prices', () => {
   it('uses the store price string', () => {
@@ -44,5 +44,13 @@ describe('freeTrialDays', () => {
   it('ignores paid intro offers and missing ones', () => {
     expect(freeTrialDays({ price: 0.99, cycles: 1, periodUnit: 'MONTH', periodNumberOfUnits: 1 })).toBeNull();
     expect(freeTrialDays(null)).toBeNull();
+  });
+});
+
+describe('yearlySavingsPercent', () => {
+  it('computes the saving from store amounts', () => {
+    expect(yearlySavingsPercent(7.99, 49.99)).toBe(47);
+    expect(yearlySavingsPercent(10, 120)).toBeNull();
+    expect(yearlySavingsPercent(null, 49.99)).toBeNull();
   });
 });
