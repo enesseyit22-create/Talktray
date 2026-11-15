@@ -36,6 +36,8 @@ import {
   safeTimeZone,
   deviceTimeZone,
   isSameZonedDay,
+  asRepeat,
+  nextOccurrence,
 } from '../../shared/parse';
 
 type AppValue = {
@@ -363,6 +365,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           all_day: updated.allDay,
           list_name: updated.listName,
           reminder_offsets: updated.reminderOffsets,
+          repeat: updated.dueAt ? updated.repeat ?? null : null,
           notification_id: updated.notificationId,
         })
         .eq('id', updated.id);
@@ -776,7 +779,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 ...current,
                 items: [
                   ...current.items,
-                  { localId: createId(), type: 'task', title: '', notes: null, dueAt: null, allDay: false, listName: null, reminderOffsets: null },
+                  { localId: createId(), type: 'task', title: '', notes: null, dueAt: null, allDay: false, listName: null, reminderOffsets: null, repeat: null },
                 ],
               }
             : current,
@@ -810,6 +813,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             allDay: entry.allDay,
             listName: entry.listName,
             reminderOffsets: entry.reminderOffsets,
+            repeat: usage.isPro && entry.dueAt ? entry.repeat ?? null : null,
             completedAt: null,
             calendarEventId: null,
             notificationId: null,
@@ -839,6 +843,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 all_day: item.allDay,
                 list_name: item.listName,
                 reminder_offsets: item.reminderOffsets,
+                repeat: item.repeat ?? null,
                 notification_id: item.notificationId,
                 calendar_event_id: item.calendarEventId,
               })),
@@ -864,6 +869,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toggleComplete: async (id) => {
         const current = items.find((item) => item.id === id);
         if (!current) return;
+        if (current.repeat && current.dueAt && !current.completedAt) {
+          // Finishing a repeating item moves it to the next occurrence. It never sits in "done".
+          const dueAt = nextOccurrence(current.dueAt, current.repeat, profile.timezone, new Date());
+          const advanced = items.map((item) =>
+            item.id === id ? { ...item, dueAt, updatedAt: new Date().toISOString() } : item,
+          );
+          setItems(advanced);
+          if (mode === 'supabase') {
+            const { error } = await supabase.from('items').update({ due_at: dueAt }).eq('id', id);
+            if (error) {
+              setItems((list) => list.map((item) => (item.id === id ? { ...item, dueAt: current.dueAt } : item)));
+              setBanner(translate(profile.locale, 'errors.saveFailed'));
+            } else {
+              setBanner(translate(profile.locale, 'repeat.moved'));
+            }
+          } else if (user) {
+            await snapshotDemo({ items: advanced });
+            setBanner(translate(profile.locale, 'repeat.moved'));
+          }
+          return;
+        }
         const completedAt = current.completedAt ? null : new Date().toISOString();
         const nextItems = items.map((item) =>
           item.id === id ? { ...item, completedAt, updatedAt: new Date().toISOString() } : item,
@@ -1029,6 +1055,7 @@ function mapItem(row: Record<string, unknown>): InboxItem {
     allDay: Boolean(row.all_day),
     listName: (row.list_name as string | null) ?? null,
     reminderOffsets: Array.isArray(row.reminder_offsets) ? row.reminder_offsets.map((value) => Number(value)) : null,
+    repeat: asRepeat(row.repeat),
     completedAt: (row.completed_at as string | null) ?? null,
     calendarEventId: (row.calendar_event_id as string | null) ?? null,
     notificationId: (row.notification_id as string | null) ?? null,

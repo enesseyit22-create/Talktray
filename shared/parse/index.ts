@@ -23,3 +23,5 @@ export type { ExtractContext, ItemType, ParsedItem, ResolvedWhen } from './types
 export { ITEM_TYPES } from './types';
 export { buildSummaryMessages, normalizeSummary, shouldSummarize, summaryToNote } from './summary';
 export type { RecordingSummary } from './summary';
+export { REPEATS, asRepeat, nextOccurrence } from './repeat';
+export type { Repeat } from './repeat';

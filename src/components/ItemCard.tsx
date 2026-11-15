@@ -1,4 +1,4 @@
-import { Calendar, Check, ChevronRight, Clock, Leaf, ShoppingBag } from 'lucide-react-native';
+import { Calendar, Check, ChevronRight, Clock, Leaf, Repeat, ShoppingBag } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
 import { AppText, GlassCard } from '@/components/ui/primitives';
@@ -109,9 +109,12 @@ export function ItemCard({
           <AppText weight="bold" numberOfLines={3} style={item.completedAt ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}>
             {t(`types.${item.type}`)}: {item.title}
           </AppText>
-          <AppText size={13} color={overdue ? colors.danger : colors.muted} numberOfLines={2}>
-            {subtitle}
-          </AppText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            {item.repeat ? <Repeat color={colors.muted} size={12} accessibilityLabel={t(`repeat.${item.repeat}`)} /> : null}
+            <AppText size={13} color={overdue ? colors.danger : colors.muted} numberOfLines={2} style={{ flexShrink: 1 }}>
+              {item.repeat ? `${t(`repeat.${item.repeat}`)} · ${subtitle}` : subtitle}
+            </AppText>
+          </View>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 1, maxWidth: '46%' }}>
           {overdue ? <OverdueBadge /> : time ? (

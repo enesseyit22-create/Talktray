@@ -118,6 +118,9 @@ Deno.serve(async (req) => {
       return json({ error: message }, status);
     }
 
+    // Repeating items are a Pro feature.
+    if (!isPro) items = items.map((item) => ({ ...item, repeat: null }));
+
     // Pro: long takes such as meetings also get a summary note, first in the list.
     if (isPro && shouldSummarize(Number(recording.duration_ms ?? 0), transcript)) {
       const summary = await summarizeWithModel(transcript, locale).catch((error) => {

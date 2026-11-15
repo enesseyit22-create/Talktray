@@ -25,3 +25,5 @@ export type { ExtractContext, ItemType, ParsedItem, ResolvedWhen } from './types
 export { ITEM_TYPES } from './types.ts';
 export { buildSummaryMessages, normalizeSummary, shouldSummarize, summaryToNote } from './summary.ts';
 export type { RecordingSummary } from './summary.ts';
+export { REPEATS, asRepeat, nextOccurrence } from './repeat.ts';
+export type { Repeat } from './repeat.ts';
