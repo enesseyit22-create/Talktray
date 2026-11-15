@@ -116,6 +116,11 @@ export const en = {
     yearly: 'Every year',
     moved: 'Moved to the next time',
   },
+  digest: {
+    title: 'Your week in TalkTray',
+    body: 'You finished {done} this week. {upcoming} are lined up for next week.',
+    bodyAhead: '{upcoming} are lined up for next week. Take a look before Monday.',
+  },
   record: {
     title: 'What’s on your mind?',
     hint: 'Tap to record. Hold if you want it to stop when you let go.',

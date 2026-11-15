@@ -15,7 +15,7 @@ import { createId } from '@/lib/id';
 import { supabase } from '@/lib/supabase';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
 import { exportItemToDevice } from '@/services/calendar';
-import { ensureReminderChannel, requestReminderPermission, syncItemNotifications } from '@/services/notifications';
+import { ensureReminderChannel, requestReminderPermission, syncItemNotifications, syncWeeklyDigest } from '@/services/notifications';
 import {
   configurePurchases,
   loadStoreOffers,
@@ -309,6 +309,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const run = () => {
       void syncItemNotifications(profile.notificationsEnabled ? items : [], profile.locale, profile.reminderOffsets);
+      void syncWeeklyDigest(items, profile.locale, profile.timezone, profile.notificationsEnabled);
     };
     // Typing in an item changes it on every key. Reschedule once the edits settle.
     const timer = setTimeout(run, 800);
@@ -319,7 +320,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       clearTimeout(timer);
       sub.remove();
     };
-  }, [user, items, profile.notificationsEnabled, profile.locale, profile.reminderOffsets]);
+  }, [user, items, profile.notificationsEnabled, profile.locale, profile.reminderOffsets, profile.timezone]);
 
   const snapshotDemo = useCallback(
     async (overrides: Partial<DemoState> = {}) => {

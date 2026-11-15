@@ -118,6 +118,11 @@ export const id: Dictionary = {
     yearly: 'Setiap tahun',
     moved: 'Dipindah ke jadwal berikutnya',
   },
+  digest: {
+    title: 'Minggumu di TalkTray',
+    body: 'Minggu ini kamu menyelesaikan {done}. Minggu depan ada {upcoming} yang menunggu.',
+    bodyAhead: 'Minggu depan ada {upcoming} yang menunggu. Cek sebelum Senin.',
+  },
   record: {
     title: 'Apa yang ada di pikiranmu?',
     hint: 'Ketuk untuk merekam. Tahan jika ingin berhenti saat jari dilepas.',

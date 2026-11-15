@@ -118,6 +118,11 @@ export const tr: Dictionary = {
     yearly: 'Her yıl',
     moved: 'Bir sonraki zamana taşındı',
   },
+  digest: {
+    title: 'TalkTray haftan',
+    body: 'Bu hafta {done} iş bitirdin. Haftaya {upcoming} iş seni bekliyor.',
+    bodyAhead: 'Haftaya {upcoming} iş seni bekliyor. Pazartesiden önce bir göz at.',
+  },
   record: {
     title: 'Aklında ne var?',
     hint: 'Kaydetmek için dokun. Bırakınca dursun istersen basılı tut.',

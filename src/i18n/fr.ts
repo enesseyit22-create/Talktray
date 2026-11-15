@@ -118,6 +118,11 @@ export const fr: Dictionary = {
     yearly: 'Chaque année',
     moved: 'Reporté à la prochaine fois',
   },
+  digest: {
+    title: 'Ta semaine dans TalkTray',
+    body: 'Tu as terminé {done} éléments cette semaine. {upcoming} t’attendent la semaine prochaine.',
+    bodyAhead: '{upcoming} éléments t’attendent la semaine prochaine. Jette un œil avant lundi.',
+  },
   record: {
     title: 'Qu’est-ce qui te trotte dans la tête ?',
     hint: 'Touche pour enregistrer. Maintiens si tu veux que ça s’arrête quand tu relâches.',

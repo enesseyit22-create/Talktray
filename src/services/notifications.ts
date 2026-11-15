@@ -5,8 +5,10 @@ import * as Notifications from 'expo-notifications';
 import type { InboxItem } from '@/domain/types';
 import { translate } from '@/i18n/translate';
 import { planReminders } from '@/lib/reminder-plan';
+import { digestStats, nextDigestAt } from '@/lib/weekly-digest';
 
 const STORE = 'talktray.notificationIds';
+const DIGEST_STORE = 'talktray.weeklyDigestId';
 const CHANNEL = 'reminders';
 
 if (Platform.OS === 'ios' || Platform.OS === 'android') {
@@ -164,4 +166,32 @@ export async function cancelItemNotification(id: string | null) {
   await Notifications.cancelScheduledNotificationAsync(id).catch((error) => {
     console.warn('[notifications] cancel failed', id, error);
   });
+}
+
+/**
+ * One notification on Sunday evening with last week's finished items and next week's plan.
+ * Rescheduled with fresh numbers every time the app syncs reminders.
+ */
+export async function syncWeeklyDigest(items: InboxItem[], locale: string, timeZone: string, enabled: boolean) {
+  if (Platform.OS === 'web') return;
+  try {
+    const previous = await AsyncStorage.getItem(DIGEST_STORE);
+    if (previous) await Notifications.cancelScheduledNotificationAsync(previous).catch(() => undefined);
+    await AsyncStorage.removeItem(DIGEST_STORE);
+    if (!enabled || !(await Notifications.getPermissionsAsync()).granted) return;
+    const at = nextDigestAt(new Date(), timeZone);
+    const { done, upcoming } = digestStats(items, at);
+    if (done === 0 && upcoming === 0) return;
+    const body =
+      done > 0
+        ? translate(locale, 'digest.body', { done, upcoming })
+        : translate(locale, 'digest.bodyAhead', { upcoming });
+    const id = await Notifications.scheduleNotificationAsync({
+      content: { title: translate(locale, 'digest.title'), body, sound: 'default' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL },
+    });
+    await AsyncStorage.setItem(DIGEST_STORE, id);
+  } catch (error) {
+    console.warn('[notifications] weekly digest failed', error);
+  }
 }

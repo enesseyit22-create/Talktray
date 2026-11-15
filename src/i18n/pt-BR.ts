@@ -118,6 +118,11 @@ export const ptBR: Dictionary = {
     yearly: 'Todo ano',
     moved: 'Movido para a próxima vez',
   },
+  digest: {
+    title: 'Sua semana no TalkTray',
+    body: 'Você concluiu {done} itens nesta semana. {upcoming} esperam por você na próxima.',
+    bodyAhead: '{upcoming} itens esperam por você na próxima semana. Dê uma olhada antes de segunda.',
+  },
   record: {
     title: 'O que está na sua cabeça?',
     hint: 'Toque para gravar. Segure se quiser que pare quando soltar.',

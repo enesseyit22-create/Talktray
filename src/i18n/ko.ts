@@ -118,6 +118,11 @@ export const ko: Dictionary = {
     yearly: '매년',
     moved: '다음 일정으로 옮겼어요',
   },
+  digest: {
+    title: '이번 주 TalkTray',
+    body: '이번 주에 {done}개를 끝냈어요. 다음 주에는 {upcoming}개가 기다리고 있어요.',
+    bodyAhead: '다음 주에 {upcoming}개가 기다리고 있어요. 월요일 전에 확인해 보세요.',
+  },
   record: {
     title: '지금 마음에 있는 것은?',
     hint: '탭하면 녹음됩니다. 손을 뗄 때 멈추려면 길게 누르세요.',

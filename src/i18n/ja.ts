@@ -118,6 +118,11 @@ export const ja: Dictionary = {
     yearly: '毎年',
     moved: '次回に移動しました',
   },
+  digest: {
+    title: 'TalkTrayの1週間',
+    body: '今週は{done}件完了しました。来週は{upcoming}件の予定があります。',
+    bodyAhead: '来週は{upcoming}件の予定があります。月曜の前に確認しましょう。',
+  },
   record: {
     title: '今、頭にあることは？',
     hint: 'タップで録音。指を離したときに止めたいときは、長押ししてください。',
