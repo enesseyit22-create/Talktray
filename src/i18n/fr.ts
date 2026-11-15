@@ -101,6 +101,13 @@ export const fr: Dictionary = {
     shopping: 'Courses',
     all: 'Tout',
   },
+  search: {
+    placeholder: 'Rechercher tâches, notes, enregistrements',
+    clear: 'Effacer la recherche',
+    results: '{count} résultats',
+    emptyTitle: 'Aucun résultat',
+    emptyBody: 'Essaie un autre mot, ou moins de mots.',
+  },
   record: {
     title: 'Qu’est-ce qui te trotte dans la tête ?',
     hint: 'Touche pour enregistrer. Maintiens si tu veux que ça s’arrête quand tu relâches.',

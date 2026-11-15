@@ -101,6 +101,13 @@ export const ja: Dictionary = {
     shopping: '買い物',
     all: 'すべて',
   },
+  search: {
+    placeholder: 'タスク・メモ・録音を検索',
+    clear: '検索をクリア',
+    results: '{count}件',
+    emptyTitle: '見つかりませんでした',
+    emptyBody: '別の言葉か、より少ない言葉で試してください。',
+  },
   record: {
     title: '今、頭にあることは？',
     hint: 'タップで録音。指を離したときに止めたいときは、長押ししてください。',

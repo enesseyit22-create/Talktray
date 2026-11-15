@@ -101,6 +101,13 @@ export const tr: Dictionary = {
     shopping: 'Alışveriş',
     all: 'Tümü',
   },
+  search: {
+    placeholder: 'Görev, not ve kayıtlarda ara',
+    clear: 'Aramayı temizle',
+    results: '{count} sonuç',
+    emptyTitle: 'Bir şey bulunamadı',
+    emptyBody: 'Başka bir kelime ya da daha az kelime dene.',
+  },
   record: {
     title: 'Aklında ne var?',
     hint: 'Kaydetmek için dokun. Bırakınca dursun istersen basılı tut.',

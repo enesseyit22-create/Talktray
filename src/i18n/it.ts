@@ -101,6 +101,13 @@ export const it: Dictionary = {
     shopping: 'Spesa',
     all: 'Tutto',
   },
+  search: {
+    placeholder: 'Cerca attività, note, registrazioni',
+    clear: 'Cancella ricerca',
+    results: '{count} risultati',
+    emptyTitle: 'Nessun risultato',
+    emptyBody: 'Prova un’altra parola o meno parole.',
+  },
   record: {
     title: 'Che cosa ti passa per la testa?',
     hint: 'Tocca per registrare. Tieni premuto se vuoi che si fermi quando lasci.',

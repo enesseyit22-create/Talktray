@@ -101,6 +101,13 @@ export const ptBR: Dictionary = {
     shopping: 'Compras',
     all: 'Tudo',
   },
+  search: {
+    placeholder: 'Buscar tarefas, notas e gravações',
+    clear: 'Limpar busca',
+    results: '{count} resultados',
+    emptyTitle: 'Nada encontrado',
+    emptyBody: 'Tente outra palavra, ou menos palavras.',
+  },
   record: {
     title: 'O que está na sua cabeça?',
     hint: 'Toque para gravar. Segure se quiser que pare quando soltar.',

@@ -101,6 +101,13 @@ export const id: Dictionary = {
     shopping: 'Belanja',
     all: 'Semua',
   },
+  search: {
+    placeholder: 'Cari tugas, catatan, rekaman',
+    clear: 'Hapus pencarian',
+    results: '{count} hasil',
+    emptyTitle: 'Tidak ada yang ditemukan',
+    emptyBody: 'Coba kata lain, atau lebih sedikit kata.',
+  },
   record: {
     title: 'Apa yang ada di pikiranmu?',
     hint: 'Ketuk untuk merekam. Tahan jika ingin berhenti saat jari dilepas.',

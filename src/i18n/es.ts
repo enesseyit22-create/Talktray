@@ -101,6 +101,13 @@ export const es: Dictionary = {
     shopping: 'Compras',
     all: 'Todo',
   },
+  search: {
+    placeholder: 'Buscar tareas, notas y grabaciones',
+    clear: 'Borrar búsqueda',
+    results: '{count} resultados',
+    emptyTitle: 'No se encontró nada',
+    emptyBody: 'Prueba otra palabra o menos palabras.',
+  },
   record: {
     title: '¿Qué tienes en mente?',
     hint: 'Toca para grabar. Mantén pulsado si quieres que pare al soltar.',

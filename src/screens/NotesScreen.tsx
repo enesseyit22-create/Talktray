@@ -6,24 +6,35 @@ import { Aurora } from '@/components/Aurora';
 import { EditSheet } from '@/components/EditSheet';
 import { tabBarClearance } from '@/components/GlassTabBar';
 import { ItemCard } from '@/components/ItemCard';
+import { SearchBar } from '@/components/SearchBar';
 import { AppText, EmptyState } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import type { InboxItem } from '@/domain/types';
 import { useI18n } from '@/i18n';
+import { searchItems } from '@/lib/search';
 
 export function NotesScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const { items, profile, updateItem, deleteItem } = useApp();
   const [editing, setEditing] = useState<InboxItem | null>(null);
-  const notes = items.filter((item) => item.type === 'note');
+  const [query, setQuery] = useState('');
+  const allNotes = items.filter((item) => item.type === 'note');
+  const notes = searchItems(allNotes, query);
   return (
     <Aurora>
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: Math.max(insets.top, 16) + 8, paddingBottom: tabBarClearance(insets.bottom), gap: 14 }}>
         <AppText size={32} weight="extrabold">
           {t('tabs.notes')}
         </AppText>
-        {notes.length === 0 ? <EmptyState title={t('notes.emptyTitle')} body={t('notes.emptyBody')} /> : null}
+        {allNotes.length > 0 ? <SearchBar value={query} onChangeText={setQuery} /> : null}
+        {notes.length === 0 ? (
+          allNotes.length > 0 ? (
+            <EmptyState title={t('search.emptyTitle')} body={t('search.emptyBody')} />
+          ) : (
+            <EmptyState title={t('notes.emptyTitle')} body={t('notes.emptyBody')} />
+          )
+        ) : null}
         {notes.map((item) => (
           <ItemCard key={item.id} item={item} timeZone={profile.timezone} onPress={() => setEditing(item)} />
         ))}

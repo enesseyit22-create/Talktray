@@ -99,6 +99,13 @@ export const en = {
     shopping: 'Shopping',
     all: 'All',
   },
+  search: {
+    placeholder: 'Search tasks, notes, recordings',
+    clear: 'Clear search',
+    results: '{count} results',
+    emptyTitle: 'Nothing found',
+    emptyBody: 'Try another word, or fewer words.',
+  },
   record: {
     title: 'What’s on your mind?',
     hint: 'Tap to record. Hold if you want it to stop when you let go.',

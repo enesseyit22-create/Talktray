@@ -10,12 +10,14 @@ import { tabBarClearance } from '@/components/GlassTabBar';
 import { ItemCard } from '@/components/ItemCard';
 import { useCapture } from '@/capture/CaptureProvider';
 import { RecordOrb } from '@/components/RecordOrb';
+import { SearchBar } from '@/components/SearchBar';
 import { EditSheet, type EditableItem } from '@/components/EditSheet';
 import { AppText, Chip, EmptyState, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import type { InboxItem } from '@/domain/types';
 import { errorText } from '@/lib/errors';
 import { formatClock, formatDuration, greetingKey, isOverdue } from '@/lib/format';
+import { searchItems, searchRecordings } from '@/lib/search';
 import { useNow } from '@/lib/useNow';
 import { useI18n } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -32,6 +34,10 @@ export function InboxScreen() {
   const params = useLocalSearchParams<{ item?: string | string[] }>();
   const linkedId = Array.isArray(params.item) ? params.item[0] : params.item;
   const [filter, setFilter] = useState<Filter>('today');
+  const [query, setQuery] = useState('');
+  const searching = query.trim().length > 0;
+  const foundItems = searching ? searchItems(items, query) : [];
+  const foundRecordings = searching ? searchRecordings(recordings, query) : [];
   const [picked, setPicked] = useState<InboxItem | null>(null);
   const linked = linkedId ? items.find((item) => item.id === linkedId) ?? null : null;
   const editing = picked ?? linked;
@@ -111,91 +117,124 @@ export function InboxScreen() {
             onHoldEnd={() => void capture.stopAndSubmit()}
           />
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ marginHorizontal: -20 }}
-          contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
-        >
-          {(['today', 'overdue', 'reminders', 'calendar', 'shopping', 'all'] as Filter[]).map((key) => (
-            <Chip key={key} label={t(`filters.${key}`)} active={filter === key} onPress={() => setFilter(key)} />
-          ))}
-        </ScrollView>
-        {showOverdueSection ? (
+        <SearchBar value={query} onChangeText={setQuery} />
+        {searching ? (
           <View style={{ gap: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <AppText weight="bold" size={18} color={colors.danger}>
-                {t('overdue.section')}
-              </AppText>
-              <Pressable onPress={() => setConfirm({ kind: 'overdue' })} style={{ minHeight: 44, justifyContent: 'center' }}>
-                <AppText size={13} weight="semibold" color={colors.danger}>
-                  {t('history.pastClear')}
-                </AppText>
-              </Pressable>
-            </View>
-            {overdue.map((item) => (
+            <AppText weight="bold" size={18}>
+              {t('search.results', { count: foundItems.length + foundRecordings.length })}
+            </AppText>
+            {foundItems.length + foundRecordings.length === 0 ? (
+              <EmptyState title={t('search.emptyTitle')} body={t('search.emptyBody')} />
+            ) : null}
+            {foundItems.map((item) => (
               <ItemCard
                 key={item.id}
                 item={item}
                 timeZone={profile.timezone}
                 onPress={() => setPicked(item)}
-                onLongPress={() => setConfirm({ kind: 'item', id: item.id })}
                 onToggle={() => void toggleComplete(item.id)}
               />
             ))}
+            {foundRecordings.map((recording) => (
+              <GlassCard key={recording.id}>
+                <AppText weight="semibold" numberOfLines={3}>
+                  {recording.transcript || t('history.untitled')}
+                </AppText>
+                <AppText size={12} color={colors.muted}>
+                  {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
+                </AppText>
+              </GlassCard>
+            ))}
           </View>
-        ) : null}
-        {filter === 'today' && shown.length > 0 && showOverdueSection ? (
-          <AppText weight="bold" size={18}>
-            {t('today')}
-          </AppText>
-        ) : null}
-        {shown.length === 0 && !showOverdueSection ? (
-          <EmptyState
-            title={t(filter === 'overdue' ? 'overdue.emptyTitle' : 'home.emptyTitle')}
-            body={t(filter === 'overdue' ? 'overdue.emptyBody' : 'home.emptyBody')}
-          />
         ) : (
-          shown.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              timeZone={profile.timezone}
-              onPress={() => setPicked(item)}
-              onToggle={() => void toggleComplete(item.id)}
-            />
-          ))
-        )}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Stat value={String(recordings.length)} label={t('home.voiceNotes')} tint={colors.task} />
-          <Stat value={String(activeTasks)} label={t('home.activeTasks')} tint={colors.shopping} />
-          <Stat value={String(notesToday)} label={t('home.notesToday')} tint={colors.note} />
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <AppText weight="bold" size={18}>
-            {t('home.recent')}
-          </AppText>
-          {recordings.length ? (
-            <Pressable onPress={() => setConfirm({ kind: 'recordings' })} style={{ minHeight: 44, justifyContent: 'center' }}>
-              <AppText size={13} weight="semibold" color={colors.danger}>
-                {t('history.clear')}
-              </AppText>
-            </Pressable>
+          <>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginHorizontal: -20 }}
+            contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
+          >
+            {(['today', 'overdue', 'reminders', 'calendar', 'shopping', 'all'] as Filter[]).map((key) => (
+              <Chip key={key} label={t(`filters.${key}`)} active={filter === key} onPress={() => setFilter(key)} />
+            ))}
+          </ScrollView>
+          {showOverdueSection ? (
+            <View style={{ gap: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <AppText weight="bold" size={18} color={colors.danger}>
+                  {t('overdue.section')}
+                </AppText>
+                <Pressable onPress={() => setConfirm({ kind: 'overdue' })} style={{ minHeight: 44, justifyContent: 'center' }}>
+                  <AppText size={13} weight="semibold" color={colors.danger}>
+                    {t('history.pastClear')}
+                  </AppText>
+                </Pressable>
+              </View>
+              {overdue.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  timeZone={profile.timezone}
+                  onPress={() => setPicked(item)}
+                  onLongPress={() => setConfirm({ kind: 'item', id: item.id })}
+                  onToggle={() => void toggleComplete(item.id)}
+                />
+              ))}
+            </View>
           ) : null}
-        </View>
-        <AppText size={12} color={colors.muted}>
-          {t('history.hold')}
-        </AppText>
-        {recordings.map((recording) => (
-          <GlassCard key={recording.id} onLongPress={() => setConfirm({ kind: 'recording', id: recording.id })}>
-            <AppText weight="semibold" numberOfLines={2}>
-              {recording.transcript || t('history.untitled')}
+          {filter === 'today' && shown.length > 0 && showOverdueSection ? (
+            <AppText weight="bold" size={18}>
+              {t('today')}
             </AppText>
-            <AppText size={12} color={colors.muted}>
-              {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
+          ) : null}
+          {shown.length === 0 && !showOverdueSection ? (
+            <EmptyState
+              title={t(filter === 'overdue' ? 'overdue.emptyTitle' : 'home.emptyTitle')}
+              body={t(filter === 'overdue' ? 'overdue.emptyBody' : 'home.emptyBody')}
+            />
+          ) : (
+            shown.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                timeZone={profile.timezone}
+                onPress={() => setPicked(item)}
+                onToggle={() => void toggleComplete(item.id)}
+              />
+            ))
+          )}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Stat value={String(recordings.length)} label={t('home.voiceNotes')} tint={colors.task} />
+            <Stat value={String(activeTasks)} label={t('home.activeTasks')} tint={colors.shopping} />
+            <Stat value={String(notesToday)} label={t('home.notesToday')} tint={colors.note} />
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <AppText weight="bold" size={18}>
+              {t('home.recent')}
             </AppText>
-          </GlassCard>
-        ))}
+            {recordings.length ? (
+              <Pressable onPress={() => setConfirm({ kind: 'recordings' })} style={{ minHeight: 44, justifyContent: 'center' }}>
+                <AppText size={13} weight="semibold" color={colors.danger}>
+                  {t('history.clear')}
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
+          <AppText size={12} color={colors.muted}>
+            {t('history.hold')}
+          </AppText>
+          {recordings.map((recording) => (
+            <GlassCard key={recording.id} onLongPress={() => setConfirm({ kind: 'recording', id: recording.id })}>
+              <AppText weight="semibold" numberOfLines={2}>
+                {recording.transcript || t('history.untitled')}
+              </AppText>
+              <AppText size={12} color={colors.muted}>
+                {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
+              </AppText>
+            </GlassCard>
+          ))}
+          </>
+        )}
       </ScrollView>
       <EditSheet
         visible={Boolean(editing)}

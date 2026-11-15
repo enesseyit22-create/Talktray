@@ -101,6 +101,13 @@ export const ko: Dictionary = {
     shopping: '장보기',
     all: '전체',
   },
+  search: {
+    placeholder: '할 일, 메모, 녹음 검색',
+    clear: '검색 지우기',
+    results: '결과 {count}개',
+    emptyTitle: '찾은 항목이 없어요',
+    emptyBody: '다른 단어나 더 적은 단어로 검색해 보세요.',
+  },
   record: {
     title: '지금 마음에 있는 것은?',
     hint: '탭하면 녹음됩니다. 손을 뗄 때 멈추려면 길게 누르세요.',

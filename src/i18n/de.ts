@@ -101,6 +101,13 @@ export const de: Dictionary = {
     shopping: 'Einkauf',
     all: 'Alle',
   },
+  search: {
+    placeholder: 'Aufgaben, Notizen, Aufnahmen durchsuchen',
+    clear: 'Suche löschen',
+    results: '{count} Ergebnisse',
+    emptyTitle: 'Nichts gefunden',
+    emptyBody: 'Versuche ein anderes Wort oder weniger Wörter.',
+  },
   record: {
     title: 'Was geht dir durch den Kopf?',
     hint: 'Tippen zum Aufnehmen. Halten, wenn es beim Loslassen stoppen soll.',
