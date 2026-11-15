@@ -21,3 +21,5 @@ export { mergeSpokenOffsets, parseReminderOffsets } from './reminders';
 export { deviceTimeZone, isSameZonedDay, localTimestamp, monthPeriod, safeTimeZone, zonedParts, zonedTimeToUtc } from './time';
 export type { ExtractContext, ItemType, ParsedItem, ResolvedWhen } from './types';
 export { ITEM_TYPES } from './types';
+export { buildSummaryMessages, normalizeSummary, shouldSummarize, summaryToNote } from './summary';
+export type { RecordingSummary } from './summary';

@@ -258,6 +258,7 @@ export const id: Dictionary = {
     f2: 'Rekaman hingga 10 menit',
     f3: 'Dengarkan lagi rekamanmu kapan saja',
     f4: 'Tanpa iklan. Hanya langganan.',
+    f5: 'Ringkasan otomatis untuk rapat dan rekaman panjang',
     billedMonthly: 'Bulanan. Diperpanjang otomatis sampai kamu membatalkan.',
     billedYearly: 'Tahunan. Diperpanjang otomatis sampai kamu membatalkan.',
     terms: 'Ketentuan Penggunaan',

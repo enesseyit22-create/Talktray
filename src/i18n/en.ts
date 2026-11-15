@@ -260,6 +260,7 @@ export const en = {
     f2: 'Recordings up to 10 minutes long',
     f3: 'Listen to your recordings again',
     f4: 'No ads. Subscription only.',
+    f5: 'Meetings and long recordings come with a summary',
     restored: 'Purchases restored',
     cancelled: 'Purchase cancelled',
   },

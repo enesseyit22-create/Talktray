@@ -131,7 +131,7 @@ export function PaywallScreen() {
           })}
         </View>
         <GlassCard style={{ gap: 12 }}>
-          {['f1', 'f2', 'f3', 'f4'].map((key) => (
+          {['f1', 'f2', 'f5', 'f3', 'f4'].map((key) => (
             <View key={key} style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
               <Check color={colors.success} size={18} />
               <AppText style={{ flex: 1, minWidth: 0 }}>{t(`paywall.${key}`)}</AppText>

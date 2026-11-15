@@ -258,6 +258,7 @@ export const tr: Dictionary = {
     f2: '10 dakikaya kadar uzun kayıtlar',
     f3: 'Kayıtlarını istediğin zaman yeniden dinle',
     f4: 'Reklam yok. Yalnızca abonelik.',
+    f5: 'Toplantı ve uzun kayıtlara otomatik özet',
     billedMonthly: 'Aylık. İptal edene kadar otomatik yenilenir.',
     billedYearly: 'Yıllık. İptal edene kadar otomatik yenilenir.',
     terms: 'Kullanım Koşulları',

@@ -258,6 +258,7 @@ export const it: Dictionary = {
     f2: 'Registrazioni fino a 10 minuti',
     f3: 'Riascolta le tue registrazioni quando vuoi',
     f4: 'Niente pubblicità. Solo abbonamento.',
+    f5: 'Riassunto automatico di riunioni e registrazioni lunghe',
     billedMonthly: 'Mensile. Si rinnova finché non annulli.',
     billedYearly: 'Annuale. Si rinnova finché non annulli.',
     terms: 'Termini di utilizzo',

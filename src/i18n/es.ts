@@ -258,6 +258,7 @@ export const es: Dictionary = {
     f2: 'Grabaciones de hasta 10 minutos',
     f3: 'Vuelve a escuchar tus grabaciones cuando quieras',
     f4: 'Sin anuncios. Solo suscripción.',
+    f5: 'Resumen automático de reuniones y grabaciones largas',
     billedMonthly: 'Mensual. Se renueva solo hasta que lo canceles.',
     billedYearly: 'Anual. Se renueva solo hasta que lo canceles.',
     terms: 'Términos de uso',

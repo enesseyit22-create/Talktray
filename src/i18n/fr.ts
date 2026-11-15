@@ -258,6 +258,7 @@ export const fr: Dictionary = {
     f2: 'Enregistrements jusqu’à 10 minutes',
     f3: 'Réécoute tes enregistrements quand tu veux',
     f4: 'Pas de pub. Seulement l’abonnement.',
+    f5: 'Résumé automatique des réunions et longs enregistrements',
     billedMonthly: 'Mensuel. Se renouvelle jusqu’à annulation.',
     billedYearly: 'Annuel. Se renouvelle jusqu’à annulation.',
     terms: 'Conditions d’utilisation',

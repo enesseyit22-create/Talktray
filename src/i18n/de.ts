@@ -258,6 +258,7 @@ export const de: Dictionary = {
     f2: 'Aufnahmen bis zu 10 Minuten',
     f3: 'Deine Aufnahmen jederzeit erneut anhören',
     f4: 'Keine Werbung. Nur das Abo.',
+    f5: 'Automatische Zusammenfassung für Meetings und lange Aufnahmen',
     billedMonthly: 'Monatlich. Verlängert sich, bis du kündigst.',
     billedYearly: 'Jährlich. Verlängert sich, bis du kündigst.',
     terms: 'Nutzungsbedingungen',

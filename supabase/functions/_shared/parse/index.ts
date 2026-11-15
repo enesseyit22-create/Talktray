@@ -23,3 +23,5 @@ export { mergeSpokenOffsets, parseReminderOffsets } from './reminders.ts';
 export { deviceTimeZone, isSameZonedDay, localTimestamp, monthPeriod, safeTimeZone, zonedParts, zonedTimeToUtc } from './time.ts';
 export type { ExtractContext, ItemType, ParsedItem, ResolvedWhen } from './types.ts';
 export { ITEM_TYPES } from './types.ts';
+export { buildSummaryMessages, normalizeSummary, shouldSummarize, summaryToNote } from './summary.ts';
+export type { RecordingSummary } from './summary.ts';

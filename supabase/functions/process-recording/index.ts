@@ -1,6 +1,10 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   buildExtractionMessages,
+  buildSummaryMessages,
+  normalizeSummary,
+  shouldSummarize,
+  summaryToNote,
   decideFreeRecording,
   extractItems,
   localTimestamp,
@@ -112,6 +116,15 @@ Deno.serve(async (req) => {
       await markFailed(admin, recordingId, message, transcript || null);
       const status = message === 'AUDIO_NOT_FOUND' ? 404 : message === 'MISSING_PROVIDER_KEY' ? 501 : 500;
       return json({ error: message }, status);
+    }
+
+    // Pro: long takes such as meetings also get a summary note, first in the list.
+    if (isPro && shouldSummarize(Number(recording.duration_ms ?? 0), transcript)) {
+      const summary = await summarizeWithModel(transcript, locale).catch((error) => {
+        console.warn('[process-recording] summary failed', error instanceof Error ? error.message : error);
+        return null;
+      });
+      if (summary) items = [summaryToNote(summary), ...items];
     }
 
     await admin.from('recordings').update({ status: 'ready', transcript, language }).eq('id', recordingId);
@@ -398,4 +411,36 @@ async function extractWithModel(transcript: string, now: Date, timeZone: string,
   const normalized = normalizeExtraction(parsed, { now, timeZone, locale });
   const items = normalized.length > 0 ? normalized : extractItems(transcript, { now, timeZone, locale });
   return mergeSpokenOffsets(items, transcript);
+}
+
+async function summarizeWithModel(transcript: string, locale: string) {
+  const provider = (Deno.env.get('LLM_PROVIDER') ?? 'groq').toLowerCase();
+  const useOpenAI = provider === 'openai';
+  const key = useOpenAI ? Deno.env.get('OPENAI_API_KEY') : Deno.env.get('GROQ_API_KEY');
+  if (!key) return null;
+  const endpoint = useOpenAI
+    ? 'https://api.openai.com/v1/chat/completions'
+    : 'https://api.groq.com/openai/v1/chat/completions';
+  const model = useOpenAI
+    ? Deno.env.get('OPENAI_LLM_MODEL') ?? 'gpt-4o-mini'
+    : Deno.env.get('LLM_MODEL') ?? 'openai/gpt-oss-120b';
+  const messages = buildSummaryMessages({ transcript, locale });
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(25_000),
+    body: JSON.stringify({
+      model,
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: messages.system },
+        { role: 'user', content: messages.user },
+      ],
+    }),
+  });
+  if (!response.ok) throw new Error(`SUMMARY_${response.status}`);
+  const payload = await response.json();
+  const content = payload.choices?.[0]?.message?.content ?? '{}';
+  return normalizeSummary(JSON.parse(content.replace(/^```(?:json)?/i, '').replace(/```$/, '')));
 }

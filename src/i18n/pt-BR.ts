@@ -258,6 +258,7 @@ export const ptBR: Dictionary = {
     f2: 'Gravações de até 10 minutos',
     f3: 'Ouça suas gravações de novo quando quiser',
     f4: 'Sem anúncios. Só assinatura.',
+    f5: 'Resumo automático de reuniões e gravações longas',
     billedMonthly: 'Mensal. Renova sozinho até você cancelar.',
     billedYearly: 'Anual. Renova sozinho até você cancelar.',
     terms: 'Termos de uso',

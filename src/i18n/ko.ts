@@ -258,6 +258,7 @@ export const ko: Dictionary = {
     f2: '최대 10분 녹음',
     f3: '녹음을 언제든 다시 듣기',
     f4: '광고 없음. 구독만.',
+    f5: '회의와 긴 녹음 자동 요약',
     billedMonthly: '월간. 취소할 때까지 자동 갱신됩니다.',
     billedYearly: '연간. 취소할 때까지 자동 갱신됩니다.',
     terms: '이용 약관',
