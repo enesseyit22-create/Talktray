@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     // Limits always use the server clock, so a changed date cannot open a new month.
     const now = body.now ? new Date(body.now) : new Date();
     const serverNow = new Date();
-    const isPro = await subscriberIsPro(userId);
+    const isPro = await subscriberIsPro(admin, userId);
 
     // A little slack over the app's own auto-stop for timer drift.
     if (isPro && Number(recording.duration_ms ?? 0) > (PRO_MAX_SECONDS_PER_RECORDING + 15) * 1000) {
@@ -315,12 +315,52 @@ function secretKey() {
   return parsed.default ?? Object.values(parsed)[0] ?? '';
 }
 
+function normalizeUntil(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === 'number') return value === Number.POSITIVE_INFINITY ? 'infinity' : null;
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.toISOString() : null;
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+function overrideActive(until: string | null): boolean {
+  if (!until) return false;
+  const value = until.trim().toLowerCase();
+  if (value === 'infinity' || value === '+infinity') return true;
+  const time = Date.parse(until);
+  return Number.isFinite(time) && time > Date.now();
+}
+
+function missingOverrideColumn(error: { code?: string; message?: string }): boolean {
+  if (error.code === 'PGRST204' || error.code === '42703') return true;
+  const message = error.message ?? '';
+  return /pro_override_until/i.test(message) && /schema cache|could not find|does not exist/i.test(message);
+}
+
+/** Pro granted by an admin (profiles.pro_override_until), independent of the store. */
+async function readGiftUntil(admin: ReturnType<typeof createClient>, userId: string): Promise<string | null> {
+  const override = await admin.from('profiles').select('pro_override_until').eq('id', userId).maybeSingle();
+  if (override.error) {
+    if (!missingOverrideColumn(override.error)) {
+      console.warn('[pro] override unread', override.error.code ?? '', (override.error.message ?? '').slice(0, 200));
+    }
+    return null;
+  }
+  const raw = override.data ? (override.data as { pro_override_until?: unknown }).pro_override_until : null;
+  if (raw != null && typeof raw !== 'string' && typeof raw !== 'number' && !(raw instanceof Date)) {
+    console.warn('[pro] override type', typeof raw);
+  }
+  return normalizeUntil(raw);
+}
+
 /**
  * True when the RevenueCat entitlement is active. If RevenueCat cannot be reached
  * after a retry, a paying user must not be locked out, so the request is treated as
  * Pro. The 300-a-month fair-use cap still applies in that case.
  */
-async function subscriberIsPro(userId: string): Promise<boolean> {
+async function subscriberIsPro(admin: ReturnType<typeof createClient>, userId: string): Promise<boolean> {
+  if (overrideActive(await readGiftUntil(admin, userId))) return true;
   const secret = Deno.env.get('REVENUECAT_SECRET_API_KEY');
   const entitlement = Deno.env.get('REVENUECAT_ENTITLEMENT_ID') ?? 'pro';
   if (!secret) return false;
