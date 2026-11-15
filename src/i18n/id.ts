@@ -115,6 +115,7 @@ export const id: Dictionary = {
     remaining: '{count} dari {limit} bulan ini',
     unlimited: 'Pro · penggunaan wajar {limit}/bulan',
     permission: 'Akses mikrofon diperlukan untuk menangkap sebuah pikiran.',
+    tooShort: 'Terlalu singkat. Tahan sedikit lebih lama lalu bicara.',
     mix: 'Bicara dalam bahasa apa pun — TalkTray mendeteksinya otomatis.',
   },
   quick: {
@@ -269,6 +270,7 @@ export const id: Dictionary = {
   errors: {
     generic: 'Ada yang tidak beres. Coba lagi.',
     quota: 'Rekaman gratis bulan ini sudah habis.',
+    quotaPro: 'Kamu sudah mencapai batas pemakaian wajar 300 rekaman bulan ini. Batas direset bulan depan.',
     network: 'Server tidak dapat dihubungi.',
     process: 'Rekaman ini tidak bisa dirapikan. Coba lagi.',
     transcription: 'Rekaman tidak bisa ditranskrip. Coba lagi sebentar lagi.',

@@ -115,6 +115,7 @@ export const it: Dictionary = {
     remaining: '{count} di {limit} questo mese',
     unlimited: 'Pro · uso equo {limit}/mese',
     permission: 'Serve il microfono per catturare un pensiero.',
+    tooShort: 'Troppo breve. Tieni premuto un po’ di più e parla.',
     mix: 'Parla in qualsiasi lingua — TalkTray la riconosce da solo.',
   },
   quick: {
@@ -269,6 +270,7 @@ export const it: Dictionary = {
   errors: {
     generic: 'Qualcosa è andato storto. Riprova.',
     quota: 'Hai usato le registrazioni gratuite di questo mese.',
+    quotaPro: 'Hai raggiunto il limite di uso corretto di 300 registrazioni di questo mese. Si rinnova il mese prossimo.',
     network: 'Il server non ha risposto.',
     process: 'Questa registrazione non si è potuta sistemare. Riprova.',
     transcription: 'La registrazione non si è potuta trascrivere. Riprova tra un momento.',

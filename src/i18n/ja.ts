@@ -115,6 +115,7 @@ export const ja: Dictionary = {
     remaining: '今月 {count} / {limit}',
     unlimited: 'Pro · フェアユース {limit}/月',
     permission: '考えを残すには、マイクへのアクセスが必要です。',
+    tooShort: '短すぎます。もう少し長く押したまま話してください。',
     mix: 'どの言語でも話して — TalkTrayが自動で判別します。',
   },
   quick: {
@@ -269,6 +270,7 @@ export const ja: Dictionary = {
   errors: {
     generic: 'うまくいきませんでした。もう一度どうぞ。',
     quota: '今月の無料録音を使い切りました。',
+    quotaPro: '今月のフェアユース上限（300件）に達しました。来月リセットされます。',
     network: 'サーバーに届きませんでした。',
     process: 'この録音を仕分けられませんでした。もう一度どうぞ。',
     transcription: '録音を文字起こしできませんでした。しばらくしてからもう一度どうぞ。',

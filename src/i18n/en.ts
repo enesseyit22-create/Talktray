@@ -113,6 +113,7 @@ export const en = {
     remaining: '{count} of {limit} this month',
     unlimited: 'Pro · fair use {limit}/month',
     permission: 'Microphone access is needed to capture a thought.',
+    tooShort: 'Too short. Hold a little longer and speak.',
     mix: 'Speak in any language — TalkTray detects it automatically.',
   },
   quick: {
@@ -267,6 +268,7 @@ export const en = {
   errors: {
     generic: 'Something went wrong. Try again.',
     quota: 'You’ve used this month’s free recordings.',
+    quotaPro: 'You reached this month’s fair-use limit of 300 recordings. It resets next month.',
     network: 'The server could not be reached.',
     process: 'This recording could not be sorted. Try again.',
     transcription: 'The recording could not be transcribed. Try again in a moment.',

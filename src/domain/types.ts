@@ -41,7 +41,7 @@ export type Usage = {
 export type DraftItem = ParsedItem & { localId: string };
 
 export type Draft = {
-  recordingId: string;
+  recordingId: string | null;
   transcript: string;
   language: string | null;
   durationMs: number;

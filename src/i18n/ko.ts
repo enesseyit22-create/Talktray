@@ -115,6 +115,7 @@ export const ko: Dictionary = {
     remaining: '이번 달 {count} / {limit}',
     unlimited: 'Pro · 공정 사용 {limit}/월',
     permission: '생각을 담으려면 마이크 권한이 필요합니다.',
+    tooShort: '너무 짧아요. 조금 더 길게 누르고 말해 주세요.',
     mix: '어떤 언어로든 말하세요 — TalkTray가 자동으로 알아듣습니다.',
   },
   quick: {
@@ -269,6 +270,7 @@ export const ko: Dictionary = {
   errors: {
     generic: '문제가 생겼습니다. 다시 시도하세요.',
     quota: '이번 달 무료 녹음을 모두 사용했습니다.',
+    quotaPro: '이번 달 공정 사용 한도인 300개 녹음에 도달했어요. 다음 달에 초기화돼요.',
     network: '서버에 연결하지 못했습니다.',
     process: '이 녹음을 정리하지 못했습니다. 다시 시도하세요.',
     transcription: '녹음을 받아쓰지 못했습니다. 잠시 후 다시 시도하세요.',

@@ -115,6 +115,7 @@ export const ptBR: Dictionary = {
     remaining: '{count} de {limit} neste mês',
     unlimited: 'Pro · uso justo {limit}/mês',
     permission: 'O microfone é necessário para guardar um pensamento.',
+    tooShort: 'Muito curto. Segure um pouco mais e fale.',
     mix: 'Fale em qualquer idioma — o TalkTray detecta automaticamente.',
   },
   quick: {
@@ -269,6 +270,7 @@ export const ptBR: Dictionary = {
   errors: {
     generic: 'Algo deu errado. Tente de novo.',
     quota: 'Você já usou as gravações grátis deste mês.',
+    quotaPro: 'Você atingiu o limite de uso justo de 300 gravações deste mês. Ele renova no próximo mês.',
     network: 'Não foi possível alcançar o servidor.',
     process: 'Não foi possível organizar esta gravação. Tente de novo.',
     transcription: 'Não foi possível transcrever a gravação. Tente de novo daqui a pouco.',

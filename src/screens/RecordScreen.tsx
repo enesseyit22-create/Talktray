@@ -37,7 +37,7 @@ export function RecordScreen() {
     (result: 'review' | 'quota') => {
       if (result === 'quota') {
         if (shouldPresentPaywall(seen, usage.isPro)) router.push('/paywall');
-        else setError(t('errors.quota'));
+        else setError(t(usage.isPro ? 'errors.quotaPro' : 'errors.quota'));
         return;
       }
       router.push('/review');

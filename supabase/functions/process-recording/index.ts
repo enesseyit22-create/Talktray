@@ -57,63 +57,73 @@ Deno.serve(async (req) => {
     const { data: profile } = await admin.from('profiles').select('timezone, locale').eq('id', userId).maybeSingle();
     const timeZone = safeTimeZone(profile?.timezone || body.timezone || 'UTC');
     const locale = resolveLocale(profile?.locale, body.locale);
+    // The phone's clock is used only to read "tomorrow at 9" and the like.
+    // Limits always use the server clock, so a changed date cannot open a new month.
     const now = body.now ? new Date(body.now) : new Date();
+    const serverNow = new Date();
     const isPro = await subscriberIsPro(userId);
-    const limits = isPro ? null : await readFreeLimits(admin);
-    if (limits) {
-      const reason = await freeLimitReason(admin, userId, recordingId, Number(recording.duration_ms ?? 0), now, timeZone, limits);
-      if (reason) {
-        await admin.from('recordings').update({ status: 'failed', error: 'quota_exceeded' }).eq('id', recordingId);
-        return json({ error: 'quota_exceeded', reason }, 402);
-      }
+
+    if (!isPro) {
+      const limits = await readFreeLimits(admin);
+      const reason = await freeLimitReason(admin, userId, Number(recording.duration_ms ?? 0), serverNow, timeZone, limits);
+      if (reason) return await refuse(admin, recordingId, reason);
+    }
+    const credit = await reserveCredit(admin, userId, recordingId, isPro, timeZone);
+    if (credit.state === 'blocked') {
+      if (credit.reason === 'repeat') return json({ error: 'ALREADY_PROCESSED' }, 409);
+      return await refuse(admin, recordingId, credit.reason);
+    }
+    if (credit.state === 'unavailable') {
+      await markFailed(admin, recordingId, 'CREDITS_UNAVAILABLE');
+      return json({ error: 'CREDITS_UNAVAILABLE' }, 503);
     }
 
     let transcript = '';
     let language: string | null = locale;
-    if (body.useStoredTranscript && recording.transcript) {
-      transcript = recording.transcript;
-    } else {
-      if (!recording.storage_path) return json({ error: 'AUDIO_NOT_FOUND' }, 400);
-      const sttKey = Deno.env.get('GROQ_API_KEY') || Deno.env.get('OPENAI_API_KEY');
-      if (!sttKey) {
-        await admin.from('recordings').update({ status: 'failed', error: 'MISSING_PROVIDER_KEY' }).eq('id', recordingId);
-        return json({ error: 'MISSING_PROVIDER_KEY' }, 501);
-      }
-      const audio = await admin.storage.from('recordings').download(recording.storage_path);
-      if (audio.error || !audio.data) return json({ error: 'AUDIO_NOT_FOUND' }, 404);
-      const spoken = await transcribe(new Uint8Array(await audio.data.arrayBuffer()));
-      transcript = spoken.text;
-      language = spoken.language ?? language;
-    }
-
     let items;
     try {
-      items = await extractWithModel(transcript, now, timeZone, locale);
-    } catch (error) {
-      if (error instanceof Error && error.message === 'MISSING_LLM_KEY') {
-        items = extractItems(transcript, { now, timeZone, locale });
+      if (body.useStoredTranscript && recording.transcript) {
+        transcript = recording.transcript;
       } else {
-        const message = error instanceof Error ? error.message : 'UNKNOWN';
-        await admin.from('recordings').update({ status: 'failed', transcript, error: message.slice(0, 500) }).eq('id', recordingId);
-        throw error;
+        if (!recording.storage_path) throw new Error('AUDIO_NOT_FOUND');
+        const sttKey = Deno.env.get('GROQ_API_KEY') || Deno.env.get('OPENAI_API_KEY');
+        if (!sttKey) throw new Error('MISSING_PROVIDER_KEY');
+        const audio = await admin.storage.from('recordings').download(recording.storage_path);
+        if (audio.error || !audio.data) throw new Error('AUDIO_NOT_FOUND');
+        const spoken = await transcribe(new Uint8Array(await audio.data.arrayBuffer()));
+        transcript = spoken.text;
+        language = spoken.language ?? language;
       }
+      try {
+        items = await extractWithModel(transcript, now, timeZone, locale);
+      } catch (error) {
+        if (!(error instanceof Error && error.message === 'MISSING_LLM_KEY')) throw error;
+        items = extractItems(transcript, { now, timeZone, locale });
+      }
+    } catch (error) {
+      // Nothing usable came back, so the user gets the credit back.
+      const message = error instanceof Error ? error.message : 'UNKNOWN';
+      await admin.from('recording_credits').delete().eq('recording_id', recordingId);
+      await markFailed(admin, recordingId, message, transcript || null);
+      const status = message === 'AUDIO_NOT_FOUND' ? 404 : message === 'MISSING_PROVIDER_KEY' ? 501 : 500;
+      return json({ error: message }, status);
     }
 
     await admin.from('recordings').update({ status: 'ready', transcript, language }).eq('id', recordingId);
-    const monthCount = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'month'));
+    const monthCount = await countCreditsSince(admin, userId, windowStart(serverNow, timeZone, 'month'));
     return json({
       transcript,
       language,
       items,
       usage: {
         count: monthCount,
-        limit: isPro ? null : limits?.free_recordings_per_month ?? null,
+        limit: credit.limit,
         isPro,
       },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'UNKNOWN';
-    return json({ error: message }, 500);
+    return json({ error: message }, message === 'CREDITS_UNAVAILABLE' ? 503 : 500);
   }
 });
 
@@ -184,85 +194,90 @@ function windowStart(now: Date, timeZone: string, kind: 'day' | 'month'): string
   ).toISOString();
 }
 
-async function countRecordingsSince(
+async function markFailed(
+  admin: ReturnType<typeof createClient>,
+  recordingId: string,
+  error: string,
+  transcript: string | null = null,
+) {
+  const patch: Record<string, unknown> = { status: 'failed', error: error.slice(0, 500) };
+  if (transcript) patch.transcript = transcript;
+  await admin.from('recordings').update(patch).eq('id', recordingId);
+}
+
+async function refuse(admin: ReturnType<typeof createClient>, recordingId: string, reason: string | null) {
+  await markFailed(admin, recordingId, 'quota_exceeded');
+  return json({ error: 'quota_exceeded', reason }, 402);
+}
+
+/** Counts from recording_credits, which users cannot delete or edit. */
+async function countCreditsSince(
   admin: ReturnType<typeof createClient>,
   userId: string,
-  start: string,
-  exceptId?: string,
+  start: string | null,
 ): Promise<number> {
-  let query = admin
-    .from('recordings')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .gte('created_at', start)
-    .neq('status', 'failed');
-  if (exceptId) query = query.neq('id', exceptId);
-  const { count } = await query;
+  let query = admin.from('recording_credits').select('recording_id', { count: 'exact', head: true }).eq('user_id', userId);
+  if (start) query = query.gte('created_at', start);
+  const { count, error } = await query;
+  if (error) throw new Error('CREDITS_UNAVAILABLE');
   return count ?? 0;
 }
 
+/** Day, length, and item limits. The monthly cap is checked atomically in reserveCredit. */
 async function freeLimitReason(
   admin: ReturnType<typeof createClient>,
   userId: string,
-  recordingId: string,
   durationMs: number,
   now: Date,
   timeZone: string,
   limits: FreeLimits,
 ): Promise<string | null> {
-  const ever = await countRecordingsSince(admin, userId, '1970-01-01T00:00:00.000Z', recordingId);
+  const ever = await countCreditsSince(admin, userId, null);
   const durationSeconds = Math.floor(durationMs / 1000);
-  if (ever < RECORDINGS_BEFORE_PAYWALL) {
-    return decideFreeRecording({
-      isPro: false,
-      completedEver: ever,
-      completedToday: 0,
-      completedMonth: 0,
-      durationSeconds,
-      itemCount: 0,
-      limits,
-    }).reason;
-  }
-  const today = await countRecordingsSince(admin, userId, windowStart(now, timeZone, 'day'), recordingId);
-  const monthStart = windowStart(now, timeZone, 'month');
-  const month = await countRecordingsSince(admin, userId, monthStart, recordingId);
+  if (ever < RECORDINGS_BEFORE_PAYWALL) return null;
+  const today =
+    limits.free_recordings_per_day == null
+      ? 0
+      : await countCreditsSince(admin, userId, windowStart(now, timeZone, 'day'));
   let itemCount = 0;
   if (limits.free_max_items != null) {
     const { count } = await admin.from('items').select('id', { count: 'exact', head: true }).eq('user_id', userId);
     itemCount = count ?? 0;
   }
-  let decision: FreeLimitDecision = decideFreeRecording({
+  const decision: FreeLimitDecision = decideFreeRecording({
     isPro: false,
     completedEver: ever,
     completedToday: today,
-    completedMonth: month,
+    // Month is enforced by reserve_recording_credit under a row lock.
+    completedMonth: 0,
     durationSeconds,
     itemCount,
     limits,
   });
-  if (decision.allowed || decision.reason === 'month') {
-    const reserved = await reserveMonthlyCredit(admin, userId, recordingId, monthStart);
-    if (reserved === 'blocked') decision = { allowed: false, reason: 'month', enforceDurationCap: true };
-  }
   return decision.allowed ? null : decision.reason;
 }
 
-/** Optional lock. Missing function falls back to the same TypeScript decision, so 1.0 clients keep working. */
-async function reserveMonthlyCredit(
+async function reserveCredit(
   admin: ReturnType<typeof createClient>,
   userId: string,
   recordingId: string,
-  periodStart: string,
-): Promise<'ok' | 'blocked' | 'unavailable'> {
-  const { data, error } = await admin.rpc('reserve_monthly_credit', {
+  isPro: boolean,
+  timeZone: string,
+): Promise<
+  | { state: 'ok'; limit: number | null }
+  | { state: 'blocked'; reason: string }
+  | { state: 'unavailable' }
+> {
+  const { data, error } = await admin.rpc('reserve_recording_credit', {
     p_user_id: userId,
     p_recording_id: recordingId,
-    p_is_pro: false,
-    p_period_start: periodStart,
+    p_is_pro: isPro,
+    p_time_zone: timeZone,
   });
-  if (error) return 'unavailable';
-  const row = data as { allowed?: boolean } | null;
-  return row?.allowed === false ? 'blocked' : 'ok';
+  if (error) return { state: 'unavailable' };
+  const row = (data ?? {}) as { allowed?: boolean; reason?: string | null; limit?: number | null };
+  if (row.allowed === false) return { state: 'blocked', reason: row.reason ?? 'month' };
+  return { state: 'ok', limit: typeof row.limit === 'number' ? row.limit : null };
 }
 
 function publishableKey() {

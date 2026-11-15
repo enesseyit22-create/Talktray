@@ -115,6 +115,7 @@ export const tr: Dictionary = {
     remaining: 'Bu ay {count} / {limit}',
     unlimited: 'Pro · adil kullanım {limit}/ay',
     permission: 'Bir düşünceyi almak için mikrofon izni gerekir.',
+    tooShort: 'Çok kısa. Biraz daha uzun basılı tut ve konuş.',
     mix: 'Herhangi bir dilde konuş — TalkTray dili kendisi anlar.',
   },
   quick: {
@@ -269,6 +270,7 @@ export const tr: Dictionary = {
   errors: {
     generic: 'Bir şey ters gitti. Yeniden dene.',
     quota: 'Bu ayki ücretsiz kayıtların bitti.',
+    quotaPro: 'Bu ayki 300 kayıtlık adil kullanım sınırına ulaştın. Gelecek ay yenilenir.',
     network: 'Sunucuya ulaşılamadı.',
     process: 'Bu kayıt ayıklanamadı. Yeniden dene.',
     transcription: 'Kayıt yazıya dökülemedi. Biraz sonra yeniden dene.',

@@ -2,6 +2,7 @@ import {
   AudioModule,
   RecordingPresets,
   setAudioModeAsync,
+  setIsAudioActiveAsync,
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
@@ -25,6 +26,19 @@ type CaptureValue = {
 };
 
 const CaptureContext = createContext<CaptureValue | null>(null);
+
+/** Taps shorter than this are treated as accidental and never sent or counted. */
+const MIN_RECORDING_MS = 1000;
+
+/**
+ * Hands the microphone back to the system after a take. Without this the iOS audio
+ * session stays in record mode, the orange microphone indicator stays on, and the
+ * next take can start against a half-open session.
+ */
+async function releaseMicrophone() {
+  await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false }).catch(() => undefined);
+  await setIsAudioActiveAsync(false).catch(() => undefined);
+}
 
 export function CaptureProvider({ children }: { children: ReactNode }) {
   const { t } = useI18n();
@@ -59,7 +73,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       const seen = recordings.filter((recording) => recording.status !== 'failed').length;
       if (result === 'quota') {
         if (shouldPresentPaywall(seen, usage.isPro)) router.push('/paywall');
-        else setError(t('errors.quota'));
+        else setError(t(usage.isPro ? 'errors.quotaPro' : 'errors.quota'));
         return;
       }
       router.push('/review');
@@ -76,9 +90,15 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
     session.current = 'stopping';
     setBusy(true);
     setError(null);
+    const durationMs = state.durationMillis;
     try {
       await recorder.stop();
-      await finish(state.durationMillis);
+      await releaseMicrophone();
+      if (durationMs < MIN_RECORDING_MS) {
+        setError(t('record.tooShort'));
+        return;
+      }
+      await finish(durationMs);
     } catch (caught) {
       setError(errorText(caught, t('errors.generic')));
     } finally {
@@ -100,10 +120,15 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
         return;
       }
       await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true });
-      if (session.current !== 'starting') return;
-      await recorder.prepareToRecordAsync();
+      if (session.current !== 'starting') {
+        await releaseMicrophone();
+        return;
+      }
+      // Passing the preset makes a fresh file for every take instead of reusing the last one.
+      await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
       if (stopAfterStart.current || session.current !== 'starting') {
         session.current = 'idle';
+        await releaseMicrophone();
         return;
       }
       recorder.record();
@@ -111,6 +136,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       if (stopAfterStart.current) await stopAndSubmit();
     } catch (caught) {
       session.current = 'idle';
+      await releaseMicrophone();
       setError(errorText(caught, t('errors.generic')));
     }
   }, [busy, recorder, stopAndSubmit, t]);

@@ -179,10 +179,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const isPro = store?.isPro ?? false;
       const limits = await loadFreeLimits().catch(() => null);
       const period = monthPeriod(new Date(), nextProfile.timezone);
-      const count = (recordingRows ?? []).filter((row) => {
-        if (row.status === 'failed') return false;
-        return monthPeriod(new Date(String(row.created_at)), nextProfile.timezone) === period;
-      }).length;
+      const count =
+        (await countMonthCredits(nextProfile.timezone)) ??
+        (recordingRows ?? []).filter((row) => {
+          if (row.status === 'failed') return false;
+          return monthPeriod(new Date(String(row.created_at)), nextProfile.timezone) === period;
+        }).length;
       flushSync(() => {
         setUser({ id: userId, email, provider: authProvider(sessionUser) });
         setItems((itemRows ?? []).map(mapItem));
@@ -505,7 +507,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             isPro: usage.isPro,
           });
         }
-        refreshUsage(0, usage.isPro);
+        // Used recordings stay used. Only the on-device demo resets.
+        if (mode !== 'supabase') refreshUsage(0, usage.isPro);
       },
       deleteRecording: async (id) => {
         const nextRecordings = recordings.filter((recording) => recording.id !== id);
@@ -513,7 +516,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setRecordings(nextRecordings);
         setItems(nextItems);
         const counts = countCompleted(nextRecordings, profile.timezone);
-        refreshUsage(counts.month, usage.isPro);
+        if (mode !== 'supabase') refreshUsage(counts.month, usage.isPro);
         if (mode === 'supabase' && user) {
           const { data } = await supabase.from('recordings').select('storage_path').eq('id', id).maybeSingle();
           const path = (data?.storage_path as string | null) || `${user.id}/${id}.m4a`;
@@ -676,9 +679,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ]);
         return 'review';
       },
-      openSample: (locale) =>
-        actions.current?.processThought({ durationMs: 12000, transcript: sampleTranscript(locale) }) ??
-        Promise.resolve('quota'),
+      openSample: async (locale) => {
+        if (mode !== 'supabase') {
+          return (
+            actions.current?.processThought({ durationMs: 12000, transcript: sampleTranscript(locale) }) ??
+            'quota'
+          );
+        }
+        // Signed-in accounts try samples on the device. Nothing is sent and no recording is used.
+        const transcript = sampleTranscript(locale);
+        const parsed = extractItems(transcript, { now: new Date(), timeZone: profile.timezone, locale });
+        setDraft({
+          recordingId: null,
+          transcript,
+          language: locale,
+          durationMs: 0,
+          items: parsed.map((item) => ({ ...item, localId: createId() })),
+          mocked: false,
+          audioUri: null,
+        });
+        return 'review';
+      },
       updateDraftItem: (localId, patch) => {
         setDraft((current) =>
           current
@@ -909,6 +930,16 @@ export function useApp() {
   const value = useContext(AppContext);
   if (!value) throw new Error('useApp must be used within AppProvider');
   return value;
+}
+
+/** This month's used recordings from the credit ledger. Null when the ledger is not deployed yet. */
+async function countMonthCredits(timeZone: string): Promise<number | null> {
+  const start = zonedMonthStart(new Date(), timeZone).toISOString();
+  const { count, error } = await supabase
+    .from('recording_credits')
+    .select('recording_id', { count: 'exact', head: true })
+    .gte('created_at', start);
+  return error ? null : count ?? 0;
 }
 
 function freeMonthLimit(limits: FreeLimits | null): number {
