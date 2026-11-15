@@ -26,3 +26,7 @@ export async function restorePurchases(): Promise<boolean> {
 }
 
 export async function logOutPurchases(): Promise<void> {}
+
+export function onProChange(_listener: (isPro: boolean) => void): () => void {
+  return () => undefined;
+}

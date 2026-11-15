@@ -20,6 +20,7 @@ import {
   configurePurchases,
   loadStoreOffers,
   logOutPurchases,
+  onProChange,
   purchaseOffer,
   restorePurchases,
 } from '@/services/purchases';
@@ -288,6 +289,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     syncWidgets({ todayCount, openTasks });
   }, [items, recordings, user, profile.timezone]);
 
+  // Renewals, expiries, and purchases made elsewhere update the plan without a restart.
+  useEffect(() => {
+    if (mode !== 'supabase') return;
+    return onProChange((isPro) => {
+      setUsage((current) =>
+        current.isPro === isPro ? current : { ...current, isPro, limit: isPro ? recordingLimit(true) : current.limit },
+      );
+    });
+  }, [mode]);
+
   useEffect(() => {
     void ensureReminderChannel(profile.locale);
   }, [profile.locale]);
@@ -297,11 +308,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const run = () => {
       void syncItemNotifications(profile.notificationsEnabled ? items : [], profile.locale, profile.reminderOffsets);
     };
-    run();
+    // Typing in an item changes it on every key. Reschedule once the edits settle.
+    const timer = setTimeout(run, 800);
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') run();
     });
-    return () => sub.remove();
+    return () => {
+      clearTimeout(timer);
+      sub.remove();
+    };
   }, [user, items, profile.notificationsEnabled, profile.locale, profile.reminderOffsets]);
 
   const snapshotDemo = useCallback(
@@ -323,6 +338,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const actions = useRef<Pick<AppValue, 'enterDemo' | 'updateProfile' | 'processThought'> | null>(null);
+
+  // Item edits are saved to the server after typing pauses, one write per item, newest state wins.
+  const pendingWrites = useRef(new Map<string, InboxItem>());
+  const writeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localeRef = useRef(profile.locale);
+  useEffect(() => {
+    localeRef.current = profile.locale;
+  }, [profile.locale]);
+
+  const flushWrites = useCallback(async () => {
+    if (writeTimer.current) clearTimeout(writeTimer.current);
+    writeTimer.current = null;
+    const batch = [...pendingWrites.current.values()];
+    pendingWrites.current.clear();
+    for (const updated of batch) {
+      const { error } = await supabase
+        .from('items')
+        .update({
+          type: updated.type,
+          title: updated.title,
+          notes: updated.notes,
+          due_at: updated.dueAt,
+          all_day: updated.allDay,
+          list_name: updated.listName,
+          reminder_offsets: updated.reminderOffsets,
+          notification_id: updated.notificationId,
+        })
+        .eq('id', updated.id);
+      if (error) setBanner(translate(localeRef.current, 'errors.saveFailed'));
+    }
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') void flushWrites();
+    });
+    return () => {
+      sub.remove();
+      void flushWrites();
+    };
+  }, [flushWrites]);
 
   const value = useMemo<AppValue>(() => {
     const refreshUsage = (count: number, isPro: boolean, period = usage.period, limit = recordingLimit(isPro)) => {
@@ -813,7 +869,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         );
         setItems(nextItems);
         if (mode === 'supabase') {
-          await supabase.from('items').update({ completed_at: completedAt }).eq('id', id);
+          const { error } = await supabase.from('items').update({ completed_at: completedAt }).eq('id', id);
+          if (error) {
+            setItems((list) => list.map((item) => (item.id === id ? { ...item, completedAt: current.completedAt } : item)));
+            setBanner(translate(profile.locale, 'errors.saveFailed'));
+          }
         } else if (user) {
           await persistDemo({
             user,
@@ -832,23 +892,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         );
         setItems(nextItems);
         const updated = nextItems.find((item) => item.id === id);
-        if (updated && profile.notificationsEnabled && updated.dueAt && !updated.completedAt) {
+        if (updated && 'dueAt' in patch && profile.notificationsEnabled && updated.dueAt && !updated.completedAt) {
           await requestReminderPermission();
         }
         if (mode === 'supabase' && updated) {
-          await supabase
-            .from('items')
-            .update({
-              type: updated.type,
-              title: updated.title,
-              notes: updated.notes,
-              due_at: updated.dueAt,
-              all_day: updated.allDay,
-              list_name: updated.listName,
-              reminder_offsets: updated.reminderOffsets,
-              notification_id: updated.notificationId,
-            })
-            .eq('id', id);
+          pendingWrites.current.set(id, updated);
+          if (writeTimer.current) clearTimeout(writeTimer.current);
+          writeTimer.current = setTimeout(() => void flushWrites(), 700);
         } else if (user) {
           await snapshotDemo({ items: nextItems });
         }
@@ -856,8 +906,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deleteItem: async (id) => {
         const nextItems = items.filter((item) => item.id !== id);
         setItems(nextItems);
-        if (mode === 'supabase') await supabase.from('items').delete().eq('id', id);
-        else if (user) await snapshotDemo({ items: nextItems });
+        if (mode === 'supabase') {
+          pendingWrites.current.delete(id);
+          const { error } = await supabase.from('items').delete().eq('id', id);
+          if (error) {
+            const removed = items.find((item) => item.id === id);
+            if (removed) setItems((list) => (list.some((item) => item.id === id) ? list : [removed, ...list]));
+            setBanner(translate(profile.locale, 'errors.saveFailed'));
+          }
+        } else if (user) await snapshotDemo({ items: nextItems });
       },
       clearSamples: async () => {
         setItems([]);
@@ -906,6 +963,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     applyProfile,
     banner,
     draft,
+    flushWrites,
     items,
     mode,
     loadRemote,

@@ -270,6 +270,7 @@ export const en = {
     quota: 'You’ve used this month’s free recordings.',
     quotaPro: 'You reached this month’s fair-use limit of 300 recordings. It resets next month.',
     network: 'The server could not be reached.',
+    saveFailed: 'Couldn’t save that change. Check your connection and try again.',
     process: 'This recording could not be sorted. Try again.',
     transcription: 'The recording could not be transcribed. Try again in a moment.',
     analysis: 'The transcript could not be turned into items. Try again.',

@@ -272,6 +272,7 @@ export const es: Dictionary = {
     quota: 'Ya usaste las grabaciones gratis de este mes.',
     quotaPro: 'Llegaste al límite de uso justo de 300 grabaciones de este mes. Se renueva el mes que viene.',
     network: 'No se pudo llegar al servidor.',
+    saveFailed: 'No se pudo guardar el cambio. Revisa tu conexión e inténtalo de nuevo.',
     process: 'No se pudo ordenar esta grabación. Inténtalo de nuevo.',
     transcription: 'No se pudo transcribir la grabación. Inténtalo en un momento.',
     analysis: 'No se pudo convertir la transcripción en elementos. Inténtalo de nuevo.',

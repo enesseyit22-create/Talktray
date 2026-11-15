@@ -294,19 +294,34 @@ function secretKey() {
   return parsed.default ?? Object.values(parsed)[0] ?? '';
 }
 
+/**
+ * True when the RevenueCat entitlement is active. If RevenueCat cannot be reached
+ * after a retry, a paying user must not be locked out, so the request is treated as
+ * Pro. The 300-a-month fair-use cap still applies in that case.
+ */
 async function subscriberIsPro(userId: string): Promise<boolean> {
   const secret = Deno.env.get('REVENUECAT_SECRET_API_KEY');
   const entitlement = Deno.env.get('REVENUECAT_ENTITLEMENT_ID') ?? 'pro';
   if (!secret) return false;
-  const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
-    headers: { Authorization: `Bearer ${secret}` },
-  });
-  if (!response.ok) return false;
-  const payload = await response.json();
-  const entry = payload?.subscriber?.entitlements?.[entitlement];
-  if (!entry) return false;
-  if (!entry.expires_date) return true;
-  return new Date(entry.expires_date).getTime() > Date.now();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
+        headers: { Authorization: `Bearer ${secret}` },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (response.status === 404) return false;
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const entry = payload?.subscriber?.entitlements?.[entitlement];
+      if (!entry) return false;
+      if (!entry.expires_date) return true;
+      return new Date(entry.expires_date).getTime() > Date.now();
+    } catch {
+      // Timeout or network error. Try once more.
+    }
+  }
+  console.warn('[process-recording] RevenueCat unreachable, treating as Pro for this request', userId);
+  return true;
 }
 
 async function transcribe(bytes: Uint8Array): Promise<{ text: string; language: string | null }> {

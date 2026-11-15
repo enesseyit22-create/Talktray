@@ -272,6 +272,7 @@ export const de: Dictionary = {
     quota: 'Die kostenlosen Aufnahmen dieses Monats sind aufgebraucht.',
     quotaPro: 'Du hast das Fair-Use-Limit von 300 Aufnahmen für diesen Monat erreicht. Es wird nächsten Monat zurückgesetzt.',
     network: 'Der Server war nicht erreichbar.',
+    saveFailed: 'Die Änderung konnte nicht gespeichert werden. Prüfe deine Verbindung und versuche es erneut.',
     process: 'Diese Aufnahme konnte nicht sortiert werden. Versuch es noch einmal.',
     transcription: 'Die Aufnahme konnte nicht transkribiert werden. Versuch es gleich noch einmal.',
     analysis: 'Das Transkript konnte nicht in Einträge geteilt werden. Versuch es noch einmal.',

@@ -272,6 +272,7 @@ export const tr: Dictionary = {
     quota: 'Bu ayki ücretsiz kayıtların bitti.',
     quotaPro: 'Bu ayki 300 kayıtlık adil kullanım sınırına ulaştın. Gelecek ay yenilenir.',
     network: 'Sunucuya ulaşılamadı.',
+    saveFailed: 'Bu değişiklik kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
     process: 'Bu kayıt ayıklanamadı. Yeniden dene.',
     transcription: 'Kayıt yazıya dökülemedi. Biraz sonra yeniden dene.',
     analysis: 'Metin öğelere ayrılamadı. Yeniden dene.',

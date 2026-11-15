@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 
 import type { InboxItem } from '@/domain/types';
 import { translate } from '@/i18n/translate';
+import { planReminders } from '@/lib/reminder-plan';
 
 const STORE = 'talktray.notificationIds';
 const CHANNEL = 'reminders';
@@ -60,10 +61,7 @@ async function saveMap(map: Record<string, string[]>) {
   await AsyncStorage.setItem(STORE, JSON.stringify(map));
 }
 
-async function scheduleOne(item: InboxItem, offset: number, locale: string): Promise<string | null> {
-  if (!item.dueAt) return null;
-  const when = new Date(new Date(item.dueAt).getTime() - offset * 60_000);
-  if (when.getTime() <= Date.now() + 5000) return null;
+async function scheduleOne(item: InboxItem, offset: number, when: Date, locale: string): Promise<string | null> {
   try {
     return await Notifications.scheduleNotificationAsync({
       content: {
@@ -103,15 +101,10 @@ export async function syncItemNotifications(items: InboxItem[], locale: string, 
     }
     const next: Record<string, string[]> = {};
     if (granted) {
-      for (const item of items) {
-        if (!item.dueAt || item.completedAt) continue;
-        const offsets = item.reminderOffsets?.length ? item.reminderOffsets : defaultOffsets;
-        const ids: string[] = [];
-        for (const offset of offsets) {
-          const id = await scheduleOne(item, offset, locale);
-          if (id) ids.push(id);
-        }
-        if (ids.length) next[item.id] = ids;
+      // Soonest first and capped, so iOS's 64-notification limit never drops a near reminder.
+      for (const entry of planReminders(items, defaultOffsets, new Date())) {
+        const id = await scheduleOne(entry.item, entry.offset, entry.fireAt, locale);
+        if (id) (next[entry.item.id] ??= []).push(id);
       }
     }
     await saveMap(next);

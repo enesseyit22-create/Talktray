@@ -272,6 +272,7 @@ export const fr: Dictionary = {
     quota: 'Tu as utilisé les enregistrements gratuits de ce mois.',
     quotaPro: 'Tu as atteint la limite d’usage raisonnable de 300 enregistrements ce mois-ci. Elle se renouvelle le mois prochain.',
     network: 'Le serveur n’a pas répondu.',
+    saveFailed: 'Impossible d’enregistrer cette modification. Vérifie ta connexion et réessaie.',
     process: 'Cet enregistrement n’a pas pu être trié. Réessaie.',
     transcription: 'L’enregistrement n’a pas pu être transcrit. Réessaie dans un instant.',
     analysis: 'La transcription n’a pas pu être rangée en éléments. Réessaie.',

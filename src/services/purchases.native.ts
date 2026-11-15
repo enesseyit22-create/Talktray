@@ -132,3 +132,14 @@ export async function logOutPurchases(): Promise<void> {
   if (!configured) return;
   await Purchases.logOut().catch(() => undefined);
 }
+
+/** Calls back whenever the store reports a renewal, expiry, or new purchase. */
+export function onProChange(listener: (isPro: boolean) => void): () => void {
+  if (!configured) return () => undefined;
+  const handler = (info: { entitlements: { active: Record<string, unknown> } }) =>
+    listener(Boolean(info.entitlements.active[ENTITLEMENT_ID]));
+  Purchases.addCustomerInfoUpdateListener(handler);
+  return () => {
+    Purchases.removeCustomerInfoUpdateListener(handler);
+  };
+}

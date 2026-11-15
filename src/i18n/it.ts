@@ -272,6 +272,7 @@ export const it: Dictionary = {
     quota: 'Hai usato le registrazioni gratuite di questo mese.',
     quotaPro: 'Hai raggiunto il limite di uso corretto di 300 registrazioni di questo mese. Si rinnova il mese prossimo.',
     network: 'Il server non ha risposto.',
+    saveFailed: 'Impossibile salvare la modifica. Controlla la connessione e riprova.',
     process: 'Questa registrazione non si è potuta sistemare. Riprova.',
     transcription: 'La registrazione non si è potuta trascrivere. Riprova tra un momento.',
     analysis: 'La trascrizione non si è potuta dividere in elementi. Riprova.',

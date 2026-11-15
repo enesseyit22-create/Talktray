@@ -272,6 +272,7 @@ export const id: Dictionary = {
     quota: 'Rekaman gratis bulan ini sudah habis.',
     quotaPro: 'Kamu sudah mencapai batas pemakaian wajar 300 rekaman bulan ini. Batas direset bulan depan.',
     network: 'Server tidak dapat dihubungi.',
+    saveFailed: 'Perubahan tidak tersimpan. Periksa koneksi lalu coba lagi.',
     process: 'Rekaman ini tidak bisa dirapikan. Coba lagi.',
     transcription: 'Rekaman tidak bisa ditranskrip. Coba lagi sebentar lagi.',
     analysis: 'Transkrip tidak bisa diubah menjadi item. Coba lagi.',

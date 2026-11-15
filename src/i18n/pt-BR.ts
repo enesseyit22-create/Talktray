@@ -272,6 +272,7 @@ export const ptBR: Dictionary = {
     quota: 'Você já usou as gravações grátis deste mês.',
     quotaPro: 'Você atingiu o limite de uso justo de 300 gravações deste mês. Ele renova no próximo mês.',
     network: 'Não foi possível alcançar o servidor.',
+    saveFailed: 'Não foi possível salvar a alteração. Verifique sua conexão e tente de novo.',
     process: 'Não foi possível organizar esta gravação. Tente de novo.',
     transcription: 'Não foi possível transcrever a gravação. Tente de novo daqui a pouco.',
     analysis: 'Não foi possível transformar a transcrição em itens. Tente de novo.',
