@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { priceLabel, yearlyPerMonthLabel } from '@/lib/store-price';
+import { freeTrialDays, priceLabel, yearlyPerMonthLabel } from '@/lib/store-price';
 
 describe('store prices', () => {
   it('uses the store price string', () => {
@@ -32,5 +32,17 @@ describe('store prices', () => {
     });
     expect(label?.replace(/\s/g, '')).toMatch(/4[,.]17/);
     expect(label).toMatch(/€|EUR/);
+  });
+});
+
+describe('freeTrialDays', () => {
+  it('reads free trials', () => {
+    expect(freeTrialDays({ price: 0, cycles: 1, periodUnit: 'WEEK', periodNumberOfUnits: 1 })).toBe(7);
+    expect(freeTrialDays({ price: 0, cycles: 1, periodUnit: 'DAY', periodNumberOfUnits: 3 })).toBe(3);
+  });
+
+  it('ignores paid intro offers and missing ones', () => {
+    expect(freeTrialDays({ price: 0.99, cycles: 1, periodUnit: 'MONTH', periodNumberOfUnits: 1 })).toBeNull();
+    expect(freeTrialDays(null)).toBeNull();
   });
 });

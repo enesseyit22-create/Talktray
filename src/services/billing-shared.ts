@@ -39,6 +39,8 @@ export type StoreOffer = {
   perMonth: string | null;
   /** Numeric price in the offer's currency, used for the yearly saving badge. */
   amount: number | null;
+  /** Free trial length for this account. Only set when the store confirmed eligibility. */
+  trialDays?: number | null;
 };
 
 /** The device region and language, e.g. TR / tr-TR. */

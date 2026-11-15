@@ -1,8 +1,14 @@
 import { Platform } from 'react-native';
-import Purchases, { LOG_LEVEL, PACKAGE_TYPE, PURCHASES_ERROR_CODE } from 'react-native-purchases';
+import Purchases, {
+  INTRO_ELIGIBILITY_STATUS,
+  LOG_LEVEL,
+  PACKAGE_TYPE,
+  PURCHASES_ERROR_CODE,
+  type PurchasesStoreProduct,
+} from 'react-native-purchases';
 
 import { ENTITLEMENT_ID } from '../../shared/parse/quota';
-import { priceLabel, yearlyPerMonthLabel } from '@/lib/store-price';
+import { freeTrialDays, priceLabel, yearlyPerMonthLabel } from '@/lib/store-price';
 import {
   fallbackOffers,
   REVENUECAT_ANDROID_SDK_KEY,
@@ -15,6 +21,36 @@ import {
 } from '@/services/billing-shared';
 
 let configured = false;
+
+/**
+ * Trial days per product, only where the store says this account can still take the trial.
+ * Unknown eligibility shows no trial, so nobody is promised a free week they will be charged for.
+ */
+async function eligibleTrials(products: (PurchasesStoreProduct | undefined)[]): Promise<Record<string, number>> {
+  const withTrial = products.filter(
+    (product): product is PurchasesStoreProduct => Boolean(product && freeTrialDays(product.introPrice)),
+  );
+  if (!withTrial.length) return {};
+  const result: Record<string, number> = {};
+  try {
+    if (Platform.OS === 'ios') {
+      const eligibility = await Purchases.checkTrialOrIntroductoryPriceEligibility(
+        withTrial.map((product) => product.identifier),
+      );
+      for (const product of withTrial) {
+        if (eligibility[product.identifier]?.status === INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) {
+          result[product.identifier] = freeTrialDays(product.introPrice) ?? 0;
+        }
+      }
+    } else {
+      // Google Play only lists the free phase to accounts that can still use it.
+      for (const product of withTrial) result[product.identifier] = freeTrialDays(product.introPrice) ?? 0;
+    }
+  } catch {
+    return {};
+  }
+  return result;
+}
 
 function publicKey(): string | undefined {
   const fromEnv =
@@ -64,6 +100,7 @@ export async function loadStoreOffers(): Promise<{
     const yearly =
       packages.find((pkg) => pkg.identifier === REVENUECAT_ANNUAL_PACKAGE) ??
       packages.find((pkg) => pkg.packageType === PACKAGE_TYPE.ANNUAL);
+    const trials = await eligibleTrials([monthly?.product, yearly?.product]);
     const local = fallbackOffers();
     const [localMonthly, localYearly] = [local[0]!, local[1]!];
     // Mixing a store price with a local fallback would compare two currencies, so the
@@ -76,6 +113,7 @@ export async function loadStoreOffers(): Promise<{
         title: 'Monthly',
         perMonth: null,
         amount: storeAmounts ? (monthly?.product.price ?? null) : localMonthly.amount,
+        trialDays: monthly ? trials[monthly.product.identifier] ?? null : null,
       },
       {
         id: 'yearly',
@@ -83,6 +121,7 @@ export async function loadStoreOffers(): Promise<{
         title: 'Yearly',
         perMonth: yearly?.product ? yearlyPerMonthLabel(yearly.product) : localYearly.perMonth,
         amount: storeAmounts ? (yearly?.product.price ?? null) : localYearly.amount,
+        trialDays: yearly ? trials[yearly.product.identifier] ?? null : null,
       },
     ];
     return { available: true, offers, isPro: await readPro() };

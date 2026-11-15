@@ -110,6 +110,11 @@ export function PaywallScreen() {
                   <AppText size={26} weight="extrabold">
                     {offer.price}
                   </AppText>
+                  {offer.trialDays ? (
+                    <AppText size={12} weight="bold" color={colors.success}>
+                      {t('paywall.trialBadge', { days: offer.trialDays })}
+                    </AppText>
+                  ) : null}
                   <AppText size={12} color={colors.muted}>
                     {offer.id === 'yearly' ? t('paywall.billedYearly') : t('paywall.billedMonthly')}
                   </AppText>
@@ -135,7 +140,25 @@ export function PaywallScreen() {
         </GlassCard>
         {message ? <AppText color={colors.primary}>{message}</AppText> : null}
         {!app.usage.isPro ? (
-          <PrimaryButton label={`${t('paywall.cta')} · ${selected?.price ?? ''}`} onPress={() => void buy()} loading={loading} />
+          <View style={{ gap: 8 }}>
+            <PrimaryButton
+              label={
+                selected?.trialDays
+                  ? t('paywall.trialCta', { days: selected.trialDays })
+                  : `${t('paywall.cta')} · ${selected?.price ?? ''}`
+              }
+              onPress={() => void buy()}
+              loading={loading}
+            />
+            {selected?.trialDays ? (
+              <AppText size={13} color={colors.muted} style={{ textAlign: 'center' }}>
+                {t(selected.id === 'yearly' ? 'paywall.trialTermsYearly' : 'paywall.trialTermsMonthly', {
+                  days: selected.trialDays,
+                  price: selected.price,
+                })}
+              </AppText>
+            ) : null}
+          </View>
         ) : null}
         {!available && app.mode === 'demo' ? (
           <PrimaryButton
