@@ -12,6 +12,7 @@ import { processErrorKey } from '@/lib/errors';
 import { ACCESS_REFRESH_MS, subscribeAccessChanges } from '@/lib/access-sync';
 import { loadFreeLimits, readFreeLimits, zonedDayStart, zonedMonthStart, type FreeLimits } from '@/lib/free-limits';
 import { timeZoneForRequest } from '@/lib/format';
+import { fetchAllPages } from '@/lib/fetch-all';
 import { createId } from '@/lib/id';
 import { overrideIsActive } from '@/lib/pro-grant';
 import { readOwnProOverride } from '@/lib/pro-override';
@@ -177,8 +178,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const localePreference = prefs.localePreference;
       const [{ data: profileRow }, { data: itemRows }, { data: recordingRows }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-        supabase.from('items').select('*').order('created_at', { ascending: false }),
-        supabase.from('recordings').select('*').order('created_at', { ascending: false }),
+        fetchAllPages((from, to) =>
+          supabase.from('items').select('*').order('created_at', { ascending: false }).order('id').range(from, to),
+        ),
+        fetchAllPages((from, to) =>
+          supabase.from('recordings').select('*').order('created_at', { ascending: false }).order('id').range(from, to),
+        ),
       ]);
       const nextProfile: Profile = {
         displayName: profileRow?.display_name || email.split('@')[0] || 'TalkTray',
