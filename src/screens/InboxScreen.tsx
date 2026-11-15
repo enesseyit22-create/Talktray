@@ -10,15 +10,17 @@ import { tabBarClearance } from '@/components/GlassTabBar';
 import { ItemCard } from '@/components/ItemCard';
 import { useCapture } from '@/capture/CaptureProvider';
 import { RecordOrb } from '@/components/RecordOrb';
+import { RecordingCard } from '@/components/RecordingCard';
 import { SearchBar } from '@/components/SearchBar';
 import { EditSheet, type EditableItem } from '@/components/EditSheet';
 import { AppText, Chip, EmptyState, GlassCard, PrimaryButton, Sheet } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import type { InboxItem } from '@/domain/types';
 import { errorText } from '@/lib/errors';
-import { formatClock, formatDuration, greetingKey, isOverdue } from '@/lib/format';
+import { formatDuration, greetingKey, isOverdue } from '@/lib/format';
 import { searchItems, searchRecordings } from '@/lib/search';
 import { useNow } from '@/lib/useNow';
+import { useRecordingPlayback } from '@/playback/useRecordingPlayback';
 import { useI18n } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
 import { deviceTimeZone, isSameZonedDay } from '../../shared/parse/time';
@@ -26,10 +28,11 @@ import { deviceTimeZone, isSameZonedDay } from '../../shared/parse/time';
 type Filter = 'today' | 'overdue' | 'reminders' | 'calendar' | 'shopping' | 'all';
 
 export function InboxScreen() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { colors } = useTheme();
-  const { profile, items, recordings, updateItem, deleteItem, deleteItems, deleteRecording, deleteAllRecordings, toggleComplete } = useApp();
+  const { profile, usage, items, recordings, updateItem, deleteItem, deleteItems, deleteRecording, deleteAllRecordings, toggleComplete } = useApp();
   const capture = useCapture();
+  const playback = useRecordingPlayback();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ item?: string | string[] }>();
   const linkedId = Array.isArray(params.item) ? params.item[0] : params.item;
@@ -136,14 +139,14 @@ export function InboxScreen() {
               />
             ))}
             {foundRecordings.map((recording) => (
-              <GlassCard key={recording.id}>
-                <AppText weight="semibold" numberOfLines={3}>
-                  {recording.transcript || t('history.untitled')}
-                </AppText>
-                <AppText size={12} color={colors.muted}>
-                  {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
-                </AppText>
-              </GlassCard>
+              <RecordingCard
+                key={recording.id}
+                recording={recording}
+                timeZone={profile.timezone}
+                playback={playback}
+                isPro={usage.isPro}
+                lines={3}
+              />
             ))}
           </View>
         ) : (
@@ -224,14 +227,14 @@ export function InboxScreen() {
             {t('history.hold')}
           </AppText>
           {recordings.map((recording) => (
-            <GlassCard key={recording.id} onLongPress={() => setConfirm({ kind: 'recording', id: recording.id })}>
-              <AppText weight="semibold" numberOfLines={2}>
-                {recording.transcript || t('history.untitled')}
-              </AppText>
-              <AppText size={12} color={colors.muted}>
-                {formatClock(recording.createdAt, profile.timezone, locale)} · {formatDuration(recording.durationMs)}
-              </AppText>
-            </GlassCard>
+            <RecordingCard
+              key={recording.id}
+              recording={recording}
+              timeZone={profile.timezone}
+              playback={playback}
+              isPro={usage.isPro}
+              onLongPress={() => setConfirm({ kind: 'recording', id: recording.id })}
+            />
           ))}
           </>
         )}

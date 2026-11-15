@@ -29,6 +29,8 @@ export type Recording = {
   durationMs: number;
   status: 'processing' | 'ready' | 'failed';
   createdAt: string;
+  /** Path of the audio in the private recordings bucket. Null for typed thoughts and demo data. */
+  storagePath?: string | null;
 };
 
 export type Usage = {

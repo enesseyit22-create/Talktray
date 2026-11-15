@@ -730,6 +730,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             durationMs: input.durationMs,
             status: 'ready',
             createdAt: now,
+            storagePath,
           },
           ...current,
         ]);
@@ -1054,6 +1055,7 @@ function mapRecording(row: Record<string, unknown>): Recording {
     durationMs: Number(row.duration_ms ?? 0),
     status: (row.status as Recording['status']) ?? 'ready',
     createdAt: String(row.created_at),
+    storagePath: (row.storage_path as string | null) ?? null,
   };
 }
 
