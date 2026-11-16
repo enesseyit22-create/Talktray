@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useCapture } from '@/capture/CaptureProvider';
 import { useApp } from '@/data/AppProvider';
 import type { Recording } from '@/domain/types';
+import { atEnd } from '@/lib/playback-end';
 import { supabase } from '@/lib/supabase';
 
 /** Signed links to the private bucket last an hour; one play never needs longer. */
@@ -28,8 +29,10 @@ export function useRecordingPlayback() {
     if (capture.isRecording) player.pause();
   }, [capture.isRecording, player]);
 
+  // At the end, only stop. Seeking back here would restart playback on iOS (the player keeps its
+  // rate after the item ends), which then ends again and loops forever. Rewinding happens on the next tap.
   useEffect(() => {
-    if (status.didJustFinish) void player.seekTo(0).catch(() => undefined);
+    if (status.didJustFinish) player.pause();
   }, [player, status.didJustFinish]);
 
   const toggle = useCallback(
@@ -39,8 +42,12 @@ export function useRecordingPlayback() {
         return;
       }
       if (activeId === recording.id) {
-        if (status.playing) player.pause();
-        else player.play();
+        if (status.playing) {
+          player.pause();
+          return;
+        }
+        if (atEnd(status)) await player.seekTo(0).catch(() => undefined);
+        player.play();
         return;
       }
       if (!recording.storagePath || mode !== 'supabase') return;
@@ -60,7 +67,7 @@ export function useRecordingPlayback() {
         setLoadingId(null);
       }
     },
-    [activeId, mode, player, status.playing, usage.isPro],
+    [activeId, mode, player, status, usage.isPro],
   );
 
   return {
@@ -68,6 +75,7 @@ export function useRecordingPlayback() {
     isPlaying: (id: string) => activeId === id && status.playing,
     isLoading: (id: string) => loadingId === id,
     hasFailed: (id: string) => failedId === id,
-    progress: (id: string) => (activeId === id && status.duration > 0 ? status.currentTime / status.duration : 0),
+    progress: (id: string) =>
+      activeId === id && status.duration > 0 && !atEnd(status) ? status.currentTime / status.duration : 0,
   };
 }
