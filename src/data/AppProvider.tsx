@@ -19,6 +19,7 @@ import { readOwnProOverride } from '@/lib/pro-override';
 import { mergeUsageState, nextGiftUntil, nextPlanLimit } from '@/lib/pro-usage';
 import { supabase } from '@/lib/supabase';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
+import { removeAllAudio, removeAudio } from '@/services/audio-storage';
 import { exportItemToDevice, removeItemFromDevice } from '@/services/calendar';
 import { persistRemoteProfile } from '@/data/save-profile';
 import { registerAdminPushToken } from '@/services/admin-push';
@@ -667,6 +668,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       deleteAccount: async () => {
         if (mode === 'supabase') {
+          // Audio first, through the Storage API. The database function only removes the account rows.
+          if (user) await removeAllAudio(user.id);
           const { error } = await supabase.rpc('delete_own_account');
           if (error) throw error;
           await supabase.auth.signOut();
@@ -694,10 +697,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (mode === 'supabase' && user) {
           const removedItems = await supabase.from('items').delete().eq('user_id', user.id).not('recording_id', 'is', null);
           if (removedItems.error) throw removedItems.error;
-          await supabase.storage.from('recordings').list(user.id).then(async ({ data }) => {
-            const paths = (data ?? []).map((file) => `${user.id}/${file.name}`);
-            if (paths.length) await supabase.storage.from('recordings').remove(paths);
-          });
+          await removeAllAudio(user.id);
           const { error } = await supabase.from('recordings').delete().eq('user_id', user.id);
           if (error) {
             setItems(nextItems);
@@ -739,7 +739,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setItems(items);
             throw removedItems.error;
           }
-          await supabase.storage.from('recordings').remove([path]).catch(() => undefined);
+          await removeAudio(path).catch(() => undefined);
           const { error } = await supabase.from('recordings').delete().eq('id', id);
           if (error) {
             setRecordings(recordings);
@@ -859,7 +859,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           status: 'processing',
           language: profile.locale,
         });
-        if (inserted.error) throw inserted.error;
+        if (inserted.error) {
+          // Nothing points at the upload yet, so it would only take space.
+          await removeAudio(storagePath).catch(() => undefined);
+          throw inserted.error;
+        }
         const { data, error } = await supabase.functions.invoke('process-recording', {
           body: {
             recordingId,

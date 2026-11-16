@@ -59,6 +59,8 @@ Deno.serve(async (req) => {
       return json({ error: 'RECORDING_NOT_FOUND' }, 404);
     }
 
+    await sweepStuck(admin, userId, recordingId).catch(() => undefined);
+
     const { data: profile } = await admin.from('profiles').select('timezone, locale').eq('id', userId).maybeSingle();
     const timeZone = safeTimeZone(profile?.timezone || body.timezone || 'UTC');
     const locale = resolveLocale(profile?.locale, body.locale);
@@ -70,20 +72,20 @@ Deno.serve(async (req) => {
 
     // A little slack over the app's own auto-stop for timer drift.
     if (isPro && Number(recording.duration_ms ?? 0) > (PRO_MAX_SECONDS_PER_RECORDING + 15) * 1000) {
-      return await refuse(admin, recordingId, 'seconds');
+      return await refuse(admin, recordingId, recording.storage_path ?? null, 'seconds');
     }
     if (!isPro) {
       const limits = await readFreeLimits(admin);
       const reason = await freeLimitReason(admin, userId, Number(recording.duration_ms ?? 0), serverNow, timeZone, limits);
-      if (reason) return await refuse(admin, recordingId, reason);
+      if (reason) return await refuse(admin, recordingId, recording.storage_path ?? null, reason);
     }
     const credit = await reserveCredit(admin, userId, recordingId, isPro, timeZone);
     if (credit.state === 'blocked') {
       if (credit.reason === 'repeat') return json({ error: 'ALREADY_PROCESSED' }, 409);
-      return await refuse(admin, recordingId, credit.reason);
+      return await refuse(admin, recordingId, recording.storage_path ?? null, credit.reason);
     }
     if (credit.state === 'unavailable') {
-      await markFailed(admin, recordingId, 'CREDITS_UNAVAILABLE');
+      await discardRecording(admin, recordingId, recording.storage_path ?? null, 'CREDITS_UNAVAILABLE');
       return json({ error: 'CREDITS_UNAVAILABLE' }, 503);
     }
 
@@ -113,7 +115,7 @@ Deno.serve(async (req) => {
       // Nothing usable came back, so the user gets the credit back.
       const message = error instanceof Error ? error.message : 'UNKNOWN';
       await admin.from('recording_credits').delete().eq('recording_id', recordingId);
-      await markFailed(admin, recordingId, message, transcript || null);
+      await discardRecording(admin, recordingId, recording.storage_path ?? null, message);
       const status = message === 'AUDIO_NOT_FOUND' ? 404 : message === 'MISSING_PROVIDER_KEY' ? 501 : 500;
       return json({ error: message }, status);
     }
@@ -215,20 +217,49 @@ function windowStart(now: Date, timeZone: string, kind: 'day' | 'month'): string
   ).toISOString();
 }
 
-async function markFailed(
+/**
+ * A recording that produced nothing is removed with its audio, so failed takes never take space.
+ * Its credit, if any, is refunded by the caller.
+ */
+async function discardRecording(
   admin: ReturnType<typeof createClient>,
   recordingId: string,
-  error: string,
-  transcript: string | null = null,
+  storagePath: string | null,
+  reason: string,
 ) {
-  const patch: Record<string, unknown> = { status: 'failed', error: error.slice(0, 500) };
-  if (transcript) patch.transcript = transcript;
-  await admin.from('recordings').update(patch).eq('id', recordingId);
+  console.warn('[process-recording] discarded', recordingId, reason.slice(0, 120));
+  if (storagePath) await admin.storage.from('recordings').remove([storagePath]).catch(() => undefined);
+  await admin.from('recordings').delete().eq('id', recordingId);
 }
 
-async function refuse(admin: ReturnType<typeof createClient>, recordingId: string, reason: string | null) {
-  await markFailed(admin, recordingId, 'quota_exceeded');
+async function refuse(
+  admin: ReturnType<typeof createClient>,
+  recordingId: string,
+  storagePath: string | null,
+  reason: string | null,
+) {
+  await discardRecording(admin, recordingId, storagePath, 'quota_exceeded');
   return json({ error: 'quota_exceeded', reason }, 402);
+}
+
+/**
+ * Takes this user left in "processing" for over an hour (the app closed or lost connection
+ * mid-request) are cleared: audio, row, and credit.
+ */
+async function sweepStuck(admin: ReturnType<typeof createClient>, userId: string, currentId: string) {
+  const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { data } = await admin
+    .from('recordings')
+    .select('id, storage_path')
+    .eq('user_id', userId)
+    .eq('status', 'processing')
+    .lt('created_at', cutoff)
+    .neq('id', currentId)
+    .limit(50);
+  for (const row of data ?? []) {
+    await admin.from('recording_credits').delete().eq('recording_id', row.id);
+    await discardRecording(admin, String(row.id), (row.storage_path as string | null) ?? null, 'stuck');
+  }
 }
 
 /** Counts from recording_credits, which users cannot delete or edit. */
