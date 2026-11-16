@@ -19,7 +19,7 @@ import { readOwnProOverride } from '@/lib/pro-override';
 import { mergeUsageState, nextGiftUntil, nextPlanLimit } from '@/lib/pro-usage';
 import { supabase } from '@/lib/supabase';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
-import { exportItemToDevice } from '@/services/calendar';
+import { exportItemToDevice, removeItemFromDevice } from '@/services/calendar';
 import { persistRemoteProfile } from '@/data/save-profile';
 import { registerAdminPushToken } from '@/services/admin-push';
 import { touchPresence } from '@/services/presence';
@@ -671,6 +671,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (error) throw error;
           await supabase.auth.signOut();
         }
+        await purgeFromDevice(items);
         await logOutPurchases();
         await saveDemo(null);
         storePro.current = false;
@@ -686,20 +687,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshUsage(0, false, monthPeriod(new Date(), profile.timezone));
       },
       deleteAllRecordings: async () => {
+        // Everything that came from a recording goes with it: items, reminders, calendar entries.
+        const linked = items.filter((item) => item.recordingId);
+        const linkedIds = new Set(linked.map((item) => item.id));
+        const nextItems = items.filter((item) => !linkedIds.has(item.id));
         if (mode === 'supabase' && user) {
+          const removedItems = await supabase.from('items').delete().eq('user_id', user.id).not('recording_id', 'is', null);
+          if (removedItems.error) throw removedItems.error;
           await supabase.storage.from('recordings').list(user.id).then(async ({ data }) => {
             const paths = (data ?? []).map((file) => `${user.id}/${file.name}`);
             if (paths.length) await supabase.storage.from('recordings').remove(paths);
           });
           const { error } = await supabase.from('recordings').delete().eq('user_id', user.id);
-          if (error) throw error;
+          if (error) {
+            setItems(nextItems);
+            throw error;
+          }
         }
+        setItems(nextItems);
         setRecordings([]);
+        await purgeFromDevice(linked);
         if (mode === 'demo' && user) {
           await persistDemo({
             user,
             profile,
-            items,
+            items: nextItems,
             recordings: [],
             usageCount: 0,
             usagePeriod: usage.period,
@@ -710,8 +722,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (mode !== 'supabase') refreshUsage(0, usage.isPro);
       },
       deleteRecording: async (id) => {
+        const linked = items.filter((item) => item.recordingId === id);
         const nextRecordings = recordings.filter((recording) => recording.id !== id);
-        const nextItems = items.map((item) => (item.recordingId === id ? { ...item, recordingId: null } : item));
+        const nextItems = items.filter((item) => item.recordingId !== id);
         setRecordings(nextRecordings);
         setItems(nextItems);
         const counts = countCompleted(nextRecordings, profile.timezone);
@@ -719,11 +732,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (mode === 'supabase' && user) {
           const { data } = await supabase.from('recordings').select('storage_path').eq('id', id).maybeSingle();
           const path = (data?.storage_path as string | null) || `${user.id}/${id}.m4a`;
+          // Items first: the foreign key would otherwise only unlink them.
+          const removedItems = await supabase.from('items').delete().eq('recording_id', id);
+          if (removedItems.error) {
+            setRecordings(recordings);
+            setItems(items);
+            throw removedItems.error;
+          }
           await supabase.storage.from('recordings').remove([path]).catch(() => undefined);
           const { error } = await supabase.from('recordings').delete().eq('id', id);
           if (error) {
             setRecordings(recordings);
-            setItems(items);
             throw error;
           }
         } else if (user) {
@@ -737,6 +756,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             isPro: usage.isPro,
           });
         }
+        await purgeFromDevice(linked);
       },
       deleteItems: async (ids) => {
         if (!ids.length) return;
@@ -753,6 +773,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else if (user) {
           await snapshotDemo({ items: nextItems });
         }
+        await purgeFromDevice(items.filter((item) => idSet.has(item.id)));
       },
       processThought: async (input) => {
         if (mode !== 'supabase' || !user) {
@@ -1101,6 +1122,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else if (user) {
           await snapshotDemo({ items: nextItems });
         }
+        await purgeFromDevice(items.filter((item) => item.id === id));
       },
       clearSamples: async () => {
         setItems([]);
@@ -1189,6 +1211,16 @@ async function countMonthCredits(timeZone: string): Promise<number | null> {
     .select('recording_id', { count: 'exact', head: true })
     .gte('created_at', start);
   return error ? null : count ?? 0;
+}
+
+/** Removes an item's scheduled reminders and its phone calendar entry. Best effort, never throws. */
+async function purgeFromDevice(removed: InboxItem[]): Promise<void> {
+  await Promise.all(
+    removed.map(async (item) => {
+      await cancelRemindersForItem(item.id).catch(() => undefined);
+      await removeItemFromDevice(item.calendarEventId).catch(() => undefined);
+    }),
+  );
 }
 
 function freeMonthLimit(limits: FreeLimits | null): number {

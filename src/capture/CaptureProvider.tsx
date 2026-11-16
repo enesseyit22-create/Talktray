@@ -29,6 +29,22 @@ type CaptureValue = {
 
 const CaptureContext = createContext<CaptureValue | null>(null);
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error ?? '');
+}
+
+/** Stops a recorder left prepared or running by an earlier take. A no-op when it is idle. */
+async function discardStaleTake(recorder: { getStatus: () => { canRecord: boolean; isRecording: boolean }; stop: () => Promise<void> }) {
+  let stale = false;
+  try {
+    const status = recorder.getStatus();
+    stale = status.canRecord || status.isRecording;
+  } catch {
+    stale = true;
+  }
+  if (stale) await recorder.stop().catch(() => undefined);
+}
+
 /** Taps shorter than this are treated as accidental and never sent or counted. */
 const MIN_RECORDING_MS = 1000;
 
@@ -129,10 +145,20 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
         await releaseMicrophone();
         return;
       }
+      // A take that was prepared but never stopped (a very short hold, an error mid-start) leaves
+      // Android's recorder "already prepared", and the next prepare is rejected. Clear it first.
+      await discardStaleTake(recorder);
       // Passing the preset makes a fresh file for every take instead of reusing the last one.
-      await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+      try {
+        await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+      } catch (first) {
+        if (!/already.*prepared|prepareToRecordAsync/i.test(errorMessage(first))) throw first;
+        await recorder.stop().catch(() => undefined);
+        await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+      }
       if (stopAfterStart.current || session.current !== 'starting') {
         session.current = 'idle';
+        await recorder.stop().catch(() => undefined);
         await releaseMicrophone();
         return;
       }
@@ -141,6 +167,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       if (stopAfterStart.current) await stopAndSubmit();
     } catch (caught) {
       session.current = 'idle';
+      await recorder.stop().catch(() => undefined);
       await releaseMicrophone();
       setError(errorText(caught, t('errors.generic')));
     }
