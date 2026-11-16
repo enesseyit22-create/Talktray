@@ -114,6 +114,7 @@ export const tr: Dictionary = {
     placeholder: 'Görev, not ve kayıtlarda ara',
     clear: 'Aramayı temizle',
     results: '{count} sonuç',
+    resultsOne: "1 sonuç",
     emptyTitle: 'Bir şey bulunamadı',
     emptyBody: 'Başka bir kelime ya da daha az kelime dene.',
   },

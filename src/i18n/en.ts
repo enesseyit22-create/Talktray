@@ -112,6 +112,7 @@ export const en = {
     placeholder: 'Search tasks, notes, recordings',
     clear: 'Clear search',
     results: '{count} results',
+    resultsOne: "1 result",
     emptyTitle: 'Nothing found',
     emptyBody: 'Try another word, or fewer words.',
   },

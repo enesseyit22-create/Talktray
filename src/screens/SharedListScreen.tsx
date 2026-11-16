@@ -223,7 +223,7 @@ export function SharedListScreen({ listId }: { listId: string }) {
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Field value={draft} onChangeText={setDraft} placeholder={t('shared.addPlaceholder')} autoCapitalize="sentences" />
               </View>
-              <View style={{ width: 96 }}>
+              <View style={{ minWidth: 96, flexShrink: 0 }}>
                 <PrimaryButton label={t('shared.add')} onPress={() => void add()} disabled={!draft.trim()} />
               </View>
             </View>

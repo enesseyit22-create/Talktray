@@ -114,6 +114,7 @@ export const ptBR: Dictionary = {
     placeholder: 'Buscar tarefas, notas e gravações',
     clear: 'Limpar busca',
     results: '{count} resultados',
+    resultsOne: "1 resultado",
     emptyTitle: 'Nada encontrado',
     emptyBody: 'Tente outra palavra, ou menos palavras.',
   },

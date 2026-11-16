@@ -114,6 +114,7 @@ export const fr: Dictionary = {
     placeholder: 'Rechercher tâches, notes, enregistrements',
     clear: 'Effacer la recherche',
     results: '{count} résultats',
+    resultsOne: "1 résultat",
     emptyTitle: 'Aucun résultat',
     emptyBody: 'Essaie un autre mot, ou moins de mots.',
   },

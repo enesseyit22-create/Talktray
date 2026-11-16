@@ -114,6 +114,7 @@ export const ko: Dictionary = {
     placeholder: '할 일, 메모, 녹음 검색',
     clear: '검색 지우기',
     results: '결과 {count}개',
+    resultsOne: "결과 1개",
     emptyTitle: '찾은 항목이 없어요',
     emptyBody: '다른 단어나 더 적은 단어로 검색해 보세요.',
   },

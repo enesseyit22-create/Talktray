@@ -114,6 +114,7 @@ export const it: Dictionary = {
     placeholder: 'Cerca attività, note, registrazioni',
     clear: 'Cancella ricerca',
     results: '{count} risultati',
+    resultsOne: "1 risultato",
     emptyTitle: 'Nessun risultato',
     emptyBody: 'Prova un’altra parola o meno parole.',
   },

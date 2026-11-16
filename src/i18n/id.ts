@@ -114,6 +114,7 @@ export const id: Dictionary = {
     placeholder: 'Cari tugas, catatan, rekaman',
     clear: 'Hapus pencarian',
     results: '{count} hasil',
+    resultsOne: "1 hasil",
     emptyTitle: 'Tidak ada yang ditemukan',
     emptyBody: 'Coba kata lain, atau lebih sedikit kata.',
   },

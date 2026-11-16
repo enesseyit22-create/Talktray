@@ -114,6 +114,7 @@ export const ja: Dictionary = {
     placeholder: 'タスク・メモ・録音を検索',
     clear: '検索をクリア',
     results: '{count}件',
+    resultsOne: "1件",
     emptyTitle: '見つかりませんでした',
     emptyBody: '別の言葉か、より少ない言葉で試してください。',
   },

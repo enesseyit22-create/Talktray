@@ -124,7 +124,9 @@ export function InboxScreen() {
         {searching ? (
           <View style={{ gap: 10 }}>
             <AppText weight="bold" size={18}>
-              {t('search.results', { count: foundItems.length + foundRecordings.length })}
+              {foundItems.length + foundRecordings.length === 1
+                ? t('search.resultsOne')
+                : t('search.results', { count: foundItems.length + foundRecordings.length })}
             </AppText>
             {foundItems.length + foundRecordings.length === 0 ? (
               <EmptyState title={t('search.emptyTitle')} body={t('search.emptyBody')} />
