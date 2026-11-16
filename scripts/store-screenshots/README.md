@@ -1,6 +1,6 @@
 # Store screenshots
 
-Builds App Store and Google Play images for every app language from the web preview.
+Builds App Store and Google Play images for every app language from the web preview, in the "night violet" style: dark gradient, localized headline with a gradient accent line, tilted phone, and floating cards whose text comes from the app translations and sample data.
 
 ```bash
 EXPO_PUBLIC_PREVIEW=1 npx expo start --web --port 8081   # preview data, no account needed
@@ -18,5 +18,5 @@ Start the server without `CI=1` while editing, or restart it after code changes:
 | `android-phone` | 1080×1920 | Google Play phone |
 | `android-feature.jpg` | 1024×500 | Google Play feature graphic |
 
-Sample content is in `src/data/seed-copy.ts`, headlines in `captions.json`. Japanese and Korean
+Sample content is in `src/data/seed-copy.ts`; headlines, kickers, and the feature-graphic tagline are in `captions.json`. Japanese and Korean
 need Noto CJK fonts installed (`apt-get install fonts-noto-cjk`).

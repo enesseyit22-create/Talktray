@@ -1,102 +1,122 @@
 {
   "en": {
-    "tagline": "Say it once. TalkTray sorts it.",
+    "tagline": ["Say it once.", "It’s all sorted."],
+    "itemsFound": "5 items found",
+    "live": "Live",
     "screens": [
-      ["Say it once", "Tasks, reminders, events, and notes from one recording"],
-      ["One thought, five items", "Check everything before it is saved"],
-      ["Never miss what is next", "Reminders, repeating tasks, and your calendar"],
-      ["Find it in seconds", "Search tasks, notes, and everything you said"],
-      ["Shop together", "Shared lists for the whole family, updated live"]
+      { "kicker": "AI voice notes", "title": "Say it once.", "accent": "It’s all sorted.", "sub": "Tasks, reminders, events, and notes from one recording." },
+      { "kicker": "Smart sorting", "title": "One thought,", "accent": "five items.", "sub": "Check everything before it is saved." },
+      { "kicker": "Repeating tasks", "title": "Never miss", "accent": "what’s next.", "sub": "Reminders, repeats, and your calendar in one place." },
+      { "kicker": "Search", "title": "Find it", "accent": "in seconds.", "sub": "Search tasks, notes, and everything you said." },
+      { "kicker": "Shared lists", "title": "Shop", "accent": "together.", "sub": "One list for the whole family. Everyone sees it live." }
     ]
   },
   "tr": {
-    "tagline": "Bir kez söyle. TalkTray ayıklasın.",
+    "tagline": ["Bir kez söyle.", "Gerisi hazır."],
+    "itemsFound": "5 öğe ayrıldı",
+    "live": "Canlı",
     "screens": [
-      ["Bir kez söyle", "Tek kayıttan görev, hatırlatma, etkinlik ve not"],
-      ["Bir düşünce, beş öğe", "Kaydetmeden önce hepsini kontrol et"],
-      ["Sıradakini kaçırma", "Hatırlatmalar, tekrarlayan görevler ve takvim"],
-      ["Saniyede bul", "Görevlerde, notlarda ve söylediklerinde ara"],
-      ["Alışverişi birlikte yap", "Aile için ortak listeler, anında güncellenir"]
+      { "kicker": "Yapay zekâ ile sesli not", "title": "Bir kez söyle.", "accent": "Gerisi hazır.", "sub": "Tek kayıttan görev, hatırlatma, etkinlik ve not." },
+      { "kicker": "Akıllı ayıklama", "title": "Bir düşünce,", "accent": "beş öğe.", "sub": "Kaydetmeden önce hepsini kontrol et." },
+      { "kicker": "Tekrarlayan görevler", "title": "Sıradakini", "accent": "kaçırma.", "sub": "Hatırlatma, tekrar ve takvim tek yerde." },
+      { "kicker": "Arama", "title": "Saniyede", "accent": "bul.", "sub": "Görevlerde, notlarda ve söylediklerinde ara." },
+      { "kicker": "Ortak listeler", "title": "Alışverişi", "accent": "birlikte yap.", "sub": "Aileyle tek liste. Biri işaretler, herkes anında görür." }
     ]
   },
   "de": {
-    "tagline": "Einmal sagen. TalkTray sortiert.",
+    "tagline": ["Einmal sagen.", "Alles sortiert."],
+    "itemsFound": "5 Einträge erkannt",
+    "live": "Live",
     "screens": [
-      ["Einmal sagen", "Aufgaben, Erinnerungen, Termine und Notizen aus einer Aufnahme"],
-      ["Ein Gedanke, fünf Einträge", "Alles prüfen, bevor es gespeichert wird"],
-      ["Nichts mehr verpassen", "Erinnerungen, wiederkehrende Aufgaben und Kalender"],
-      ["In Sekunden gefunden", "Aufgaben, Notizen und alles Gesagte durchsuchen"],
-      ["Gemeinsam einkaufen", "Geteilte Listen für die Familie, live aktualisiert"]
+      { "kicker": "Sprachnotizen mit KI", "title": "Einmal sagen.", "accent": "Alles sortiert.", "sub": "Aufgaben, Erinnerungen, Termine und Notizen aus einer Aufnahme." },
+      { "kicker": "Intelligent sortiert", "title": "Ein Gedanke,", "accent": "fünf Einträge.", "sub": "Alles prüfen, bevor es gespeichert wird." },
+      { "kicker": "Wiederkehrende Aufgaben", "title": "Nichts mehr", "accent": "verpassen.", "sub": "Erinnerungen, Wiederholungen und Kalender an einem Ort." },
+      { "kicker": "Suche", "title": "In Sekunden", "accent": "gefunden.", "sub": "Aufgaben, Notizen und alles Gesagte durchsuchen." },
+      { "kicker": "Geteilte Listen", "title": "Gemeinsam", "accent": "einkaufen.", "sub": "Eine Liste für die Familie. Alle sehen Änderungen sofort." }
     ]
   },
   "es": {
-    "tagline": "Dilo una vez. TalkTray lo ordena.",
+    "tagline": ["Dilo una vez.", "Todo en orden."],
+    "itemsFound": "5 elementos detectados",
+    "live": "En vivo",
     "screens": [
-      ["Dilo una vez", "Tareas, recordatorios, eventos y notas de una sola grabación"],
-      ["Una idea, cinco elementos", "Revisa todo antes de guardarlo"],
-      ["No te pierdas lo siguiente", "Recordatorios, tareas que se repiten y tu calendario"],
-      ["Encuéntralo en segundos", "Busca en tareas, notas y todo lo que dijiste"],
-      ["Haced la compra juntos", "Listas compartidas para toda la familia, al instante"]
+      { "kicker": "Notas de voz con IA", "title": "Dilo una vez.", "accent": "Todo en orden.", "sub": "Tareas, recordatorios, eventos y notas de una sola grabación." },
+      { "kicker": "Orden inteligente", "title": "Una idea,", "accent": "cinco elementos.", "sub": "Revisa todo antes de guardarlo." },
+      { "kicker": "Tareas que se repiten", "title": "No te pierdas", "accent": "lo siguiente.", "sub": "Recordatorios, repeticiones y calendario en un solo lugar." },
+      { "kicker": "Búsqueda", "title": "Encuéntralo", "accent": "en segundos.", "sub": "Busca en tareas, notas y todo lo que dijiste." },
+      { "kicker": "Listas compartidas", "title": "La compra,", "accent": "juntos.", "sub": "Una lista para toda la familia. Todos ven los cambios al momento." }
     ]
   },
   "fr": {
-    "tagline": "Dites-le une fois. TalkTray trie.",
+    "tagline": ["Dites-le une fois.", "Tout est trié."],
+    "itemsFound": "5 éléments trouvés",
+    "live": "En direct",
     "screens": [
-      ["Dites-le une fois", "Tâches, rappels, événements et notes en un seul enregistrement"],
-      ["Une idée, cinq éléments", "Vérifiez tout avant d’enregistrer"],
-      ["Ne ratez plus rien", "Rappels, tâches récurrentes et calendrier"],
-      ["Trouvé en quelques secondes", "Cherchez dans vos tâches, notes et tout ce que vous avez dit"],
-      ["Les courses à plusieurs", "Des listes partagées pour toute la famille, en direct"]
+      { "kicker": "Notes vocales avec IA", "title": "Dites-le une fois.", "accent": "Tout est trié.", "sub": "Tâches, rappels, événements et notes en un seul enregistrement." },
+      { "kicker": "Tri intelligent", "title": "Une idée,", "accent": "cinq éléments.", "sub": "Vérifiez tout avant d’enregistrer." },
+      { "kicker": "Tâches récurrentes", "title": "Ne ratez", "accent": "plus rien.", "sub": "Rappels, répétitions et agenda au même endroit." },
+      { "kicker": "Recherche", "title": "Trouvé en", "accent": "quelques secondes.", "sub": "Cherchez dans vos tâches, notes et tout ce que vous avez dit." },
+      { "kicker": "Listes partagées", "title": "Les courses,", "accent": "ensemble.", "sub": "Une liste pour toute la famille, mise à jour en direct." }
     ]
   },
   "it": {
-    "tagline": "Dillo una volta. TalkTray mette in ordine.",
+    "tagline": ["Dillo una volta.", "È tutto in ordine."],
+    "itemsFound": "5 elementi trovati",
+    "live": "Dal vivo",
     "screens": [
-      ["Dillo una volta", "Attività, promemoria, eventi e note da una sola registrazione"],
-      ["Un pensiero, cinque elementi", "Controlla tutto prima di salvare"],
-      ["Non perdere il prossimo impegno", "Promemoria, attività ricorrenti e calendario"],
-      ["Trovato in pochi secondi", "Cerca tra attività, note e tutto ciò che hai detto"],
-      ["La spesa insieme", "Liste condivise per tutta la famiglia, aggiornate dal vivo"]
+      { "kicker": "Note vocali con IA", "title": "Dillo una volta.", "accent": "È tutto in ordine.", "sub": "Attività, promemoria, eventi e note da una sola registrazione." },
+      { "kicker": "Ordine intelligente", "title": "Un pensiero,", "accent": "cinque elementi.", "sub": "Controlla tutto prima di salvare." },
+      { "kicker": "Attività ricorrenti", "title": "Non perdere", "accent": "il prossimo.", "sub": "Promemoria, ripetizioni e calendario in un unico posto." },
+      { "kicker": "Ricerca", "title": "Trovato in", "accent": "pochi secondi.", "sub": "Cerca tra attività, note e tutto ciò che hai detto." },
+      { "kicker": "Liste condivise", "title": "La spesa,", "accent": "insieme.", "sub": "Una lista per tutta la famiglia, aggiornata dal vivo." }
     ]
   },
   "ja": {
-    "tagline": "話すだけ。TalkTrayが整理します。",
+    "tagline": ["話すだけ。", "あとは整理済み。"],
+    "itemsFound": "5件に整理",
+    "live": "リアルタイム",
     "screens": [
-      ["話すだけでいい", "ひとつの録音からタスク・リマインダー・予定・メモ"],
-      ["ひとつの話から5つの項目", "保存する前にすべて確認できます"],
-      ["次の予定を見逃さない", "リマインダー、繰り返しタスク、カレンダー"],
-      ["すぐに見つかる", "タスク、メモ、話した内容をまとめて検索"],
-      ["買い物を家族で", "共有リストがリアルタイムで更新"]
+      { "kicker": "AIボイスメモ", "title": "話すだけ。", "accent": "あとは整理済み。", "sub": "ひとつの録音からタスク・リマインダー・予定・メモ。" },
+      { "kicker": "かしこく整理", "title": "ひとつの話から", "accent": "5つの項目。", "sub": "保存する前にすべて確認できます。" },
+      { "kicker": "繰り返しタスク", "title": "次の予定を", "accent": "見逃さない。", "sub": "リマインダー、繰り返し、カレンダーをひとつに。" },
+      { "kicker": "検索", "title": "すぐに", "accent": "見つかる。", "sub": "タスク、メモ、話した内容をまとめて検索。" },
+      { "kicker": "共有リスト", "title": "買い物は", "accent": "家族いっしょに。", "sub": "家族でひとつのリスト。変更はすぐに届きます。" }
     ]
   },
   "ko": {
-    "tagline": "한 번 말하면, TalkTray가 정리해요.",
+    "tagline": ["한 번 말하면", "정리 끝."],
+    "itemsFound": "5개 항목으로 정리",
+    "live": "실시간",
     "screens": [
-      ["한 번 말하면 끝", "녹음 하나로 할 일, 알림, 일정, 메모까지"],
-      ["생각 하나, 항목 다섯 개", "저장하기 전에 모두 확인하세요"],
-      ["다음 일정을 놓치지 마세요", "알림, 반복 할 일, 그리고 캘린더"],
-      ["몇 초 만에 찾기", "할 일, 메모, 말한 내용까지 검색"],
-      ["장보기는 함께", "가족 공유 목록이 실시간으로 업데이트돼요"]
+      { "kicker": "AI 음성 메모", "title": "한 번 말하면", "accent": "정리 끝.", "sub": "녹음 하나로 할 일, 알림, 일정, 메모까지." },
+      { "kicker": "똑똑한 정리", "title": "생각 하나,", "accent": "항목 다섯 개.", "sub": "저장하기 전에 모두 확인하세요." },
+      { "kicker": "반복 할 일", "title": "다음 일정을", "accent": "놓치지 마세요.", "sub": "알림, 반복, 캘린더를 한곳에서." },
+      { "kicker": "검색", "title": "몇 초 만에", "accent": "찾기.", "sub": "할 일, 메모, 말한 내용까지 검색." },
+      { "kicker": "공유 목록", "title": "장보기는", "accent": "함께.", "sub": "가족이 함께 쓰는 목록, 바로 업데이트돼요." }
     ]
   },
   "pt-BR": {
-    "tagline": "Fale uma vez. O TalkTray organiza.",
+    "tagline": ["Fale uma vez.", "Tudo organizado."],
+    "itemsFound": "5 itens encontrados",
+    "live": "Ao vivo",
     "screens": [
-      ["Fale uma vez", "Tarefas, lembretes, eventos e notas de uma só gravação"],
-      ["Uma ideia, cinco itens", "Confira tudo antes de salvar"],
-      ["Não perca o próximo compromisso", "Lembretes, tarefas que se repetem e sua agenda"],
-      ["Ache em segundos", "Busque em tarefas, notas e tudo o que você disse"],
-      ["Compras em família", "Listas compartilhadas, atualizadas na hora"]
+      { "kicker": "Notas de voz com IA", "title": "Fale uma vez.", "accent": "Tudo organizado.", "sub": "Tarefas, lembretes, eventos e notas de uma só gravação." },
+      { "kicker": "Organização inteligente", "title": "Uma ideia,", "accent": "cinco itens.", "sub": "Confira tudo antes de salvar." },
+      { "kicker": "Tarefas que se repetem", "title": "Não perca", "accent": "o próximo.", "sub": "Lembretes, repetições e agenda num só lugar." },
+      { "kicker": "Busca", "title": "Ache em", "accent": "segundos.", "sub": "Busque em tarefas, notas e tudo o que você disse." },
+      { "kicker": "Listas compartilhadas", "title": "Compras", "accent": "em família.", "sub": "Uma lista para toda a casa, atualizada na hora." }
     ]
   },
   "id": {
-    "tagline": "Ucapkan sekali. TalkTray yang merapikan.",
+    "tagline": ["Ucapkan sekali.", "Semua beres."],
+    "itemsFound": "5 item ditemukan",
+    "live": "Langsung",
     "screens": [
-      ["Cukup ucapkan sekali", "Tugas, pengingat, acara, dan catatan dari satu rekaman"],
-      ["Satu pikiran, lima item", "Periksa semuanya sebelum disimpan"],
-      ["Jangan lewatkan agenda berikutnya", "Pengingat, tugas berulang, dan kalendermu"],
-      ["Temukan dalam hitungan detik", "Cari di tugas, catatan, dan semua yang kamu ucapkan"],
-      ["Belanja bareng keluarga", "Daftar bersama yang diperbarui langsung"]
+      { "kicker": "Catatan suara AI", "title": "Ucapkan sekali.", "accent": "Semua beres.", "sub": "Tugas, pengingat, acara, dan catatan dari satu rekaman." },
+      { "kicker": "Penyortiran pintar", "title": "Satu pikiran,", "accent": "lima item.", "sub": "Periksa semuanya sebelum disimpan." },
+      { "kicker": "Tugas berulang", "title": "Jangan lewatkan", "accent": "agenda berikutnya.", "sub": "Pengingat, pengulangan, dan kalender di satu tempat." },
+      { "kicker": "Pencarian", "title": "Temukan dalam", "accent": "hitungan detik.", "sub": "Cari di tugas, catatan, dan semua yang kamu ucapkan." },
+      { "kicker": "Daftar bersama", "title": "Belanja", "accent": "bareng keluarga.", "sub": "Satu daftar untuk seisi rumah, diperbarui langsung." }
     ]
   }
 }
