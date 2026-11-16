@@ -328,7 +328,7 @@ export const it: Dictionary = {
     unavailable: 'L’acquisto non è andato a buon fine. Riprova tra un momento.',
     f1: 'Registrazioni che sembrano illimitate, con un tetto di uso equo',
     f2: 'Registrazioni fino a 10 minuti',
-    f3: 'Riascolta le tue registrazioni quando vuoi',
+    f3: "Riascolta le tue registrazioni per 30 giorni",
     f4: 'Niente pubblicità. Solo abbonamento.',
     f5: 'Riassunto automatico di riunioni e registrazioni lunghe',
     f6: 'Attività ricorrenti',

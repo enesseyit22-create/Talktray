@@ -330,7 +330,7 @@ export const en = {
     unavailable: 'The purchase could not be completed. Try again in a moment.',
     f1: 'Unlimited-feeling recordings, with a fair-use cap',
     f2: 'Recordings up to 10 minutes long',
-    f3: 'Listen to your recordings again',
+    f3: "Listen to your recordings for 30 days",
     f4: 'No ads. Subscription only.',
     f5: 'Meetings and long recordings come with a summary',
     f6: 'Repeating tasks',

@@ -24,7 +24,7 @@ We do not sell personal information. Processors that help run Talktray include S
 
 ## How long we keep it
 
-We keep account data and inbox content until you delete the account in the app, or until you delete an individual item. Deleting the account removes the profile, recordings, inbox items, usage records, and stored audio tied to that user, then signs you out.
+We keep account data and inbox content until you delete the account in the app, or until you delete an individual item. Recording audio is kept for 7 days on the free plan and 30 days on Pro, then deleted automatically; the transcript and the items you saved stay. Deleting the account removes the profile, recordings, inbox items, usage records, and stored audio tied to that user, then signs you out.
 
 ## Your choices
 

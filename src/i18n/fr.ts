@@ -328,7 +328,7 @@ export const fr: Dictionary = {
     unavailable: 'L’achat n’a pas abouti. Réessaie dans un instant.',
     f1: 'Des enregistrements qui semblent illimités, avec un plafond raisonnable',
     f2: 'Enregistrements jusqu’à 10 minutes',
-    f3: 'Réécoute tes enregistrements quand tu veux',
+    f3: "Réécoute tes enregistrements pendant 30 jours",
     f4: 'Pas de pub. Seulement l’abonnement.',
     f5: 'Résumé automatique des réunions et longs enregistrements',
     f6: 'Tâches récurrentes',

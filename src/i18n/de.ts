@@ -328,7 +328,7 @@ export const de: Dictionary = {
     unavailable: 'Der Kauf konnte nicht abgeschlossen werden. Versuch es gleich noch einmal.',
     f1: 'Aufnahmen, die sich unbegrenzt anfühlen, mit Fair-Use-Grenze',
     f2: 'Aufnahmen bis zu 10 Minuten',
-    f3: 'Deine Aufnahmen jederzeit erneut anhören',
+    f3: "Deine Aufnahmen 30 Tage lang erneut anhören",
     f4: 'Keine Werbung. Nur das Abo.',
     f5: 'Automatische Zusammenfassung für Meetings und lange Aufnahmen',
     f6: 'Wiederkehrende Aufgaben',

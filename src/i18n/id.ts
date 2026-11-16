@@ -328,7 +328,7 @@ export const id: Dictionary = {
     unavailable: 'Pembelian tidak selesai. Coba lagi sebentar lagi.',
     f1: 'Rekaman yang terasa leluasa, dengan batas penggunaan wajar',
     f2: 'Rekaman hingga 10 menit',
-    f3: 'Dengarkan lagi rekamanmu kapan saja',
+    f3: "Dengarkan lagi rekamanmu selama 30 hari",
     f4: 'Tanpa iklan. Hanya langganan.',
     f5: 'Ringkasan otomatis untuk rapat dan rekaman panjang',
     f6: 'Tugas berulang',

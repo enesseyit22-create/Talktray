@@ -328,7 +328,7 @@ export const ptBR: Dictionary = {
     unavailable: 'A compra não foi concluída. Tente de novo em instantes.',
     f1: 'Gravações com cara de ilimitadas, com um teto de uso justo',
     f2: 'Gravações de até 10 minutos',
-    f3: 'Ouça suas gravações de novo quando quiser',
+    f3: "Ouça suas gravações de novo por 30 dias",
     f4: 'Sem anúncios. Só assinatura.',
     f5: 'Resumo automático de reuniões e gravações longas',
     f6: 'Tarefas que se repetem',

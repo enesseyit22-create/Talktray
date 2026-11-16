@@ -328,7 +328,7 @@ export const es: Dictionary = {
     unavailable: 'No se pudo completar la compra. Inténtalo de nuevo en un momento.',
     f1: 'Grabaciones que se sienten ilimitadas, con un tope de uso justo',
     f2: 'Grabaciones de hasta 10 minutos',
-    f3: 'Vuelve a escuchar tus grabaciones cuando quieras',
+    f3: "Vuelve a escuchar tus grabaciones durante 30 días",
     f4: 'Sin anuncios. Solo suscripción.',
     f5: 'Resumen automático de reuniones y grabaciones largas',
     f6: 'Tareas que se repiten',

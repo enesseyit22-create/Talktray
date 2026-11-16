@@ -328,7 +328,7 @@ export const tr: Dictionary = {
     unavailable: 'Satın alma tamamlanamadı. Biraz sonra yeniden dene.',
     f1: 'Adil kullanım sınırlı, limitsiz hissi veren kayıt',
     f2: '10 dakikaya kadar uzun kayıtlar',
-    f3: 'Kayıtlarını istediğin zaman yeniden dinle',
+    f3: "Kayıtlarını 30 gün boyunca yeniden dinle",
     f4: 'Reklam yok. Yalnızca abonelik.',
     f5: 'Toplantı ve uzun kayıtlara otomatik özet',
     f6: 'Tekrarlayan görevler',
