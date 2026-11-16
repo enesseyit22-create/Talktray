@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: J; font-weight: 800; src: url('file:///home/user/Talktray/node_modules/@expo-google-fonts/plus-jakarta-sans/800ExtraBold/PlusJakartaSans_800ExtraBold.ttf'); }
+@font-face { font-family: J; font-weight: 700; src: url('file:///home/user/Talktray/node_modules/@expo-google-fonts/plus-jakarta-sans/700Bold/PlusJakartaSans_700Bold.ttf'); }
+@font-face { font-family: J; font-weight: 600; src: url('file:///home/user/Talktray/node_modules/@expo-google-fonts/plus-jakarta-sans/600SemiBold/PlusJakartaSans_600SemiBold.ttf'); }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #0B0920; }
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; font-family: J, 'Noto Sans', sans-serif; color: #fff;
+  background: linear-gradient(170deg, #1A1440 0%, #120E2E 55%, #0B0920 100%); }
+.orb { position: absolute; border-radius: 50%; filter: blur(60px); will-change: transform; }
+.grain { position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px); background-size: 5px 5px; pointer-events: none; }
+.vig { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.45) 100%); pointer-events: none; }
+.layer { position: absolute; inset: 0; }
+.phone { position: absolute; left: 50%; top: 50%; width: 700px; padding: 18px; border-radius: 118px; transform-origin: center;
+  background: linear-gradient(145deg, #3A3366, #151229); box-shadow: 0 70px 140px rgba(0,0,0,.6), 0 0 0 2px rgba(255,255,255,.08) inset; }
+.phone img { display: block; width: 100%; border-radius: 100px; }
+.phone .mask { position: absolute; inset: 18px; border-radius: 100px; overflow: hidden; }
+.copy { position: absolute; left: 90px; right: 90px; text-align: center; }
+.kicker { display: inline-flex; align-items: center; gap: 12px; padding: 14px 28px; border-radius: 999px; background: rgba(255,255,255,.1);
+  border: 1.5px solid rgba(255,255,255,.18); font-weight: 700; font-size: 32px; letter-spacing: .02em; color: #D9D2FF; }
+h1 { font-weight: 800; font-size: 104px; line-height: 1.04; letter-spacing: -.035em; }
+h1 em { font-style: normal; background: linear-gradient(90deg, #B9A8FF, #FFB3C7); -webkit-background-clip: text; color: transparent; }
+h1.big { font-size: 128px; }
+p.sub { margin-top: 26px; font-weight: 600; font-size: 42px; line-height: 1.3; color: #B8B2DA; }
+.card { position: absolute; display: flex; align-items: center; gap: 22px; padding: 22px 34px 22px 22px; border-radius: 38px;
+  background: rgba(24,18,58,.93); border: 1.5px solid rgba(255,255,255,.18); box-shadow: 0 30px 70px rgba(0,0,0,.45); }
+.ic { flex: none; width: 72px; height: 72px; border-radius: 22px; display: flex; align-items: center; justify-content: center; }
+.ct { font-weight: 800; font-size: 36px; line-height: 1.15; }
+.cs { font-weight: 600; font-size: 27px; line-height: 1.2; color: #CFC8F5; margin-top: 3px; }
+.ring { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 3px solid rgba(185,168,255,.55); transform: translate(-50%,-50%); }
+.wave { position: absolute; left: 50%; bottom: 150px; display: flex; gap: 14px; align-items: center; transform: translateX(-50%); }
+.wave i { display: block; width: 14px; border-radius: 8px; background: linear-gradient(180deg, #B9A8FF, #7A6AF0); }
+.brand { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); display: flex; flex-direction: column; align-items: center; gap: 34px; }
+.brand img { width: 240px; height: 240px; border-radius: 64px; box-shadow: 0 40px 100px rgba(122,106,240,.45); }
+.brand .wm { font-weight: 800; font-size: 120px; letter-spacing: -.035em; }
+.brand .wm span { color: #B9A8FF; }
+.cta { display: inline-flex; align-items: center; gap: 16px; padding: 28px 54px; border-radius: 999px; background: linear-gradient(90deg, #7A6AF0, #A389FF);
+  font-weight: 800; font-size: 44px; box-shadow: 0 30px 80px rgba(122,106,240,.5); }
+.store { display: flex; gap: 22px; justify-content: center; margin-top: 44px; }
+.store div { padding: 18px 30px; border-radius: 22px; background: rgba(255,255,255,.1); border: 1.5px solid rgba(255,255,255,.18); font-weight: 700; font-size: 30px; color: #D9D2FF; }
+.flash { position: absolute; inset: 0; background: #fff; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+const W = 1080, H = 1920;
+const S = 'file:///home/user/Talktray/store/screenshots/raw/tr/phone/';
+const LOGO = 'file:///home/user/Talktray/assets/brand/logo-1024.png';
+const ICON = {
+  check: '<path d="M20 6 9 17l-5-5"/>', clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>',
+  leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>',
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/>',
+  sparkle: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>',
+  repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  play: '<path d="m6 3 14 9-14 9Z"/>',
+};
+const svg = (n, c = '#fff', s = 38) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
+
+// ---- easing ----
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const easeOut = (t) => 1 - Math.pow(1 - clamp(t), 3);
+const easeInOut = (t) => { t = clamp(t); return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+const spring = (t) => { t = clamp(t); return 1 - Math.exp(-6 * t) * Math.cos(10 * t) * (1 - t); };
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// ---- scene timeline (seconds) ----
+const SCENES = [
+  { id: 'intro',   start: 0,    end: 3.2 },
+  { id: 'record',  start: 3.2,  end: 8.0 },
+  { id: 'review',  start: 8.0,  end: 13.2 },
+  { id: 'tasks',   start: 13.2, end: 17.6 },
+  { id: 'search',  start: 17.6, end: 21.4 },
+  { id: 'shared',  start: 21.4, end: 26.0 },
+  { id: 'pro',     start: 26.0, end: 30.4 },
+  { id: 'outro',   start: 30.4, end: 35.0 },
+];
+const DURATION = 35.0;
+
+function orbs(t) {
+  const o = (x, y, s, c, ph) => {
+    const dx = Math.sin(t * .35 + ph) * 60, dy = Math.cos(t * .28 + ph) * 50;
+    return `<div class="orb" style="left:${x}px;top:${y}px;width:${s}px;height:${s}px;background:${c};transform:translate(${dx}px,${dy}px)"></div>`;
+  };
+  return o(-300, -200, 1100, '#6D4DFFcc', 0) + o(500, 1200, 900, '#FF7A9C55', 2) + o(200, 700, 700, '#4D9DFF33', 4);
+}
+
+function copy(top, kicker, title, accent, sub, tIn, tOut, big) {
+  const a = easeOut(tIn), out = easeInOut(tOut);
+  const y = lerp(40, 0, a) + lerp(0, -40, out), op = a * (1 - out);
+  const kick = kicker ? `<div class="kicker" style="opacity:${easeOut(tIn * 1.4)};transform:translateY(${lerp(20, 0, easeOut(tIn * 1.4))}px)">${svg('sparkle', '#D9D2FF', 30)}${kicker}</div>` : '';
+  return `<div class="copy" style="top:${top}px;opacity:${op};transform:translateY(${y}px)">${kick}
+    <h1 class="${big ? 'big' : ''}" style="margin-top:${kicker ? 30 : 0}px">${title}${accent ? `<br><em>${accent}</em>` : ''}</h1>
+    ${sub ? `<p class="sub" style="opacity:${easeOut(tIn - .25)}">${sub}</p>` : ''}</div>`;
+}
+
+function phone(src, { x = 0, y = 0, rot = 0, scale = 1, opacity = 1, shiftY = 0, zoomIn = 0 } = {}) {
+  // zoomIn: 0..1 pushes into the screen slightly (cinematic)
+  const sc = scale * (1 + zoomIn * .12);
+  return `<div class="phone" style="opacity:${opacity};transform:translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${rot}deg) scale(${sc})">
+    <img src="${S}${src}" style="transform:translateY(${shiftY}px)">
+  </div>`;
+}
+
+function card({ x, y, rot = 0, bg, icon, title, sub }, t) {
+  const a = spring(t);
+  return `<div class="card" style="left:${x}px;top:${y}px;opacity:${clamp(t * 3)};transform:rotate(${rot}deg) scale(${lerp(.6, 1, a)}) translateY(${lerp(30, 0, a)}px)">
+    <div class="ic" style="background:${bg}">${svg(icon)}</div><div><div class="ct">${title}</div>${sub ? `<div class="cs">${sub}</div>` : ''}</div></div>`;
+}
+
+// ---- scenes ----
+function introScene(t) {
+  // 0..3.2: logo bloom, wordmark, tagline
+  const a = easeOut(seg(t, 0, .9)), b = easeOut(seg(t, .5, 1.4)), c = easeOut(seg(t, 1.1, 2.0));
+  const out = easeInOut(seg(t, 2.6, 3.2));
+  const rings = [0, 1, 2].map((i) => { const p = ((t * .5 + i / 3) % 1); return `<div class="ring" style="width:${lerp(260, 1400, p)}px;height:${lerp(260, 1400, p)}px;opacity:${(1 - p) * .35}"></div>`; }).join('');
+  return `${rings}<div class="brand" style="opacity:${a * (1 - out)};transform:translate(-50%,-50%) scale(${lerp(.7, 1, a) * lerp(1, 1.08, out)})">
+    <img src="${LOGO}" style="transform:scale(${lerp(.5, 1, spring(seg(t, 0, 1.1)))})">
+    <div class="wm" style="opacity:${b};transform:translateY(${lerp(30, 0, b)}px)">Talk<span>Tray</span></div>
+    <p class="sub" style="opacity:${c};transform:translateY(${lerp(20, 0, c)}px);font-size:46px">Sesli notların. Düzenlenmiş.</p></div>`;
+}
+
+function recordScene(t) {
+  // 3.2..8.0: phone rises, mic pulse, waveform, "Bir kez söyle."
+  const l = t - 3.2;
+  const rise = easeOut(seg(l, 0, 1.1));
+  const out = easeInOut(seg(l, 4.2, 4.8));
+  const pulse = 1 + Math.sin(l * 6) * .035 * clamp(seg(l, 1.0, 1.6));
+  const bars = Array.from({ length: 17 }, (_, i) => { const h = 20 + Math.abs(Math.sin(l * 7 + i * .9)) * 90 * clamp(seg(l, 1.2, 1.8)); return `<i style="height:${h}px"></i>`; }).join('');
+  return copy(170, 'Yapay zekâ ile sesli not', 'Bir kez söyle.', 'Gerisi hazır.', 'Mikrofona dokun, aklındakini anlat.', seg(l, .3, 1.2), seg(l, 4.2, 4.8), false)
+    + phone('record.png', { y: lerp(1100, 540, rise) + lerp(0, -80, out), rot: lerp(-8, -4, rise), scale: lerp(.9, 1, rise) * pulse, opacity: 1 - out })
+    + `<div class="wave" style="opacity:${clamp(seg(l, 1.2, 1.8)) * (1 - out)}">${bars}</div>`
+    + card({ x: 80, y: 1350, rot: -6, bg: '#7A6AF0', icon: 'mic', title: '0:14 kayıt', sub: 'Dinleniyor…' }, seg(l, 1.6, 2.4) * (1 - out));
+}
+
+function reviewScene(t) {
+  // 8.0..13.2: review screen; cards pop one by one
+  const l = t - 8.0;
+  const inA = easeOut(seg(l, 0, .9)), out = easeInOut(seg(l, 4.6, 5.2));
+  const cards = [
+    { x: 60, y: 930, rot: -5, bg: '#2FBF8F', icon: 'check', title: 'Görev', sub: 'Bankayı ara · Yarın 10:00' },
+    { x: 560, y: 1110, rot: 4, bg: '#FF8A65', icon: 'clock', title: 'Hatırlatma', sub: 'Çiçekleri sula · 20:00' },
+    { x: 50, y: 1300, rot: -3, bg: '#4D9DFF', icon: 'cal', title: 'Etkinlik', sub: 'Diş hekimi · Cuma 15:00' },
+    { x: 540, y: 1490, rot: 5, bg: '#F2A93B', icon: 'bag', title: 'Alışveriş', sub: 'Kahve, yulaf sütü' },
+    { x: 80, y: 1670, rot: -4, bg: '#8BC34A', icon: 'leaf', title: 'Not', sub: 'İşte kitap kulübü' },
+  ].map((c, i) => card(c, seg(l, 1.0 + i * .45, 1.7 + i * .45) * (1 - out))).join('');
+  return copy(150, 'Akıllı ayıklama', 'Bir düşünce,', 'beş öğe.', 'Görev, hatırlatma, etkinlik, alışveriş ve not. Kendiliğinden.', seg(l, .2, 1.0), seg(l, 4.6, 5.2))
+    + phone('2-review.png', { y: lerp(700, 580, inA) + lerp(0, -60, out), rot: lerp(6, 3, inA), scale: lerp(.92, 1, inA), opacity: inA * (1 - out), zoomIn: seg(l, 1, 4.6) * .5 })
+    + cards;
+}
+
+function tasksScene(t) {
+  // 13.2..17.6: tasks with repeat
+  const l = t - 13.2;
+  const inA = easeOut(seg(l, 0, .9)), out = easeInOut(seg(l, 3.8, 4.4));
+  return copy(150, 'Tekrarlayan görevler', 'Sıradakini', 'kaçırma.', 'Her gün, her hafta, her ay. Bir kez söyle, TalkTray hatırlatsın.', seg(l, .2, 1.0), seg(l, 3.8, 4.4))
+    + phone('3-tasks.png', { x: lerp(-700, 0, inA) + lerp(0, 700, out), y: 750, rot: lerp(-10, -3, inA), scale: lerp(.95, 1, inA), opacity: 1, zoomIn: seg(l, .8, 3.8) * .4 })
+    + card({ x: 540, y: 970, rot: 5, bg: '#7A6AF0', icon: 'repeat', title: 'Her ay', sub: 'Faturayı öde' }, seg(l, 1.1, 1.9) * (1 - out))
+    + card({ x: 60, y: 1550, rot: -5, bg: '#FF8A65', icon: 'clock', title: 'Hatırlatma', sub: 'İlacı al · 08:30' }, seg(l, 1.7, 2.5) * (1 - out));
+}
+
+function searchScene(t) {
+  // 17.6..21.4
+  const l = t - 17.6;
+  const inA = easeOut(seg(l, 0, .9)), out = easeInOut(seg(l, 3.2, 3.8));
+  const typed = 'diş'.slice(0, Math.floor(seg(l, .8, 1.6) * 3));
+  return copy(150, 'Arama', 'Saniyede', 'bul.', 'Görevlerde, notlarda ve söylediklerinde ara.', seg(l, .2, 1.0), seg(l, 3.2, 3.8))
+    + phone('4-search.png', { y: lerp(720, 580, inA), rot: lerp(5, 3, inA), scale: lerp(.92, 1, inA) * lerp(1, 1.06, out), opacity: inA * (1 - out), zoomIn: seg(l, .8, 3.2) * .4 })
+    + card({ x: 300, y: 1170, rot: 3, bg: '#4D9DFF', icon: 'search', title: typed || ' ', sub: seg(l, 1.6, 2) > 0 ? '1 sonuç' : ' ' }, seg(l, .8, 1.5) * (1 - out));
+}
+
+function sharedScene(t) {
+  // 21.4..26.0
+  const l = t - 21.4;
+  const inA = easeOut(seg(l, 0, .9)), out = easeInOut(seg(l, 4.0, 4.6));
+  return copy(150, 'Ortak listeler', 'Alışverişi', 'birlikte yap.', 'Aileyle tek liste. Biri işaretler, herkes anında görür.', seg(l, .2, 1.0), seg(l, 4.0, 4.6))
+    + phone('5-shared.png', { x: lerp(700, 0, inA) + lerp(0, -700, out), y: 750, rot: lerp(10, -3, inA), scale: lerp(.95, 1, inA), zoomIn: seg(l, .8, 4) * .4 })
+    + card({ x: 60, y: 970, rot: -5, bg: '#2FBF8F', icon: 'users', title: 'Ayşe · Mehmet · Elif', sub: 'Canlı' }, seg(l, 1.0, 1.8) * (1 - out))
+    + card({ x: 520, y: 1590, rot: 5, bg: '#7A6AF0', icon: 'check', title: 'Ekmek', sub: 'Elif işaretledi' }, seg(l, 1.8, 2.6) * (1 - out));
+}
+
+function proScene(t) {
+  // 26.0..30.4
+  const l = t - 26.0;
+  const inA = easeOut(seg(l, 0, .9)), out = easeInOut(seg(l, 3.8, 4.4));
+  return copy(150, 'TalkTray Pro', 'Daha uzun konuş,', 'sonra dinle.', '10 dakikaya kadar kayıt, toplantı özeti ve 30 gün yeniden dinleme.', seg(l, .2, 1.0), seg(l, 3.8, 4.4))
+    + phone('2-review.png', { y: lerp(720, 600, inA) + lerp(0, 120, out), rot: lerp(-5, -2, inA), scale: lerp(.92, 1, inA), opacity: inA * (1 - out), zoomIn: seg(l, .8, 3.8) * .35 })
+    + card({ x: 60, y: 990, rot: -5, bg: '#7A6AF0', icon: 'sparkle', title: 'Toplantı özeti', sub: 'Kararlar ve yapılacaklar' }, seg(l, 1.0, 1.8) * (1 - out))
+    + card({ x: 540, y: 1470, rot: 5, bg: '#2FBF8F', icon: 'play', title: 'Yeniden dinle', sub: '30 gün' }, seg(l, 1.7, 2.5) * (1 - out));
+}
+
+function outroScene(t) {
+  // 30.4..35.0
+  const l = t - 30.4;
+  const a = easeOut(seg(l, 0, 1.0)), b = easeOut(seg(l, .6, 1.5)), c = easeOut(seg(l, 1.2, 2.0));
+  const rings = [0, 1, 2].map((i) => { const p = ((l * .4 + i / 3) % 1); return `<div class="ring" style="width:${lerp(300, 1500, p)}px;height:${lerp(300, 1500, p)}px;opacity:${(1 - p) * .3}"></div>`; }).join('');
+  return `${rings}<div class="brand" style="transform:translate(-50%,-56%)">
+    <img src="${LOGO}" style="opacity:${a};transform:scale(${lerp(.6, 1, spring(seg(l, 0, 1.1)))})">
+    <div class="wm" style="opacity:${a};transform:translateY(${lerp(30, 0, a)}px)">Talk<span>Tray</span></div>
+    <h1 style="font-size:84px;opacity:${b};transform:translateY(${lerp(30, 0, b)}px);text-align:center">Bir kez söyle.<br><em>Gerisi hazır.</em></h1>
+    <div class="cta" style="opacity:${c};transform:translateY(${lerp(30, 0, c)}px)">${svg('mic', '#fff', 44)}Ücretsiz dene</div>
+    <div class="store" style="opacity:${c}"><div> App Store</div><div>▶ Google Play</div></div>
+  </div>`;
+}
+
+function flashAt(t, at, len = .25) {
+  const p = seg(t, at, at + len);
+  return p > 0 && p < 1 ? `<div class="flash" style="opacity:${(1 - p) * .55}"></div>` : '';
+}
+
+window.renderFrame = function (t) {
+  let html = orbs(t);
+  const parts = [];
+  if (t < 3.2) parts.push(introScene(t));
+  if (t >= 3.0 && t < 8.0) parts.push(recordScene(Math.max(t, 3.2)));
+  if (t >= 8.0 && t < 13.2) parts.push(reviewScene(t));
+  if (t >= 13.2 && t < 17.6) parts.push(tasksScene(t));
+  if (t >= 17.6 && t < 21.4) parts.push(searchScene(t));
+  if (t >= 21.4 && t < 26.0) parts.push(sharedScene(t));
+  if (t >= 26.0 && t < 30.4) parts.push(proScene(t));
+  if (t >= 30.4) parts.push(outroScene(t));
+  html += `<div class="layer">${parts.join('')}</div><div class="grain"></div><div class="vig"></div>`;
+  for (const at of [3.1, 30.3]) html += flashAt(t, at);
+  document.getElementById('stage').innerHTML = html;
+};
+window.DURATION = DURATION;
+renderFrame(0);
+</script>
+</body>
+</html>
