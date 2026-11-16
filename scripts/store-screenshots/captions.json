@@ -1,0 +1,102 @@
+{
+  "en": {
+    "tagline": "Say it once. TalkTray sorts it.",
+    "screens": [
+      ["Say it once", "Tasks, reminders, events, and notes from one recording"],
+      ["One thought, five items", "Check everything before it is saved"],
+      ["Never miss what is next", "Reminders, repeating tasks, and your calendar"],
+      ["Find it in seconds", "Search tasks, notes, and everything you said"],
+      ["Shop together", "Shared lists for the whole family, updated live"]
+    ]
+  },
+  "tr": {
+    "tagline": "Bir kez söyle. TalkTray ayıklasın.",
+    "screens": [
+      ["Bir kez söyle", "Tek kayıttan görev, hatırlatma, etkinlik ve not"],
+      ["Bir düşünce, beş öğe", "Kaydetmeden önce hepsini kontrol et"],
+      ["Sıradakini kaçırma", "Hatırlatmalar, tekrarlayan görevler ve takvim"],
+      ["Saniyede bul", "Görevlerde, notlarda ve söylediklerinde ara"],
+      ["Alışverişi birlikte yap", "Aile için ortak listeler, anında güncellenir"]
+    ]
+  },
+  "de": {
+    "tagline": "Einmal sagen. TalkTray sortiert.",
+    "screens": [
+      ["Einmal sagen", "Aufgaben, Erinnerungen, Termine und Notizen aus einer Aufnahme"],
+      ["Ein Gedanke, fünf Einträge", "Alles prüfen, bevor es gespeichert wird"],
+      ["Nichts mehr verpassen", "Erinnerungen, wiederkehrende Aufgaben und Kalender"],
+      ["In Sekunden gefunden", "Aufgaben, Notizen und alles Gesagte durchsuchen"],
+      ["Gemeinsam einkaufen", "Geteilte Listen für die Familie, live aktualisiert"]
+    ]
+  },
+  "es": {
+    "tagline": "Dilo una vez. TalkTray lo ordena.",
+    "screens": [
+      ["Dilo una vez", "Tareas, recordatorios, eventos y notas de una sola grabación"],
+      ["Una idea, cinco elementos", "Revisa todo antes de guardarlo"],
+      ["No te pierdas lo siguiente", "Recordatorios, tareas que se repiten y tu calendario"],
+      ["Encuéntralo en segundos", "Busca en tareas, notas y todo lo que dijiste"],
+      ["Haced la compra juntos", "Listas compartidas para toda la familia, al instante"]
+    ]
+  },
+  "fr": {
+    "tagline": "Dites-le une fois. TalkTray trie.",
+    "screens": [
+      ["Dites-le une fois", "Tâches, rappels, événements et notes en un seul enregistrement"],
+      ["Une idée, cinq éléments", "Vérifiez tout avant d’enregistrer"],
+      ["Ne ratez plus rien", "Rappels, tâches récurrentes et calendrier"],
+      ["Trouvé en quelques secondes", "Cherchez dans vos tâches, notes et tout ce que vous avez dit"],
+      ["Les courses à plusieurs", "Des listes partagées pour toute la famille, en direct"]
+    ]
+  },
+  "it": {
+    "tagline": "Dillo una volta. TalkTray mette in ordine.",
+    "screens": [
+      ["Dillo una volta", "Attività, promemoria, eventi e note da una sola registrazione"],
+      ["Un pensiero, cinque elementi", "Controlla tutto prima di salvare"],
+      ["Non perdere il prossimo impegno", "Promemoria, attività ricorrenti e calendario"],
+      ["Trovato in pochi secondi", "Cerca tra attività, note e tutto ciò che hai detto"],
+      ["La spesa insieme", "Liste condivise per tutta la famiglia, aggiornate dal vivo"]
+    ]
+  },
+  "ja": {
+    "tagline": "話すだけ。TalkTrayが整理します。",
+    "screens": [
+      ["話すだけでいい", "ひとつの録音からタスク・リマインダー・予定・メモ"],
+      ["ひとつの話から5つの項目", "保存する前にすべて確認できます"],
+      ["次の予定を見逃さない", "リマインダー、繰り返しタスク、カレンダー"],
+      ["すぐに見つかる", "タスク、メモ、話した内容をまとめて検索"],
+      ["買い物を家族で", "共有リストがリアルタイムで更新"]
+    ]
+  },
+  "ko": {
+    "tagline": "한 번 말하면, TalkTray가 정리해요.",
+    "screens": [
+      ["한 번 말하면 끝", "녹음 하나로 할 일, 알림, 일정, 메모까지"],
+      ["생각 하나, 항목 다섯 개", "저장하기 전에 모두 확인하세요"],
+      ["다음 일정을 놓치지 마세요", "알림, 반복 할 일, 그리고 캘린더"],
+      ["몇 초 만에 찾기", "할 일, 메모, 말한 내용까지 검색"],
+      ["장보기는 함께", "가족 공유 목록이 실시간으로 업데이트돼요"]
+    ]
+  },
+  "pt-BR": {
+    "tagline": "Fale uma vez. O TalkTray organiza.",
+    "screens": [
+      ["Fale uma vez", "Tarefas, lembretes, eventos e notas de uma só gravação"],
+      ["Uma ideia, cinco itens", "Confira tudo antes de salvar"],
+      ["Não perca o próximo compromisso", "Lembretes, tarefas que se repetem e sua agenda"],
+      ["Ache em segundos", "Busque em tarefas, notas e tudo o que você disse"],
+      ["Compras em família", "Listas compartilhadas, atualizadas na hora"]
+    ]
+  },
+  "id": {
+    "tagline": "Ucapkan sekali. TalkTray yang merapikan.",
+    "screens": [
+      ["Cukup ucapkan sekali", "Tugas, pengingat, acara, dan catatan dari satu rekaman"],
+      ["Satu pikiran, lima item", "Periksa semuanya sebelum disimpan"],
+      ["Jangan lewatkan agenda berikutnya", "Pengingat, tugas berulang, dan kalendermu"],
+      ["Temukan dalam hitungan detik", "Cari di tugas, catatan, dan semua yang kamu ucapkan"],
+      ["Belanja bareng keluarga", "Daftar bersama yang diperbarui langsung"]
+    ]
+  }
+}

@@ -50,3 +50,6 @@ example
 
 # Supabase CLI
 supabase/.temp/
+
+# Generated store images (see scripts/store-screenshots)
+store/screenshots/

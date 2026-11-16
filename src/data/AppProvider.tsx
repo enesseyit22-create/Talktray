@@ -3,7 +3,8 @@ import { flushSync } from 'react-dom';
 import { getCalendars } from 'expo-localization';
 import { AppState } from 'react-native';
 
-import { buildSeed } from '@/data/seed';
+import { buildPreviewDraft, buildSeed } from '@/data/seed';
+import { SEED_COPY } from '@/data/seed-copy';
 import { loadDemo, loadPrefs, saveDemo, savePrefs, type DemoState } from '@/data/storage';
 import type { Draft, DraftItem, InboxItem, Profile, Recording, SessionUser, Usage } from '@/domain/types';
 import { asLocale, deviceLocale, resolveLocalePreference, translate, useI18n, type Locale } from '@/i18n';
@@ -249,9 +250,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const preview = process.env.EXPO_PUBLIC_PREVIEW === '1';
       const previewLocale = asLocale(process.env.EXPO_PUBLIC_PREVIEW_LOCALE || locale);
       if (preview) {
-        const name = process.env.EXPO_PUBLIC_PREVIEW_NAME || 'TalkTray';
+        const name = process.env.EXPO_PUBLIC_PREVIEW_NAME || SEED_COPY[previewLocale]?.name || 'TalkTray';
         const timeZone = phoneTimeZone();
-        const seeded = buildSeed(new Date(), timeZone, previewLocale === 'tr' ? 'tr' : 'en');
+        const seeded = buildSeed(new Date(), timeZone, previewLocale);
         const nextProfile = {
           ...defaultProfile(previewLocale, timeZone),
           displayName: name,
@@ -593,7 +594,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           reminderOffsets: seeded?.profile.reminderOffsets?.length ? seeded.profile.reminderOffsets : [0],
         };
         const nextUser = seeded?.user ?? { id: createId(), email: email?.trim() || 'demo@talktray.app' };
-        const seed = seeded ? null : buildSeed(new Date(), timeZone, locale === 'tr' ? 'tr' : 'en');
+        const seed = seeded ? null : buildSeed(new Date(), timeZone, locale);
         const nextItems = seeded?.items ?? seed?.items ?? [];
         const nextRecordings = seeded?.recordings ?? seed?.recordings ?? [];
         const period = monthPeriod(new Date(), timeZone);
@@ -921,6 +922,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return 'review';
       },
       openSample: async (locale) => {
+        if (process.env.EXPO_PUBLIC_PREVIEW === '1') {
+          // Store screenshots: a fixed, natively written sample in the app's language.
+          const sample = buildPreviewDraft(new Date(), profile.timezone, profile.locale);
+          setDraft({
+            recordingId: null,
+            transcript: sample.transcript,
+            language: profile.locale,
+            durationMs: 14000,
+            items: sample.items,
+            mocked: false,
+            audioUri: null,
+          });
+          return 'review';
+        }
         if (mode !== 'supabase') {
           return (
             actions.current?.processThought({ durationMs: 12000, transcript: sampleTranscript(locale) }) ??

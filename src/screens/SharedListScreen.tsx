@@ -31,7 +31,7 @@ import {
 import { useTheme } from '@/theme/ThemeProvider';
 
 export function SharedListScreen({ listId }: { listId: string }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const app = useApp();
@@ -48,7 +48,7 @@ export function SharedListScreen({ listId }: { listId: string }) {
   const reload = useCallback(() => {
     if (!listId || loading.current) return;
     loading.current = true;
-    loadSharedList(listId)
+    loadSharedList(listId, locale)
       .then((next) => {
         setList(next.list);
         setMembers(next.members);
@@ -59,7 +59,7 @@ export function SharedListScreen({ listId }: { listId: string }) {
       .finally(() => {
         loading.current = false;
       });
-  }, [listId, t]);
+  }, [listId, locale, t]);
 
   useFocusEffect(reload);
 

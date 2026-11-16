@@ -20,7 +20,7 @@ import {
 import { useTheme } from '@/theme/ThemeProvider';
 
 export function SharedListsScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const app = useApp();
@@ -29,17 +29,17 @@ export function SharedListsScreen() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState<'create' | 'join' | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const signedIn = app.mode === 'supabase' && Boolean(app.user);
+  const signedIn = (app.mode === 'supabase' && Boolean(app.user)) || process.env.EXPO_PUBLIC_PREVIEW === '1';
 
   const reload = useCallback(() => {
     if (!signedIn) return;
-    loadSharedLists()
+    loadSharedLists(locale)
       .then(setLists)
       .catch(() => {
         setLists((current) => current ?? []);
         setError(t('shared.errorNetwork'));
       });
-  }, [signedIn, t]);
+  }, [locale, signedIn, t]);
 
   useFocusEffect(reload);
 

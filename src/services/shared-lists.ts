@@ -1,3 +1,5 @@
+import { SEED_COPY } from '@/data/seed-copy';
+import { asLocale } from '@/i18n/locale';
 import { supabase } from '@/lib/supabase';
 
 export type SharedList = {
@@ -78,17 +80,42 @@ function mapItem(row: Record<string, unknown>): SharedItem {
   };
 }
 
-export async function loadSharedLists(): Promise<SharedList[]> {
+/** Store screenshots only (EXPO_PUBLIC_PREVIEW=1): a sample shared list in the preview language. */
+const PREVIEW = process.env.EXPO_PUBLIC_PREVIEW === '1';
+
+function previewList(locale?: string): { list: SharedList; members: SharedMember[]; items: SharedItem[] } {
+  const copy = SEED_COPY[asLocale(locale || process.env.EXPO_PUBLIC_PREVIEW_LOCALE)] ?? SEED_COPY.en;
+  const now = Date.now();
+  const stamp = (minutesAgo: number) => new Date(now - minutesAgo * 60_000).toISOString();
+  const ids = ['preview', 'p2', 'p3'];
+  return {
+    list: { id: 'preview', name: copy.shared.name, ownerId: 'preview', inviteCode: 'K7MPQ2XA', createdAt: stamp(5000) },
+    members: copy.shared.members.map((name, index) => ({ userId: ids[index]!, displayName: name })),
+    items: copy.shared.items.map((title, index) => ({
+      id: `s${index}`,
+      listId: 'preview',
+      title,
+      addedBy: ids[index % 3]!,
+      doneAt: index >= 3 ? stamp(20 + index) : null,
+      doneBy: index >= 3 ? ids[(index + 1) % 3]! : null,
+      createdAt: stamp(300 - index * 10),
+    })),
+  };
+}
+
+export async function loadSharedLists(previewLocale?: string): Promise<SharedList[]> {
+  if (PREVIEW) return [previewList(previewLocale).list];
   const { data, error } = await supabase.from('shared_lists').select('*').order('created_at', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(mapList);
 }
 
-export async function loadSharedList(listId: string): Promise<{
+export async function loadSharedList(listId: string, previewLocale?: string): Promise<{
   list: SharedList | null;
   members: SharedMember[];
   items: SharedItem[];
 }> {
+  if (PREVIEW) return previewList(previewLocale);
   const [list, members, items] = await Promise.all([
     supabase.from('shared_lists').select('*').eq('id', listId).maybeSingle(),
     supabase.from('shared_list_members').select('user_id, display_name').eq('list_id', listId),
@@ -161,6 +188,7 @@ export async function clearDoneSharedItems(listId: string): Promise<void> {
 
 /** Live changes from other members. The screen also re-reads on focus in case realtime is quiet. */
 export function subscribeSharedList(listId: string, onChange: () => void): () => void {
+  if (PREVIEW) return () => undefined;
   const channel = supabase
     .channel(`shared-list-${listId}`)
     .on(
