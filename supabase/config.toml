@@ -2,3 +2,9 @@ project_id = "talktray"
 
 [functions.process-recording]
 verify_jwt = true
+
+[functions.admin-push]
+verify_jwt = false
+
+[functions.purge-audio]
+verify_jwt = false

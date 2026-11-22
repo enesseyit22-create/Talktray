@@ -1,3 +1,4 @@
+import { normalizeOverrideUntil } from '@/lib/pro-grant';
 import { PRO_FAIR_USE_RECORDINGS, RECORDINGS_BEFORE_PAYWALL } from '../../shared/parse/quota';
 import { zonedParts, zonedTimeToUtc } from '../../shared/parse/time';
 
@@ -21,11 +22,13 @@ export type UsageMeter =
   | { kind: 'month'; count: number; limit: number }
   | { kind: 'open'; count: number; limit: null };
 
-/** What the profile card shows. Matches process-recording: 3 full free recordings, then the monthly free cap. Pro shows the 300 fair-use cap. */
+/**
+ * What the profile card and paywall count. Free accounts show the monthly free
+ * cap from settings (25 unless an admin changed it, or open when that cap is
+ * unset). Pro, including an admin gift, shows the fair-use cap. The first few
+ * recordings still skip enforcement; that gate is not a separate displayed quota.
+ */
 export function usageMeter(isPro: boolean, facts: UsageFacts): UsageMeter {
-  if (!isPro && facts.completedEver < facts.trialLimit) {
-    return { kind: 'trial', count: facts.completedEver, limit: facts.trialLimit };
-  }
   if (isPro) return { kind: 'month', count: facts.completedMonth, limit: facts.proMonthLimit };
   if (facts.freeMonthLimit == null) return { kind: 'open', count: facts.completedMonth, limit: null };
   return { kind: 'month', count: facts.completedMonth, limit: facts.freeMonthLimit };
@@ -79,4 +82,10 @@ export function factsFromRpc(value: unknown, fallback: UsageFacts): UsageFacts {
     freeMonthLimit,
     proMonthLimit: number('pro_month_limit', PRO_FAIR_USE_RECORDINGS),
   };
+}
+
+/** Undefined when this server build does not report gifts. Null means no active grant. */
+export function giftUntilFromRpc(value: unknown): string | null | undefined {
+  if (!value || typeof value !== 'object' || !('gift_until' in value)) return undefined;
+  return normalizeOverrideUntil((value as Record<string, unknown>).gift_until);
 }

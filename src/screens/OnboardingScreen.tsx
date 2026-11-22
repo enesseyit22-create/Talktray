@@ -87,6 +87,11 @@ export function OnboardingScreen() {
             <AppText color={colors.muted} style={{ textAlign: 'center' }}>
               {t(`onboarding.${SLIDES[index]}Body`)}
             </AppText>
+            {last ? (
+              <AppText color={colors.muted} style={{ textAlign: 'center' }}>
+                {t('onboarding.familyHint')}
+              </AppText>
+            ) : null}
           </View>
         </View>
         <View style={{ gap: 16 }}>

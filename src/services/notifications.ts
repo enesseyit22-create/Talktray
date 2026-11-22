@@ -1,9 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 import type { InboxItem } from '@/domain/types';
 import { translate } from '@/i18n/translate';
+import { digestStats, nextDigestAt } from '@/lib/weekly-digest';
+import {
+  exactDateTrigger,
+  planReminders,
+  scheduledFireAt,
+  type PlannedReminder,
+  type ReminderSource,
+} from '@/services/reminder-schedule';
 
 const STORE = 'talktray.notificationIds';
 const CHANNEL = 'reminders';
@@ -23,7 +31,7 @@ export async function ensureReminderChannel(locale: string) {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL, {
     name: translate(locale, 'notifications.channel'),
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: Notifications.AndroidImportance.MAX,
     sound: 'default',
     vibrationPattern: [0, 250, 250, 250],
     enableVibrate: true,
@@ -36,6 +44,36 @@ export async function requestReminderPermission(): Promise<boolean> {
   if (current.granted) return true;
   const next = await Notifications.requestPermissionsAsync();
   return next.granted;
+}
+
+const EXACT_PROMPT = 'talktray.exactAlarmPrompted';
+
+function notificationsAllowed(status: Notifications.NotificationPermissionsStatus): boolean {
+  if (status.granted) return true;
+  const ios = status.ios?.status;
+  return (
+    ios === Notifications.IosAuthorizationStatus.AUTHORIZED ||
+    ios === Notifications.IosAuthorizationStatus.PROVISIONAL ||
+    ios === Notifications.IosAuthorizationStatus.EPHEMERAL
+  );
+}
+
+/** Opens the Android screen where the user allows exact alarms. The manifest permission is already in the installed build. */
+export async function openExactAlarmSettings(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    await Linking.sendIntent('android.settings.REQUEST_SCHEDULE_EXACT_ALARM');
+  } catch {
+    await Linking.openSettings();
+  }
+}
+
+export async function promptExactAlarmOnce(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  const seen = await AsyncStorage.getItem(EXACT_PROMPT);
+  if (seen) return;
+  await AsyncStorage.setItem(EXACT_PROMPT, '1');
+  await openExactAlarmSettings();
 }
 
 function bodyFor(offset: number, title: string, locale: string) {
@@ -60,34 +98,38 @@ async function saveMap(map: Record<string, string[]>) {
   await AsyncStorage.setItem(STORE, JSON.stringify(map));
 }
 
-async function scheduleOne(item: InboxItem, offset: number, locale: string): Promise<string | null> {
-  if (!item.dueAt) return null;
-  const when = new Date(new Date(item.dueAt).getTime() - offset * 60_000);
-  if (when.getTime() <= Date.now() + 5000) return null;
+async function scheduleOne(plan: PlannedReminder, locale: string): Promise<boolean> {
+  const channelId = Platform.OS === 'android' ? CHANNEL : undefined;
+  const content = {
+    title: plan.title,
+    body: bodyFor(plan.offset, plan.title, locale),
+    data: { itemId: plan.itemId, url: `talktray://item/${plan.itemId}` },
+    sound: 'default' as const,
+    ...(Platform.OS === 'android' ? { priority: Notifications.AndroidNotificationPriority.MAX } : {}),
+  };
+  // DATE uses the absolute instant. An interval trigger is inexact on Android and drifts.
+  const trigger = exactDateTrigger(plan.fireAt, channelId);
   try {
-    return await Notifications.scheduleNotificationAsync({
-      content: {
-        title: item.title,
-        body: bodyFor(offset, item.title, locale),
-        data: { itemId: item.id, url: `talktray://item/${item.id}` },
-        sound: 'default',
-      },
+    await Notifications.scheduleNotificationAsync({
+      identifier: plan.id,
+      content,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: when,
-        channelId: CHANNEL,
+        date: trigger.date,
+        ...(channelId ? { channelId } : {}),
       },
     });
+    return true;
   } catch (error) {
-    console.warn('[notifications] schedule failed', item.id, offset, error);
-    return null;
+    console.warn('[notifications] exact schedule failed', plan.id, error);
+    return false;
   }
 }
 
 let syncing = false;
-let pending: { items: InboxItem[]; locale: string; defaultOffsets: number[] } | null = null;
+let pending: { items: ReminderSource[]; locale: string; defaultOffsets: number[] } | null = null;
 
-export async function syncItemNotifications(items: InboxItem[], locale: string, defaultOffsets: number[]) {
+export async function syncItemNotifications(items: ReminderSource[], locale: string, defaultOffsets: number[]) {
   if (Platform.OS === 'web') return;
   if (syncing) {
     pending = { items, locale, defaultOffsets };
@@ -96,25 +138,34 @@ export async function syncItemNotifications(items: InboxItem[], locale: string, 
   syncing = true;
   try {
     await ensureReminderChannel(locale);
-    const granted = (await Notifications.getPermissionsAsync()).granted;
+    const allowed = notificationsAllowed(await Notifications.getPermissionsAsync());
     const previous = await loadMap();
     for (const ids of Object.values(previous)) {
-      for (const id of ids) await Notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
-    }
-    const next: Record<string, string[]> = {};
-    if (granted) {
-      for (const item of items) {
-        if (!item.dueAt || item.completedAt) continue;
-        const offsets = item.reminderOffsets?.length ? item.reminderOffsets : defaultOffsets;
-        const ids: string[] = [];
-        for (const offset of offsets) {
-          const id = await scheduleOne(item, offset, locale);
-          if (id) ids.push(id);
-        }
-        if (ids.length) next[item.id] = ids;
+      for (const id of ids) {
+        if (!id.startsWith('tt:')) await Notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
       }
     }
-    await saveMap(next);
+    if (Object.keys(previous).length) await saveMap({});
+
+    const planned = allowed ? planReminders(items, defaultOffsets, Date.now()) : [];
+    if (planned.length) void promptExactAlarmOnce();
+    const existing = await Notifications.getAllScheduledNotificationsAsync();
+    const plannedIds = new Set(planned.map((item) => item.id));
+    for (const request of existing) {
+      if (!request.identifier.startsWith('tt:')) continue;
+      if (!plannedIds.has(request.identifier)) {
+        await Notifications.cancelScheduledNotificationAsync(request.identifier).catch(() => undefined);
+      }
+    }
+    const existingById = new Map(existing.map((request) => [request.identifier, request]));
+    for (const item of planned) {
+      const current = existingById.get(item.id);
+      const when = current ? scheduledFireAt(current.trigger) : null;
+      const sameTime = when != null && Math.abs(when - item.fireAt) < 1500;
+      if (sameTime && current?.content.title === item.title) continue;
+      if (current) await Notifications.cancelScheduledNotificationAsync(item.id).catch(() => undefined);
+      await scheduleOne(item, locale);
+    }
   } catch (error) {
     console.warn('[notifications] sync failed', error);
   } finally {
@@ -138,9 +189,9 @@ export async function sendTestNotification(locale: string) {
         sound: 'default',
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 2,
-        channelId: CHANNEL,
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(Date.now() + 2000),
+        ...(Platform.OS === 'android' ? { channelId: CHANNEL } : {}),
       },
     });
     return true;
@@ -166,9 +217,62 @@ export function listenForNotificationTaps(open: (itemId: string) => void) {
   return () => sub.remove();
 }
 
+export async function cancelRemindersForItem(itemId: string): Promise<void> {
+  if (Platform.OS === 'web' || !itemId) return;
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  const prefix = `tt:${itemId}:`;
+  await Promise.all(
+    scheduled
+      .filter((request) => {
+        const dataId = request.content.data?.itemId;
+        return request.identifier === itemId || request.identifier.startsWith(prefix) || dataId === itemId;
+      })
+      .map((request) => Notifications.cancelScheduledNotificationAsync(request.identifier).catch(() => undefined)),
+  );
+}
+
 export async function cancelItemNotification(id: string | null) {
   if (Platform.OS === 'web' || !id) return;
   await Notifications.cancelScheduledNotificationAsync(id).catch((error) => {
     console.warn('[notifications] cancel failed', id, error);
   });
+}
+
+/** Fixed id, outside the tt: reminder namespace, so reminder syncs never touch it. */
+const DIGEST_ID = 'digest:weekly';
+
+/**
+ * One notification on Sunday evening with last week's finished items and next week's plan.
+ * Rescheduled with fresh numbers every time the app syncs reminders.
+ */
+export async function syncWeeklyDigest(items: InboxItem[], locale: string, timeZone: string, enabled: boolean) {
+  if (Platform.OS === 'web') return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(DIGEST_ID).catch(() => undefined);
+    if (!enabled || !notificationsAllowed(await Notifications.getPermissionsAsync())) return;
+    const at = nextDigestAt(new Date(), timeZone);
+    const { done, upcoming } = digestStats(items, at);
+    if (done === 0 && upcoming === 0) return;
+    const body =
+      done > 0
+        ? translate(locale, 'digest.body', { done, upcoming })
+        : translate(locale, 'digest.bodyAhead', { upcoming });
+    const channelId = Platform.OS === 'android' ? CHANNEL : undefined;
+    await Notifications.scheduleNotificationAsync({
+      identifier: DIGEST_ID,
+      content: {
+        title: translate(locale, 'digest.title'),
+        body,
+        sound: 'default',
+        ...(Platform.OS === 'android' ? { priority: Notifications.AndroidNotificationPriority.HIGH } : {}),
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: at,
+        ...(channelId ? { channelId } : {}),
+      },
+    });
+  } catch (error) {
+    console.warn('[notifications] weekly digest failed', error);
+  }
 }

@@ -16,13 +16,15 @@ export function Aurora({ children }: { children: ReactNode }) {
         <View style={[styles.blob, styles.four, { backgroundColor: colors.blobs[3] }]} />
         <View style={[styles.blob, styles.five, { backgroundColor: colors.blobs[4] }]} />
       </BlurTargetView>
-      {children}
+      {/* On iPad and wide windows, content keeps a readable column instead of stretching edge to edge. */}
+      <View style={styles.column}>{children}</View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  column: { flex: 1, width: '100%', maxWidth: 680, alignSelf: 'center' },
   blob: { position: 'absolute', borderRadius: 999 },
   one: { width: 280, height: 280, top: -60, left: -80, opacity: 0.95 },
   two: { width: 240, height: 240, top: 40, right: -70, opacity: 0.9 },

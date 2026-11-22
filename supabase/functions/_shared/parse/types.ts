@@ -1,3 +1,4 @@
+import type { Repeat } from './repeat.ts';
 export const ITEM_TYPES = ['task', 'reminder', 'event', 'shopping', 'note'] as const;
 
 export type ItemType = (typeof ITEM_TYPES)[number];
@@ -11,6 +12,8 @@ export type ParsedItem = {
   listName: string | null;
   /** Minutes before dueAt. Null means the profile default. */
   reminderOffsets: number[] | null;
+  /** Repeating schedule (Pro). Missing or null means it happens once. */
+  repeat?: Repeat | null;
 };
 
 export type ExtractContext = {

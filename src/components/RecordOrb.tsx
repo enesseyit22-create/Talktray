@@ -123,13 +123,24 @@ export function RecordOrb({
               {recording ? <Bars /> : <AudioLines color={colors.primary} size={18} strokeWidth={2.4} />}
             </>
           )}
+          {label ? (
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 10,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 99,
+                backgroundColor: scheme === 'dark' ? 'rgba(0,0,0,0.78)' : 'rgba(24, 16, 48, 0.82)',
+              }}
+            >
+              <AppText size={12} weight="bold" color="#FFFFFF">
+                {label}
+              </AppText>
+            </View>
+          ) : null}
         </Pressable>
       </View>
-      {label ? (
-        <AppText weight="semibold" color={colors.muted}>
-          {label}
-        </AppText>
-      ) : null}
     </View>
   );
 }

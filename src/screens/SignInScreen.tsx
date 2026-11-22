@@ -95,7 +95,7 @@ export function SignInScreen() {
           {mode === 'up' ? (
             <Field label={t('name')} value={name} onChangeText={setName} placeholder={t('auth.namePlaceholder')} autoCapitalize="words" />
           ) : null}
-          <Field label={t('email')} value={email} onChangeText={setEmail} placeholder="enes@talktray.app" />
+            <Field label={t('email')} value={email} onChangeText={setEmail} autoCapitalize="none" placeholder={t('auth.emailPlaceholder')} />
           <Field label={t('password')} value={password} onChangeText={setPassword} secureTextEntry placeholder="••••••••" />
           {error ? <AppText color={colors.danger}>{error}</AppText> : null}
           {info ? <AppText color={colors.success}>{info}</AppText> : null}
@@ -117,7 +117,7 @@ export function SignInScreen() {
               label={t('auth.demoCta')}
               onPress={() => {
                 setError(null);
-                void enterDemo(name || email.split('@')[0] || 'Enes', email)
+                void enterDemo(name || email.split('@')[0] || 'TalkTray', email)
                   .then(() => router.replace('/home'))
                   .catch(() => setError(t('errors.generic')));
               }}

@@ -81,12 +81,12 @@ describe('sheetFrame', () => {
 
 describe('tab bar clearance', () => {
   it('matches the resting bar at the default font scale', () => {
-    expect(tabBarBlockHeight(1)).toBe(72);
-    expect(contentClearance(34, 1)).toBe(34 + 72 + 28 + 40);
+    expect(tabBarBlockHeight(1)).toBe(80);
+    expect(contentClearance(34, 1)).toBe(34 + 80 + 28 + 40);
   });
 
-  it('grows the bar when labels need a second scaled line', () => {
-    expect(tabBarBlockHeight(2)).toBeGreaterThan(72);
+  it('grows the bar when the font scale grows', () => {
+    expect(tabBarBlockHeight(2)).toBeGreaterThan(80);
     expect(contentClearance(0, 2)).toBeGreaterThan(contentClearance(0, 1));
   });
 });

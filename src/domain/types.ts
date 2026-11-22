@@ -1,4 +1,4 @@
-import type { Locale } from '@/i18n/locale';
+import type { Locale, LocalePreference } from '@/i18n/locale';
 import type { ItemType, ParsedItem } from '../../shared/parse/types';
 
 export type Profile = {
@@ -6,6 +6,7 @@ export type Profile = {
   username: string | null;
   timezone: string;
   locale: Locale;
+  localePreference: LocalePreference;
   theme: 'system' | 'light' | 'dark';
   exportToCalendar: boolean;
   notificationsEnabled: boolean;
@@ -28,6 +29,7 @@ export type Recording = {
   language: string | null;
   durationMs: number;
   status: 'processing' | 'ready' | 'failed';
+  storagePath: string | null;
   createdAt: string;
 };
 
@@ -41,7 +43,7 @@ export type Usage = {
 export type DraftItem = ParsedItem & { localId: string };
 
 export type Draft = {
-  recordingId: string;
+  recordingId: string | null;
   transcript: string;
   language: string | null;
   durationMs: number;

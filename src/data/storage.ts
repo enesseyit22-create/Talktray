@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { InboxItem, Profile, Recording, SessionUser } from '@/domain/types';
 import type { ThemeMode } from '@/theme/ThemeProvider';
-import { asLocale, deviceLocale, type Locale } from '@/i18n';
+import { deviceLocale, isLocalePreference, resolveLocalePreference, type Locale, type LocalePreference } from '@/i18n';
 
 const PREFS = 'talktray.prefs';
 const DEMO = 'talktray.demo';
@@ -11,6 +11,7 @@ export type Prefs = {
   onboardingDone: boolean;
   theme: ThemeMode;
   locale: Locale;
+  localePreference: LocalePreference;
 };
 
 export type DemoState = {
@@ -27,20 +28,26 @@ const defaultPrefs: Prefs = {
   onboardingDone: false,
   theme: 'system',
   locale: 'en',
+  localePreference: 'system',
 };
 
 export async function loadPrefs(): Promise<Prefs> {
+  const device = deviceLocale();
   const raw = await AsyncStorage.getItem(PREFS);
-  if (!raw) return { ...defaultPrefs, locale: deviceLocale() };
+  if (!raw) return { ...defaultPrefs, locale: device, localePreference: 'system' };
   try {
     const parsed = JSON.parse(raw) as Partial<Prefs>;
+    const localePreference = isLocalePreference(parsed.localePreference) ? parsed.localePreference : 'system';
+    const theme = parsed.theme === 'light' || parsed.theme === 'dark' || parsed.theme === 'system' ? parsed.theme : 'system';
     return {
       ...defaultPrefs,
       ...parsed,
-      locale: asLocale(parsed.locale ?? deviceLocale()),
+      theme,
+      localePreference,
+      locale: resolveLocalePreference(localePreference, device),
     };
   } catch {
-    return { ...defaultPrefs, locale: deviceLocale() };
+    return { ...defaultPrefs, locale: device, localePreference: 'system' };
   }
 }
 

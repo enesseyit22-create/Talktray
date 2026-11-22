@@ -22,11 +22,10 @@ export function sheetFrame(input: {
   };
 }
 
-/** Tab bar block height, including two lines of scaled label text. */
+/** Tab bar block height. Labels stay one line; the bar is a little taller than the old two-line minimum. */
 export function tabBarBlockHeight(fontScale: number): number {
   const scale = Number.isFinite(fontScale) && fontScale > 0 ? fontScale : 1;
-  const line = Math.round(11 * 1.35 * scale);
-  return Math.max(72, 8 + 22 + 4 + line * 2);
+  return 80 + Math.round((scale - 1) * 18);
 }
 
 /** Scroll padding that clears the floating tab bar and the mic that rises above it. */

@@ -4,7 +4,7 @@ Talktray is a voice inbox. You tap once, speak a thought, and the app turns it i
 
 The interface is a soft glass layout: pastel blobs, frosted cards, a raised record button, and a deep-indigo dark mode. Turkish and English ship together. The product is subscription-only. There are no ads.
 
-Free accounts get **25 recordings per month**, enforced on the server. Pro is **$7.99/month** or **$49.99/year** (entitlement `pro`) with a **300 recording** fair-use cap.
+Free accounts get **25 recordings per month**, enforced on the server. Pro is **$7.99/month** or **$49.99/year** (entitlement `pro`) with a **1000 recording** fair-use cap.
 
 ## Run it here
 
