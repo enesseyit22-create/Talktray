@@ -57,6 +57,7 @@ export const ja: Dictionary = {
     s2Body: 'TalkTrayは話した内容を、タスク、リマインダー、予定、買い物、メモに分けます。',
     s3Title: '一日が、もう整っています。',
     s3Body: '保存する前に確認できます。リマインダーはこの端末に残り、Proなら月の枠が広がります。',
+    familyHint: '家族とリストを共有して、買い物を一緒にチェックできます。',
   },
   auth: {
     welcome: 'おかえりなさい',
@@ -87,6 +88,8 @@ export const ja: Dictionary = {
     emptyBody: 'マイクをタップして、仕分けはTalkTrayに任せてください。',
     reminded: '通知済み',
     seeAll: 'すべて見る',
+    familyTitle: '家族',
+    familyBody: '家の人との共有リスト。招待して、一緒にチェックしましょう。',
   },
   overdue: {
     badge: '期限切れ',
@@ -140,6 +143,10 @@ export const ja: Dictionary = {
     signInBody: "共有リストには、ほかの人が参加できるようアカウントが必要です。",
     emptyTitle: "共有リストはまだありません",
     emptyBody: "家族用に作るか、コードで参加しましょう。",
+    emptyCta: '家族を招待',
+    remind: 'リマインド',
+    remindAt: 'リストの全員が、自分の端末でこの時刻に通知を受けます。',
+    remindClear: 'リマインダーを外す',
     youOwn: "あなたが作成したリスト",
     youJoined: "参加中のリスト",
     newTitle: "新しい共有リスト",
@@ -195,6 +202,8 @@ export const ja: Dictionary = {
     permission: '考えを残すには、マイクへのアクセスが必要です。',
     tooShort: '短すぎます。もう少し長く押したまま話してください。',
     mix: 'どの言語でも話して — TalkTrayが自動で判別します。',
+    failedKept: '処理できませんでした。録音は残っています。',
+    retryKept: 'この録音でもう一度',
   },
   quick: {
     title: '録音',

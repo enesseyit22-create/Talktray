@@ -1,5 +1,15 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
+import {
+  memberLabel,
+  premiumBody,
+  premiumDeliveryId,
+  premiumWord,
+  signupBody,
+  signupDeliveryId,
+  type PremiumWord,
+} from '../_shared/admin-push.ts';
+
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 type SignupBody = {
@@ -8,6 +18,12 @@ type SignupBody = {
   email?: string | null;
   username?: string | null;
   displayName?: string | null;
+};
+
+type PremiumBody = SignupBody & {
+  source?: string;
+  plan?: string | null;
+  until?: string | null;
 };
 
 type RevenueCatEvent = {
@@ -40,8 +56,25 @@ Deno.serve(async (req) => {
 
   try {
     if (isInternal && isSignup(payload)) {
-      const who = label(payload.username, payload.email, payload.displayName, payload.userId);
-      const sent = await deliver(admin, `signup:${payload.userId}`, `Yeni üye: ${who}`);
+      const who = memberLabel(payload.username, payload.email, payload.displayName, payload.userId);
+      const sent = await deliver(admin, signupDeliveryId(payload.userId), signupBody(who));
+      return json({ ok: true, sent });
+    }
+
+    if (isInternal && isPremium(payload)) {
+      const source = payload.source === 'gift' ? 'gift' : 'store';
+      const word = premiumWord(source, payload.plan);
+      const who = memberLabel(payload.username, payload.email, payload.displayName, payload.userId);
+      const sent = await deliver(
+        admin,
+        premiumDeliveryId({
+          source,
+          userId: payload.userId,
+          word,
+          until: payload.until,
+        }),
+        premiumBody(who, word),
+      );
       return json({ ok: true, sent });
     }
 
@@ -53,15 +86,21 @@ Deno.serve(async (req) => {
       return json({ ok: true, sent });
     }
 
-    const purchase = event.type === 'INITIAL_PURCHASE' || event.type === 'NON_RENEWING_PURCHASE';
-    const renewal = event.type === 'RENEWAL';
-    if (!purchase && !renewal) return json({ ok: true, ignored: event.type });
+    const purchase =
+      event.type === 'INITIAL_PURCHASE' ||
+      event.type === 'NON_RENEWING_PURCHASE' ||
+      event.type === 'PRODUCT_CHANGE';
+    if (!purchase) return json({ ok: true, ignored: event.type });
 
     const userId = event.app_user_id ?? '';
+    if (!userId || userId.startsWith('$RCAnonymous')) return json({ ok: true, ignored: 'anonymous' });
+    const word: PremiumWord = premiumWord('store', event.product_id);
     const who = await purchaserLabel(admin, userId);
-    const product = event.product_id || 'premium';
-    const text = purchase ? `Yeni premium: ${who} — ${product}` : `Premium yenileme: ${who} — ${product}`;
-    const sent = await deliver(admin, `rc:${event.id ?? `${event.type}:${userId}:${product}`}`, text);
+    const sent = await deliver(
+      admin,
+      premiumDeliveryId({ source: 'store', userId, word }),
+      premiumBody(who, word),
+    );
     return json({ ok: true, sent });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'PUSH_FAILED';
@@ -75,19 +114,16 @@ function isSignup(value: unknown): value is SignupBody & { userId: string } {
   return body.kind === 'signup' && typeof body.userId === 'string' && body.userId.length > 0;
 }
 
-function label(...parts: Array<string | null | undefined>): string {
-  for (const part of parts) {
-    const text = part?.trim();
-    if (text) return text;
-  }
-  return 'bilinmiyor';
+function isPremium(value: unknown): value is PremiumBody & { userId: string } {
+  if (!value || typeof value !== 'object') return false;
+  const body = value as PremiumBody;
+  return body.kind === 'premium' && typeof body.userId === 'string' && body.userId.length > 0;
 }
 
 async function purchaserLabel(admin: SupabaseClient, userId: string): Promise<string> {
-  if (!userId || userId.startsWith('$RCAnonymous')) return label(userId);
   const profile = await admin.from('profiles').select('username, display_name').eq('id', userId).maybeSingle();
   const user = await admin.auth.admin.getUserById(userId).catch(() => null);
-  return label(profile.data?.username, user?.data?.user?.email, profile.data?.display_name, userId);
+  return memberLabel(profile.data?.username, user?.data?.user?.email, profile.data?.display_name, userId);
 }
 
 async function deliver(admin: SupabaseClient, id: string, body: string): Promise<boolean> {
@@ -109,10 +145,11 @@ async function deliver(admin: SupabaseClient, id: string, body: string): Promise
       body: JSON.stringify(
         to.map((token) => ({
           to: token,
-          title: 'Talktray',
+          title: 'TalkTray',
           body,
           sound: 'default',
           channelId: 'reminders',
+          priority: 'high',
         })),
       ),
     });

@@ -57,6 +57,7 @@ export const id: Dictionary = {
     s2Body: 'TalkTray memecah ucapanmu menjadi tugas, pengingat, acara, belanja, dan catatan.',
     s3Title: 'Harimu, sudah tersusun.',
     s3Body: 'Tinjau dulu sebelum masuk. Pengingat tetap di ponsel ini, dan Pro membuat bulan ini tetap longgar.',
+    familyHint: 'Kamu bisa berbagi daftar dengan keluarga dan mencentang belanja bersama.',
   },
   auth: {
     welcome: 'Selamat datang kembali',
@@ -87,6 +88,8 @@ export const id: Dictionary = {
     emptyBody: 'Ketuk mikrofon dan biarkan TalkTray yang merapikan.',
     reminded: 'Sudah diingatkan',
     seeAll: 'Lihat semua',
+    familyTitle: 'Keluarga',
+    familyBody: 'Daftar bersama orang di rumah. Undang mereka dan centang bersama.',
   },
   overdue: {
     badge: 'Terlewat',
@@ -140,6 +143,10 @@ export const id: Dictionary = {
     signInBody: "Daftar bersama perlu akun, supaya orang lain bisa bergabung.",
     emptyTitle: "Belum ada daftar bersama",
     emptyBody: "Buat satu untuk rumah, atau gabung dengan kode.",
+    emptyCta: 'Undang keluarga',
+    remind: 'Ingatkan',
+    remindAt: 'Semua orang di daftar diingatkan di ponsel masing-masing, pada jam ini.',
+    remindClear: 'Hapus pengingat',
     youOwn: "Kamu membuat daftar ini",
     youJoined: "Kamu bergabung ke daftar ini",
     newTitle: "Daftar bersama baru",
@@ -195,6 +202,8 @@ export const id: Dictionary = {
     permission: 'Akses mikrofon diperlukan untuk menangkap sebuah pikiran.',
     tooShort: 'Terlalu singkat. Tahan sedikit lebih lama lalu bicara.',
     mix: 'Bicara dalam bahasa apa pun — TalkTray mendeteksinya otomatis.',
+    failedKept: 'Gagal diproses. Rekaman ini masih ada.',
+    retryKept: 'Coba rekaman ini lagi',
   },
   quick: {
     title: 'Rekam',

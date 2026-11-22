@@ -1,6 +1,7 @@
 import { SEED_COPY } from '@/data/seed-copy';
 import { asLocale } from '@/i18n/locale';
 import { supabase } from '@/lib/supabase';
+import { notifySharedRemindersChanged } from '@/services/shared-reminders';
 
 export type SharedList = {
   id: string;
@@ -22,6 +23,7 @@ export type SharedItem = {
   addedBy: string | null;
   doneAt: string | null;
   doneBy: string | null;
+  dueAt: string | null;
   createdAt: string;
 };
 
@@ -76,6 +78,7 @@ function mapItem(row: Record<string, unknown>): SharedItem {
     addedBy: (row.added_by as string | null) ?? null,
     doneAt: (row.done_at as string | null) ?? null,
     doneBy: (row.done_by as string | null) ?? null,
+    dueAt: (row.due_at as string | null) ?? null,
     createdAt: String(row.created_at ?? ''),
   };
 }
@@ -98,6 +101,7 @@ function previewList(locale?: string): { list: SharedList; members: SharedMember
       addedBy: ids[index % 3]!,
       doneAt: index >= 3 ? stamp(20 + index) : null,
       doneBy: index >= 3 ? ids[(index + 1) % 3]! : null,
+      dueAt: null,
       createdAt: stamp(300 - index * 10),
     })),
   };
@@ -173,17 +177,26 @@ export async function setSharedItemDone(id: string, done: boolean): Promise<void
     .update({ done_at: done ? new Date().toISOString() : null })
     .eq('id', id);
   if (error) throw error;
+  notifySharedRemindersChanged();
+}
+
+export async function setSharedItemDue(id: string, dueAt: string | null): Promise<void> {
+  const { error } = await supabase.from('shared_list_items').update({ due_at: dueAt }).eq('id', id);
+  if (error) throw error;
+  notifySharedRemindersChanged();
 }
 
 export async function deleteSharedItem(id: string): Promise<void> {
   const { error } = await supabase.from('shared_list_items').delete().eq('id', id);
   if (error) throw error;
+  notifySharedRemindersChanged();
 }
 
 /** Ticks finished items off the list for everyone. */
 export async function clearDoneSharedItems(listId: string): Promise<void> {
   const { error } = await supabase.from('shared_list_items').delete().eq('list_id', listId).not('done_at', 'is', null);
   if (error) throw error;
+  notifySharedRemindersChanged();
 }
 
 /** Live changes from other members. The screen also re-reads on focus in case realtime is quiet. */

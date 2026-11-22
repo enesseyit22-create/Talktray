@@ -28,6 +28,10 @@ Rules:
 - task: actionable work. It may have a due date.
 - note: ideas and freeform thoughts.
 - Titles are short and drop filler such as "remind me to".
+- Split every spoken action into its own item: task, reminder, event, shopping product, or note. Do not merge two actions into one title.
+- Keep mixed Turkish and English as spoken. Do not translate either part.
+- When a time is spoken with an action, it is a reminder or an event, not a note.
+- One product per shopping item, even when several are spoken in a single sentence.
 - Do not invent items that are not in the transcript.`;
   return { system, user: input.transcript };
 }

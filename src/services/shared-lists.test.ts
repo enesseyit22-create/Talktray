@@ -22,7 +22,7 @@ describe('shared lists', () => {
 
   it('puts open items first, oldest first, then done items, latest first', () => {
     const item = (id: string, createdAt: string, doneAt: string | null): SharedItem => ({
-      id, listId: 'l', title: id, addedBy: null, doneAt, doneBy: null, createdAt,
+      id, listId: 'l', title: id, addedBy: null, doneAt, doneBy: null, dueAt: null, createdAt,
     });
     const sorted = sortSharedItems([
       item('done-old', '2026-01-01', '2026-01-02'),

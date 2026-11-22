@@ -55,6 +55,7 @@ export const en = {
     s2Body: 'TalkTray splits what you said into tasks, reminders, events, shopping, and notes.',
     s3Title: 'Your day, already arranged.',
     s3Body: 'Review anything before it lands. Reminders stay on this phone, and Pro keeps the month open.',
+    familyHint: 'You can share a list with your family and tick the shopping off together.',
   },
   auth: {
     welcome: 'Welcome back',
@@ -85,6 +86,8 @@ export const en = {
     emptyBody: 'Tap the mic and leave the sorting to TalkTray.',
     reminded: 'Reminded',
     seeAll: 'See all',
+    familyTitle: 'Family',
+    familyBody: 'Shared lists with the people at home. Invite them and tick items together.',
   },
   overdue: {
     badge: 'Overdue',
@@ -138,6 +141,10 @@ export const en = {
     signInBody: "Shared lists need an account, so others can join yours.",
     emptyTitle: "No shared lists yet",
     emptyBody: "Make one for the household, or join one with a code.",
+    emptyCta: 'Invite your family',
+    remind: 'Remind',
+    remindAt: 'Everyone on the list is reminded on their own phone, at this time.',
+    remindClear: 'Remove reminder',
     youOwn: "You made this list",
     youJoined: "You joined this list",
     newTitle: "New shared list",
@@ -193,6 +200,8 @@ export const en = {
     permission: 'Microphone access is needed to capture a thought.',
     tooShort: 'Too short. Hold a little longer and speak.',
     mix: 'Speak in any language — TalkTray detects it automatically.',
+    failedKept: 'That did not go through. This recording is still here.',
+    retryKept: 'Try this recording again',
   },
   quick: {
     title: 'Record',

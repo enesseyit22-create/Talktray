@@ -28,6 +28,26 @@ export function fireAtMs(dueAt: string, offsetMinutes: number, nowMs: number): n
   return when;
 }
 
+/** iOS allows 64 pending notifications. Leave a few slots for the weekly digest and a test. */
+export const REMINDER_CAP = 60;
+
+/** Personal items win on an id clash. Shared rows fill in behind them, then the cap keeps the soonest. */
+export function mergeReminderSources(personal: ReminderSource[], shared: ReminderSource[]): ReminderSource[] {
+  const seen = new Set<string>();
+  const merged: ReminderSource[] = [];
+  for (const item of personal) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    merged.push(item);
+  }
+  for (const item of shared) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    merged.push(item);
+  }
+  return merged;
+}
+
 export function planReminders(items: ReminderSource[], defaultOffsets: number[], nowMs: number): PlannedReminder[] {
   const planned: PlannedReminder[] = [];
   for (const item of items) {
@@ -39,8 +59,17 @@ export function planReminders(items: ReminderSource[], defaultOffsets: number[],
       planned.push({ id: reminderId(item.id, offset), itemId: item.id, offset, fireAt, title: item.title });
     }
   }
-  planned.sort((a, b) => a.fireAt - b.fireAt);
-  return planned.slice(0, 60);
+  planned.sort((a, b) => a.fireAt - b.fireAt || a.id.localeCompare(b.id));
+  return planned.slice(0, REMINDER_CAP);
+}
+
+/** Absolute date trigger. A raw millisecond number is already what expo stores; a Date makes that explicit. */
+export function exactDateTrigger(fireAt: number, channelId?: string): { type: 'date'; date: Date; channelId?: string } {
+  return {
+    type: 'date',
+    date: new Date(fireAt),
+    ...(channelId ? { channelId } : {}),
+  };
 }
 
 /** Read the fire time expo-notifications reports for an already scheduled request. */

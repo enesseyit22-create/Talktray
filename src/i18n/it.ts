@@ -57,6 +57,7 @@ export const it: Dictionary = {
     s2Body: 'TalkTray divide ciò che hai detto in attività, promemoria, eventi, spesa e note.',
     s3Title: 'La tua giornata, già in ordine.',
     s3Body: 'Controlla prima che finisca in inbox. I promemoria restano su questo telefono, e Pro tiene il mese aperto.',
+    familyHint: 'Puoi condividere un elenco con la famiglia e spuntare la spesa insieme.',
   },
   auth: {
     welcome: 'Bentornato',
@@ -87,6 +88,8 @@ export const it: Dictionary = {
     emptyBody: 'Tocca il microfono e lascia che TalkTray sistemi tutto.',
     reminded: 'Ricordato',
     seeAll: 'Vedi tutto',
+    familyTitle: 'Famiglia',
+    familyBody: 'Elenchi condivisi con chi sta a casa. Invitali e spuntate insieme.',
   },
   overdue: {
     badge: 'In ritardo',
@@ -140,6 +143,10 @@ export const it: Dictionary = {
     signInBody: "Le liste condivise richiedono un account, così altri possono unirsi.",
     emptyTitle: "Ancora nessuna lista condivisa",
     emptyBody: "Creane una per casa, o unisciti a una con un codice.",
+    emptyCta: 'Invita la famiglia',
+    remind: 'Promemoria',
+    remindAt: 'Chi è nell’elenco riceve il promemoria sul proprio telefono, a quest’ora.',
+    remindClear: 'Togli promemoria',
     youOwn: "Hai creato questa lista",
     youJoined: "Ti sei unito a questa lista",
     newTitle: "Nuova lista condivisa",
@@ -195,6 +202,8 @@ export const it: Dictionary = {
     permission: 'Serve il microfono per catturare un pensiero.',
     tooShort: 'Troppo breve. Tieni premuto un po’ di più e parla.',
     mix: 'Parla in qualsiasi lingua — TalkTray la riconosce da solo.',
+    failedKept: 'Non è andato a buon fine. La registrazione è ancora qui.',
+    retryKept: 'Riprova questa registrazione',
   },
   quick: {
     title: 'Registra',

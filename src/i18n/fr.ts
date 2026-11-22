@@ -57,6 +57,7 @@ export const fr: Dictionary = {
     s2Body: 'TalkTray sépare ce que tu as dit en tâches, rappels, événements, courses et notes.',
     s3Title: 'Ta journée, déjà en place.',
     s3Body: 'Relis avant que ça n’atterrisse. Les rappels restent sur ce téléphone, et Pro laisse le mois ouvert.',
+    familyHint: 'Tu peux partager une liste avec ta famille et cocher les courses ensemble.',
   },
   auth: {
     welcome: 'Content de te revoir',
@@ -87,6 +88,8 @@ export const fr: Dictionary = {
     emptyBody: 'Touche le micro et laisse TalkTray trier.',
     reminded: 'Rappelé',
     seeAll: 'Tout voir',
+    familyTitle: 'Famille',
+    familyBody: 'Des listes partagées avec les gens de la maison. Invite-les et cochez ensemble.',
   },
   overdue: {
     badge: 'En retard',
@@ -140,6 +143,10 @@ export const fr: Dictionary = {
     signInBody: "Les listes partagées demandent un compte, pour que d’autres puissent rejoindre la tienne.",
     emptyTitle: "Aucune liste partagée",
     emptyBody: "Crée-en une pour la maison, ou rejoins-en une avec un code.",
+    emptyCta: 'Inviter ta famille',
+    remind: 'Rappel',
+    remindAt: 'Chaque personne de la liste est rappelée sur son téléphone, à cette heure.',
+    remindClear: 'Retirer le rappel',
     youOwn: "Tu as créé cette liste",
     youJoined: "Tu as rejoint cette liste",
     newTitle: "Nouvelle liste partagée",
@@ -195,6 +202,8 @@ export const fr: Dictionary = {
     permission: 'Le micro est nécessaire pour attraper une pensée.',
     tooShort: 'Trop court. Maintiens un peu plus longtemps et parle.',
     mix: 'Parle dans n’importe quelle langue — TalkTray la détecte tout seul.',
+    failedKept: 'Ça n’a pas abouti. L’enregistrement est encore là.',
+    retryKept: 'Réessayer cet enregistrement',
   },
   quick: {
     title: 'Enregistrer',

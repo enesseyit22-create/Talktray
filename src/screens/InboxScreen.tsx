@@ -121,6 +121,20 @@ export function InboxScreen() {
           />
         </View>
         <SearchBar value={query} onChangeText={setQuery} />
+        {searching ? null : (
+          <GlassCard onPress={() => router.push('/lists')} padding={14}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Users color={colors.primary} size={18} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <AppText weight="bold">{t('home.familyTitle')}</AppText>
+                <AppText size={13} color={colors.muted} numberOfLines={2}>
+                  {t('home.familyBody')}
+                </AppText>
+              </View>
+              <ChevronRight color={colors.soft} size={16} />
+            </View>
+          </GlassCard>
+        )}
         {searching ? (
           <View style={{ gap: 10 }}>
             <AppText weight="bold" size={18}>
@@ -165,17 +179,6 @@ export function InboxScreen() {
               <Chip key={key} label={t(`filters.${key}`)} active={filter === key} onPress={() => setFilter(key)} />
             ))}
           </ScrollView>
-          {filter === 'shopping' ? (
-            <GlassCard onPress={() => router.push('/lists')} padding={14}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Users color={colors.primary} size={18} />
-                <AppText weight="semibold" style={{ flex: 1 }}>
-                  {t('shared.open')}
-                </AppText>
-                <ChevronRight color={colors.soft} size={16} />
-              </View>
-            </GlassCard>
-          ) : null}
           {showOverdueSection ? (
             <View style={{ gap: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>

@@ -119,6 +119,9 @@ export function RecordScreen() {
         </GlassCard>
         {busy || capture.busy ? <AppText color={colors.muted}>{t('record.processing')}</AppText> : null}
         {error || capture.error ? <AppText color={colors.danger}>{error || capture.error}</AppText> : null}
+        {capture.pending ? (
+          <PrimaryButton label={t('record.retryKept')} onPress={() => void capture.retryPending()} loading={capture.busy} />
+        ) : null}
         <View style={{ width: '100%', gap: 10 }}>
           <AppText weight="semibold">{t('record.samples')}</AppText>
           <View style={{ flexDirection: 'row', gap: 8 }}>

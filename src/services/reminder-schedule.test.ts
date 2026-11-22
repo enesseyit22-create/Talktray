@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { fireAtMs, planReminders, reminderId, scheduledFireAt } from './reminder-schedule';
+import { exactDateTrigger, fireAtMs, mergeReminderSources, planReminders, reminderId, scheduledFireAt } from './reminder-schedule';
 
 describe('reminder schedule', () => {
   const now = Date.parse('2026-11-11T12:00:00.000Z');
@@ -25,6 +25,30 @@ describe('reminder schedule', () => {
       now,
     );
     expect(planned.map((item) => item.id)).toEqual([reminderId('a', 10), reminderId('a', 0)]);
+  });
+
+  it('keeps the 60 soonest and lets a nearer shared item replace a far personal one', () => {
+    const personal = Array.from({ length: 60 }, (_, index) => ({
+      id: `p${index}`,
+      title: `P${index}`,
+      dueAt: new Date(now + (index + 10) * 60_000).toISOString(),
+      completedAt: null,
+      reminderOffsets: [0],
+    }));
+    const shared = [
+      {
+        id: 'shared-milk',
+        title: 'Süt',
+        dueAt: new Date(now + 60_000).toISOString(),
+        completedAt: null,
+        reminderOffsets: [0],
+      },
+    ];
+    const planned = planReminders(mergeReminderSources(personal, shared), [0], now);
+    expect(planned).toHaveLength(60);
+    expect(planned[0]?.itemId).toBe('shared-milk');
+    expect(planned.some((item) => item.itemId === 'p59')).toBe(false);
+    expect(exactDateTrigger(planned[0]!.fireAt, 'reminders').date.getTime()).toBe(planned[0]!.fireAt);
   });
 
   it('reads a date trigger timestamp from either shape expo returns', () => {

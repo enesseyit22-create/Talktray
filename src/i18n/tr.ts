@@ -57,6 +57,7 @@ export const tr: Dictionary = {
     s2Body: 'TalkTray söylediğini görev, hatırlatma, etkinlik, alışveriş ve nota böler.',
     s3Title: 'Günün çoktan düzenli.',
     s3Body: 'Kaydetmeden önce gözden geçir. Hatırlatmalar bu telefonda kalır. Pro ayı açık tutar.',
+    familyHint: 'Ailene ortak bir liste açıp marketi birlikte işaretleyebilirsin.',
   },
   auth: {
     welcome: 'Tekrar hoş geldin',
@@ -87,6 +88,8 @@ export const tr: Dictionary = {
     emptyBody: 'Mikrofona dokun, ayıklamayı TalkTray yapsın.',
     reminded: 'Hatırlatıldı',
     seeAll: 'Tümünü gör',
+    familyTitle: 'Aile',
+    familyBody: 'Evdekilerle ortak listeler. Davet et, birlikte işaretle.',
   },
   overdue: {
     badge: 'Geçmiş',
@@ -140,6 +143,10 @@ export const tr: Dictionary = {
     signInBody: "Başkalarının listene katılabilmesi için hesap gerekir.",
     emptyTitle: "Henüz ortak liste yok",
     emptyBody: "Ev için bir liste oluştur ya da kodla birine katıl.",
+    emptyCta: 'Aileni davet et',
+    remind: 'Hatırlat',
+    remindAt: 'Listedeki herkes kendi telefonunda, bu saatte hatırlatılır.',
+    remindClear: 'Hatırlatmayı kaldır',
     youOwn: "Bu listeyi sen oluşturdun",
     youJoined: "Bu listeye katıldın",
     newTitle: "Yeni ortak liste",
@@ -195,6 +202,8 @@ export const tr: Dictionary = {
     permission: 'Bir düşünceyi almak için mikrofon izni gerekir.',
     tooShort: 'Çok kısa. Biraz daha uzun basılı tut ve konuş.',
     mix: 'Herhangi bir dilde konuş — TalkTray dili kendisi anlar.',
+    failedKept: 'İşlenemedi. Kayıt duruyor, yeniden deneyebilirsin.',
+    retryKept: 'Bu kaydı yeniden dene',
   },
   quick: {
     title: 'Kaydet',

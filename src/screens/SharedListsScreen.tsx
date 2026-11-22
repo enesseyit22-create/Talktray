@@ -123,7 +123,12 @@ export function SharedListsScreen() {
         ) : (
           <>
             {lists == null ? <Skeleton /> : null}
-            {lists?.length === 0 ? <EmptyState title={t('shared.emptyTitle')} body={t('shared.emptyBody')} /> : null}
+            {lists?.length === 0 ? (
+              <View style={{ gap: 12 }}>
+                <EmptyState title={t('shared.emptyTitle')} body={t('shared.emptyBody')} />
+                <PrimaryButton label={t('shared.emptyCta')} onPress={() => void create()} loading={busy === 'create'} />
+              </View>
+            ) : null}
             {lists?.map((list) => (
               <GlassCard key={list.id} onPress={() => router.push({ pathname: '/lists/[id]', params: { id: list.id } })}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

@@ -5,7 +5,13 @@ import * as Notifications from 'expo-notifications';
 import type { InboxItem } from '@/domain/types';
 import { translate } from '@/i18n/translate';
 import { digestStats, nextDigestAt } from '@/lib/weekly-digest';
-import { planReminders, scheduledFireAt, type PlannedReminder } from '@/services/reminder-schedule';
+import {
+  exactDateTrigger,
+  planReminders,
+  scheduledFireAt,
+  type PlannedReminder,
+  type ReminderSource,
+} from '@/services/reminder-schedule';
 
 const STORE = 'talktray.notificationIds';
 const CHANNEL = 'reminders';
@@ -25,7 +31,7 @@ export async function ensureReminderChannel(locale: string) {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL, {
     name: translate(locale, 'notifications.channel'),
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: Notifications.AndroidImportance.MAX,
     sound: 'default',
     vibrationPattern: [0, 250, 250, 250],
     enableVibrate: true,
@@ -99,42 +105,31 @@ async function scheduleOne(plan: PlannedReminder, locale: string): Promise<boole
     body: bodyFor(plan.offset, plan.title, locale),
     data: { itemId: plan.itemId, url: `talktray://item/${plan.itemId}` },
     sound: 'default' as const,
+    ...(Platform.OS === 'android' ? { priority: Notifications.AndroidNotificationPriority.MAX } : {}),
   };
+  // DATE uses the absolute instant. An interval trigger is inexact on Android and drifts.
+  const trigger = exactDateTrigger(plan.fireAt, channelId);
   try {
     await Notifications.scheduleNotificationAsync({
       identifier: plan.id,
       content,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: plan.fireAt,
+        date: trigger.date,
         ...(channelId ? { channelId } : {}),
       },
     });
     return true;
   } catch (error) {
-    const seconds = Math.max(1, Math.round((plan.fireAt - Date.now()) / 1000));
-    try {
-      await Notifications.scheduleNotificationAsync({
-        identifier: plan.id,
-        content,
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds,
-          ...(channelId ? { channelId } : {}),
-        },
-      });
-      return true;
-    } catch (again) {
-      console.warn('[notifications] schedule failed', plan.id, error, again);
-      return false;
-    }
+    console.warn('[notifications] exact schedule failed', plan.id, error);
+    return false;
   }
 }
 
 let syncing = false;
-let pending: { items: InboxItem[]; locale: string; defaultOffsets: number[] } | null = null;
+let pending: { items: ReminderSource[]; locale: string; defaultOffsets: number[] } | null = null;
 
-export async function syncItemNotifications(items: InboxItem[], locale: string, defaultOffsets: number[]) {
+export async function syncItemNotifications(items: ReminderSource[], locale: string, defaultOffsets: number[]) {
   if (Platform.OS === 'web') return;
   if (syncing) {
     pending = { items, locale, defaultOffsets };
@@ -153,6 +148,7 @@ export async function syncItemNotifications(items: InboxItem[], locale: string, 
     if (Object.keys(previous).length) await saveMap({});
 
     const planned = allowed ? planReminders(items, defaultOffsets, Date.now()) : [];
+    if (planned.length) void promptExactAlarmOnce();
     const existing = await Notifications.getAllScheduledNotificationsAsync();
     const plannedIds = new Set(planned.map((item) => item.id));
     for (const request of existing) {
@@ -193,9 +189,9 @@ export async function sendTestNotification(locale: string) {
         sound: 'default',
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 2,
-        channelId: CHANNEL,
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: new Date(Date.now() + 2000),
+        ...(Platform.OS === 'android' ? { channelId: CHANNEL } : {}),
       },
     });
     return true;
@@ -262,14 +258,17 @@ export async function syncWeeklyDigest(items: InboxItem[], locale: string, timeZ
         ? translate(locale, 'digest.body', { done, upcoming })
         : translate(locale, 'digest.bodyAhead', { upcoming });
     const channelId = Platform.OS === 'android' ? CHANNEL : undefined;
-    const seconds = Math.max(60, Math.round((at.getTime() - Date.now()) / 1000));
     await Notifications.scheduleNotificationAsync({
       identifier: DIGEST_ID,
-      content: { title: translate(locale, 'digest.title'), body, sound: 'default' },
-      // Interval, like the reminder fallback, so Android needs no exact-alarm permission for it.
+      content: {
+        title: translate(locale, 'digest.title'),
+        body,
+        sound: 'default',
+        ...(Platform.OS === 'android' ? { priority: Notifications.AndroidNotificationPriority.HIGH } : {}),
+      },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds,
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: at,
         ...(channelId ? { channelId } : {}),
       },
     });

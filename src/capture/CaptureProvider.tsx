@@ -1,5 +1,7 @@
 import {
   AudioModule,
+  AudioQuality,
+  IOSOutputFormat,
   RecordingPresets,
   setAudioModeAsync,
   setIsAudioActiveAsync,
@@ -9,11 +11,18 @@ import {
 import { router } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { speechRecordingCore } from '@/capture/speech-recording';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
-import { errorText } from '@/lib/errors';
+import { errorText, RecordingKeptError } from '@/lib/errors';
 import { loadFreeLimits, type FreeLimits } from '@/lib/free-limits';
 import { PRO_MAX_SECONDS_PER_RECORDING, RECORDINGS_BEFORE_PAYWALL, shouldPresentPaywall } from '../../shared/parse/quota';
+
+type PendingTake = {
+  uri: string;
+  durationMs: number;
+  recordingId: string | null;
+};
 
 type CaptureValue = {
   isRecording: boolean;
@@ -22,16 +31,27 @@ type CaptureValue = {
   maxSeconds: number | null;
   busy: boolean;
   error: string | null;
+  /** A take that failed after stop. Retry sends the same file again. */
+  pending: PendingTake | null;
   start: () => Promise<void>;
   stopAndSubmit: () => Promise<void>;
+  retryPending: () => Promise<void>;
   toggle: () => Promise<void>;
 };
 
-const CaptureContext = createContext<CaptureValue | null>(null);
+const SPEECH_OPTIONS = {
+  ...speechRecordingCore(),
+  ios: {
+    outputFormat: IOSOutputFormat.MPEG4AAC,
+    audioQuality: AudioQuality.LOW,
+    sampleRate: 16000,
+    linearPCMBitDepth: 16,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+};
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error ?? '');
-}
+const CaptureContext = createContext<CaptureValue | null>(null);
 
 /** Stops a recorder left prepared or running by an earlier take. A no-op when it is idle. */
 async function discardStaleTake(recorder: { getStatus: () => { canRecord: boolean; isRecording: boolean }; stop: () => Promise<void> }) {
@@ -61,10 +81,11 @@ async function releaseMicrophone() {
 export function CaptureProvider({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const { usage, recordings, processThought } = useApp();
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorder = useAudioRecorder(SPEECH_OPTIONS);
   const state = useAudioRecorderState(recorder, 200);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingTake | null>(null);
   const [limits, setLimits] = useState<FreeLimits | null>(null);
   const session = useRef<'idle' | 'starting' | 'live' | 'stopping'>('idle');
   const stopAfterStart = useRef(false);
@@ -89,15 +110,23 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
   }, [usage.isPro]);
 
   const finish = useCallback(
-    async (durationMs: number) => {
-      const result = await processThought({ audioUri: recorder.uri, durationMs });
-      const seen = recordings.filter((recording) => recording.status !== 'failed').length;
-      if (result === 'quota') {
-        if (shouldPresentPaywall(seen, usage.isPro)) router.push('/paywall');
-        else setError(t(usage.isPro ? 'errors.quotaPro' : 'errors.quota'));
-        return;
+    async (durationMs: number, recordingId: string | null = null) => {
+      const uri = recorder.uri;
+      try {
+        const result = await processThought({ audioUri: uri, durationMs, recordingId });
+        setPending(null);
+        const seen = recordings.filter((recording) => recording.status !== 'failed').length;
+        if (result === 'quota') {
+          if (shouldPresentPaywall(seen, usage.isPro)) router.push('/paywall');
+          else setError(t(usage.isPro ? 'errors.quotaPro' : 'errors.quota'));
+          return;
+        }
+        router.push('/review');
+      } catch (caught) {
+        const keptId = caught instanceof RecordingKeptError ? caught.recordingId : recordingId;
+        if (uri) setPending({ uri, durationMs, recordingId: keptId });
+        setError(t('record.failedKept'));
       }
-      router.push('/review');
     },
     [processThought, recorder, recordings, t, usage.isPro],
   );
@@ -150,11 +179,15 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       await discardStaleTake(recorder);
       // Passing the preset makes a fresh file for every take instead of reusing the last one.
       try {
-        await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
-      } catch (first) {
-        if (!/already.*prepared|prepareToRecordAsync/i.test(errorMessage(first))) throw first;
+        await recorder.prepareToRecordAsync(SPEECH_OPTIONS);
+      } catch {
         await recorder.stop().catch(() => undefined);
-        await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+        try {
+          await recorder.prepareToRecordAsync(SPEECH_OPTIONS);
+        } catch {
+          // Some devices reject 16 kHz, or the recorder was left prepared. The high preset still records.
+          await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+        }
       }
       if (stopAfterStart.current || session.current !== 'starting') {
         session.current = 'idle';
@@ -164,6 +197,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       }
       recorder.record();
       session.current = 'live';
+      setPending(null);
       if (stopAfterStart.current) await stopAndSubmit();
     } catch (caught) {
       session.current = 'idle';
@@ -172,6 +206,33 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       setError(errorText(caught, t('errors.generic')));
     }
   }, [busy, recorder, stopAndSubmit, t]);
+
+  const retryPending = useCallback(async () => {
+    if (!pending || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await processThought({
+        audioUri: pending.uri,
+        durationMs: pending.durationMs,
+        recordingId: pending.recordingId,
+      });
+      setPending(null);
+      const seen = recordings.filter((recording) => recording.status !== 'failed').length;
+      if (result === 'quota') {
+        if (shouldPresentPaywall(seen, usage.isPro)) router.push('/paywall');
+        else setError(t(usage.isPro ? 'errors.quotaPro' : 'errors.quota'));
+        return;
+      }
+      router.push('/review');
+    } catch (caught) {
+      const keptId = caught instanceof RecordingKeptError ? caught.recordingId : pending.recordingId;
+      setPending({ ...pending, recordingId: keptId });
+      setError(t('record.failedKept'));
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, pending, processThought, recordings, t, usage.isPro]);
 
   const toggle = useCallback(async () => {
     if (session.current === 'live' || state.isRecording) await stopAndSubmit();
@@ -197,11 +258,13 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       maxSeconds,
       busy,
       error,
+      pending,
       start,
       stopAndSubmit,
+      retryPending,
       toggle,
     }),
-    [busy, error, maxSeconds, start, state.durationMillis, state.isRecording, stopAndSubmit, toggle],
+    [busy, error, maxSeconds, pending, retryPending, start, state.durationMillis, state.isRecording, stopAndSubmit, toggle],
   );
 
   return <CaptureContext.Provider value={value}>{children}</CaptureContext.Provider>;

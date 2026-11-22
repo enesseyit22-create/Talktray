@@ -57,6 +57,7 @@ export const es: Dictionary = {
     s2Body: 'TalkTray separa lo que dijiste en tareas, recordatorios, eventos, compras y notas.',
     s3Title: 'Tu día, ya ordenado.',
     s3Body: 'Revisa todo antes de guardarlo. Los recordatorios se quedan en este teléfono, y Pro deja el mes abierto.',
+    familyHint: 'Puedes compartir una lista con tu familia y marcar la compra juntos.',
   },
   auth: {
     welcome: 'Qué gusto verte',
@@ -87,6 +88,8 @@ export const es: Dictionary = {
     emptyBody: 'Toca el micrófono y deja que TalkTray ordene.',
     reminded: 'Avisado',
     seeAll: 'Ver todo',
+    familyTitle: 'Familia',
+    familyBody: 'Listas compartidas con quienes viven en casa. Invítalos y márquenlas juntos.',
   },
   overdue: {
     badge: 'Atrasado',
@@ -140,6 +143,10 @@ export const es: Dictionary = {
     signInBody: "Las listas compartidas necesitan una cuenta para que otros puedan unirse.",
     emptyTitle: "Aún no hay listas compartidas",
     emptyBody: "Crea una para casa o únete a una con un código.",
+    emptyCta: 'Invita a tu familia',
+    remind: 'Recordar',
+    remindAt: 'Quienes están en la lista reciben el aviso en su teléfono, a esta hora.',
+    remindClear: 'Quitar recordatorio',
     youOwn: "Creaste esta lista",
     youJoined: "Te uniste a esta lista",
     newTitle: "Nueva lista compartida",
@@ -195,6 +202,8 @@ export const es: Dictionary = {
     permission: 'Hace falta el micrófono para guardar un pensamiento.',
     tooShort: 'Demasiado corto. Mantén pulsado un poco más y habla.',
     mix: 'Habla en cualquier idioma — TalkTray lo detecta solo.',
+    failedKept: 'No se pudo procesar. La grabación sigue aquí.',
+    retryKept: 'Reintentar esta grabación',
   },
   quick: {
     title: 'Grabar',

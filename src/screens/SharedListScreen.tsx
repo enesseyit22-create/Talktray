@@ -1,14 +1,17 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Check, ChevronLeft, Share2, Trash2 } from 'lucide-react-native';
+import { Bell, Check, ChevronLeft, Share2, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, ScrollView, Share, StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
+import { WhenField } from '@/components/WhenField';
 import { AppText, EmptyState, Field, GlassCard, PrimaryButton, Sheet, Skeleton } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
+import { formatDueLabel } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
+import { useNow } from '@/lib/useNow';
 import { createId } from '@/lib/id';
 import { sheetTopInset } from '@/lib/layout';
 import {
@@ -21,6 +24,7 @@ import {
   loadSharedList,
   rotateInviteCode,
   setSharedItemDone,
+  setSharedItemDue,
   sharedListError,
   sortSharedItems,
   subscribeSharedList,
@@ -42,6 +46,8 @@ export function SharedListScreen({ listId }: { listId: string }) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [remind, setRemind] = useState<SharedItem | null>(null);
+  const now = useNow();
   const [leaving, setLeaving] = useState(false);
   const loading = useRef(false);
 
@@ -91,6 +97,7 @@ export function SharedListScreen({ listId }: { listId: string }) {
       addedBy: app.user?.id ?? null,
       doneAt: null,
       doneBy: null,
+      dueAt: null,
       createdAt: new Date().toISOString(),
     };
     setDraft('');
@@ -162,6 +169,20 @@ export function SharedListScreen({ listId }: { listId: string }) {
       const code = await rotateInviteCode(list.id);
       setList({ ...list, inviteCode: code });
     } catch {
+      setError(t('shared.errorNetwork'));
+    }
+  };
+
+  const saveRemind = async (dueAt?: string | null) => {
+    if (!remind) return;
+    const next = dueAt === undefined ? remind.dueAt : dueAt;
+    const before = items;
+    setItems((current) => (current ?? []).map((entry) => (entry.id === remind.id ? { ...entry, dueAt: next } : entry)));
+    setRemind(null);
+    try {
+      await setSharedItemDue(remind.id, next);
+    } catch {
+      setItems(before);
       setError(t('shared.errorNetwork'));
     }
   };
@@ -267,7 +288,21 @@ export function SharedListScreen({ listId }: { listId: string }) {
                           {t('shared.doneBy', { name: doneByName })}
                         </AppText>
                       ) : null}
+                      {item.dueAt && !item.doneAt ? (
+                        <AppText size={12} color={colors.muted}>
+                          {formatDueLabel(item.dueAt, now, app.profile.timezone, locale, t('today'), t('tomorrow'), false)}
+                        </AppText>
+                      ) : null}
                     </View>
+                    <Pressable
+                      onPress={() => setRemind(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('shared.remind')}
+                      hitSlop={8}
+                      style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Bell color={item.dueAt ? colors.primary : colors.muted} size={18} />
+                    </Pressable>
                     <Pressable
                       onPress={() => void remove(item)}
                       accessibilityRole="button"
@@ -323,6 +358,26 @@ export function SharedListScreen({ listId }: { listId: string }) {
         )}
         {error ? <AppText color={colors.danger}>{error}</AppText> : null}
       </ScrollView>
+      <Sheet visible={Boolean(remind)} onClose={() => setRemind(null)}>
+        {remind ? (
+          <>
+            <AppText size={20} weight="extrabold">
+              {t('shared.remind')}
+            </AppText>
+            <AppText color={colors.muted}>{t('shared.remindAt')}</AppText>
+            <WhenField
+              dueAt={remind.dueAt}
+              allDay={false}
+              timeZone={app.profile.timezone}
+              onChange={(patch) => setRemind((current) => (current ? { ...current, dueAt: patch.dueAt } : current))}
+            />
+            <PrimaryButton label={t('save')} onPress={() => void saveRemind()} />
+            {remind.dueAt ? (
+              <PrimaryButton tone="glass" label={t('shared.remindClear')} onPress={() => void saveRemind(null)} />
+            ) : null}
+          </>
+        ) : null}
+      </Sheet>
       <Sheet visible={confirmLeave} onClose={() => setConfirmLeave(false)}>
         <AppText size={20} weight="extrabold">
           {owner ? t('shared.deleteTitle') : t('shared.leaveTitle')}

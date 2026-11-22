@@ -57,6 +57,7 @@ export const ko: Dictionary = {
     s2Body: 'TalkTray가 말한 내용을 할 일, 알림, 일정, 장보기, 메모로 나눕니다.',
     s3Title: '하루가 이미 정리되어 있어요.',
     s3Body: '저장하기 전에 확인하세요. 알림은 이 휴대폰에 남고, Pro는 한 달을 넉넉히 열어 둡니다.',
+    familyHint: '가족과 목록을 공유하고 장을 함께 체크할 수 있어요.',
   },
   auth: {
     welcome: '다시 오셨군요',
@@ -87,6 +88,8 @@ export const ko: Dictionary = {
     emptyBody: '마이크를 누르고 정리는 TalkTray에 맡기세요.',
     reminded: '알림됨',
     seeAll: '모두 보기',
+    familyTitle: '가족',
+    familyBody: '집에 있는 사람들과 공유 목록. 초대하고 함께 체크하세요.',
   },
   overdue: {
     badge: '지남',
@@ -140,6 +143,10 @@ export const ko: Dictionary = {
     signInBody: "다른 사람이 참여하려면 계정이 필요해요.",
     emptyTitle: "아직 공유 목록이 없어요",
     emptyBody: "집을 위한 목록을 만들거나 코드로 참여하세요.",
+    emptyCta: '가족 초대',
+    remind: '알림',
+    remindAt: '목록의 모두가 각자 휴대폰에서 이 시각에 알림을 받습니다.',
+    remindClear: '알림 지우기',
     youOwn: "내가 만든 목록",
     youJoined: "참여한 목록",
     newTitle: "새 공유 목록",
@@ -195,6 +202,8 @@ export const ko: Dictionary = {
     permission: '생각을 담으려면 마이크 권한이 필요합니다.',
     tooShort: '너무 짧아요. 조금 더 길게 누르고 말해 주세요.',
     mix: '어떤 언어로든 말하세요 — TalkTray가 자동으로 알아듣습니다.',
+    failedKept: '처리되지 않았습니다. 녹음은 그대로 있습니다.',
+    retryKept: '이 녹음 다시 시도',
   },
   quick: {
     title: '녹음',

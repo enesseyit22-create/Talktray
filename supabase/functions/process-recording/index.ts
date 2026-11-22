@@ -79,21 +79,33 @@ Deno.serve(async (req) => {
       const reason = await freeLimitReason(admin, userId, Number(recording.duration_ms ?? 0), serverNow, timeZone, limits);
       if (reason) return await refuse(admin, recordingId, recording.storage_path ?? null, reason);
     }
-    const credit = await reserveCredit(admin, userId, recordingId, isPro, timeZone);
-    if (credit.state === 'blocked') {
+    let credit = await reserveCredit(admin, userId, recordingId, isPro, timeZone);
+    const replay = credit.state === 'blocked' && credit.reason === 'repeat' && Boolean(recording.transcript);
+    if (credit.state === 'blocked' && !replay) {
+      if (credit.reason === 'repeat' && recording.status === 'failed') {
+        await admin.from('recording_credits').delete().eq('recording_id', recordingId);
+        credit = await reserveCredit(admin, userId, recordingId, isPro, timeZone);
+      } else if (credit.reason === 'repeat') {
+        return json({ error: 'ALREADY_PROCESSED' }, 409);
+      } else {
+        return await refuse(admin, recordingId, recording.storage_path ?? null, credit.reason);
+      }
+    }
+    if (credit.state === 'blocked' && !replay) {
       if (credit.reason === 'repeat') return json({ error: 'ALREADY_PROCESSED' }, 409);
       return await refuse(admin, recordingId, recording.storage_path ?? null, credit.reason);
     }
     if (credit.state === 'unavailable') {
-      await discardRecording(admin, recordingId, recording.storage_path ?? null, 'CREDITS_UNAVAILABLE');
-      return json({ error: 'CREDITS_UNAVAILABLE' }, 503);
+      await markFailed(admin, recordingId, 'CREDITS_UNAVAILABLE');
+      return json({ error: 'CREDITS_UNAVAILABLE', retryable: true, recordingId }, 503);
     }
+    const usageLimit = credit.state === 'ok' ? credit.limit : isPro ? 1000 : 25;
 
     let transcript = '';
     let language: string | null = locale;
     let items;
     try {
-      if (body.useStoredTranscript && recording.transcript) {
+      if ((body.useStoredTranscript || replay) && recording.transcript) {
         transcript = recording.transcript;
       } else {
         if (!recording.storage_path) throw new Error('AUDIO_NOT_FOUND');
@@ -105,32 +117,39 @@ Deno.serve(async (req) => {
         transcript = spoken.text;
         language = spoken.language ?? language;
       }
+      const summaryPromise =
+        isPro && shouldSummarize(Number(recording.duration_ms ?? 0), transcript)
+          ? summarizeWithModel(transcript, locale).catch((error) => {
+              console.warn('[process-recording] summary failed', error instanceof Error ? error.message : error);
+              return null;
+            })
+          : null;
       try {
         items = await extractWithModel(transcript, now, timeZone, locale);
       } catch (error) {
         if (!(error instanceof Error && error.message === 'MISSING_LLM_KEY')) throw error;
         items = extractItems(transcript, { now, timeZone, locale });
       }
+      if (summaryPromise) {
+        const summary = await summaryPromise;
+        if (summary) items = [summaryToNote(summary), ...items];
+      }
     } catch (error) {
-      // Nothing usable came back, so the user gets the credit back.
-      const message = error instanceof Error ? error.message : 'UNKNOWN';
-      await admin.from('recording_credits').delete().eq('recording_id', recordingId);
-      await discardRecording(admin, recordingId, recording.storage_path ?? null, message);
-      const status = message === 'AUDIO_NOT_FOUND' ? 404 : message === 'MISSING_PROVIDER_KEY' ? 501 : 500;
-      return json({ error: message }, status);
+      if (replay && recording.transcript) {
+        transcript = recording.transcript;
+        items = extractItems(transcript, { now, timeZone, locale });
+      } else {
+        // The credit comes back. The audio stays so the phone can retry the same take.
+        const message = error instanceof Error ? error.message : 'UNKNOWN';
+        await admin.from('recording_credits').delete().eq('recording_id', recordingId);
+        await markFailed(admin, recordingId, message);
+        const status = message === 'AUDIO_NOT_FOUND' ? 404 : message === 'MISSING_PROVIDER_KEY' ? 501 : 500;
+        return json({ error: message, retryable: true, recordingId }, status);
+      }
     }
 
     // Repeating items are a Pro feature.
     if (!isPro) items = items.map((item) => ({ ...item, repeat: null }));
-
-    // Pro: long takes such as meetings also get a summary note, first in the list.
-    if (isPro && shouldSummarize(Number(recording.duration_ms ?? 0), transcript)) {
-      const summary = await summarizeWithModel(transcript, locale).catch((error) => {
-        console.warn('[process-recording] summary failed', error instanceof Error ? error.message : error);
-        return null;
-      });
-      if (summary) items = [summaryToNote(summary), ...items];
-    }
 
     await admin.from('recordings').update({ status: 'ready', transcript, language }).eq('id', recordingId);
     const monthCount = await countCreditsSince(admin, userId, windowStart(serverNow, timeZone, 'month'));
@@ -140,7 +159,7 @@ Deno.serve(async (req) => {
       items,
       usage: {
         count: monthCount,
-        limit: credit.limit,
+        limit: usageLimit,
         isPro,
       },
     });
@@ -221,6 +240,16 @@ function windowStart(now: Date, timeZone: string, kind: 'day' | 'month'): string
  * A recording that produced nothing is removed with its audio, so failed takes never take space.
  * Its credit, if any, is refunded by the caller.
  */
+/** Keeps the audio. The phone retries the same recording id. */
+async function markFailed(
+  admin: ReturnType<typeof createClient>,
+  recordingId: string,
+  reason: string,
+) {
+  console.warn('[process-recording] failed', recordingId, reason.slice(0, 120));
+  await admin.from('recordings').update({ status: 'failed' }).eq('id', recordingId);
+}
+
 async function discardRecording(
   admin: ReturnType<typeof createClient>,
   recordingId: string,
@@ -416,6 +445,9 @@ async function subscriberIsPro(admin: ReturnType<typeof createClient>, userId: s
   return true;
 }
 
+const STT_ATTEMPTS = 2;
+const STT_TIMEOUT_MS = 28_000;
+
 async function transcribe(bytes: Uint8Array): Promise<{ text: string; language: string | null }> {
   const provider = (Deno.env.get('STT_PROVIDER') ?? 'groq').toLowerCase();
   const groq = Deno.env.get('GROQ_API_KEY');
@@ -426,18 +458,47 @@ async function transcribe(bytes: Uint8Array): Promise<{ text: string; language: 
   const endpoint = useOpenAI
     ? 'https://api.openai.com/v1/audio/transcriptions'
     : 'https://api.groq.com/openai/v1/audio/transcriptions';
+  // Turbo is the fast Groq Whisper. STT_MODEL still overrides it.
   const model = useOpenAI
     ? Deno.env.get('OPENAI_STT_MODEL') ?? 'whisper-1'
-    : Deno.env.get('STT_MODEL') ?? 'whisper-large-v3';
-  const form = new FormData();
-  form.append('file', new Blob([bytes], { type: 'audio/mp4' }), 'audio.m4a');
-  form.append('model', model);
-  form.append('response_format', 'verbose_json');
-  form.append('temperature', '0');
-  const response = await fetch(endpoint, { method: 'POST', headers: { Authorization: `Bearer ${key}` }, body: form });
-  if (!response.ok) throw new Error(`STT_${response.status}`);
-  const payload = await response.json();
-  return { text: String(payload.text ?? ''), language: payload.language ?? null };
+    : Deno.env.get('STT_MODEL') ?? 'whisper-large-v3-turbo';
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < STT_ATTEMPTS; attempt += 1) {
+    const form = new FormData();
+    form.append('file', new Blob([bytes], { type: 'audio/mp4' }), 'audio.m4a');
+    form.append('model', model);
+    form.append('response_format', 'verbose_json');
+    form.append('temperature', '0');
+    // Bias toward mixed Turkish and English without locking the language.
+    form.append('prompt', 'Türkçe ve English. Görev, hatırlatma, etkinlik, alışveriş, not.');
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}` },
+        body: form,
+        signal: AbortSignal.timeout(STT_TIMEOUT_MS),
+      });
+      if (response.ok) {
+        const payload = await response.json();
+        const text = String(payload.text ?? '').trim();
+        if (!text) throw new Error('STT_EMPTY');
+        return { text, language: payload.language ?? null };
+      }
+      lastStatus = response.status;
+      if (response.status !== 429 && response.status < 500) throw new Error(`STT_${response.status}`);
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('STT_') && !error.message.startsWith('STT_EMPTY')) {
+        const status = Number(error.message.slice(4));
+        if (Number.isFinite(status) && status !== 429 && status < 500) throw error;
+      }
+      if (attempt === STT_ATTEMPTS - 1) {
+        if (error instanceof Error && error.message.startsWith('STT_')) throw error;
+        throw new Error(lastStatus ? `STT_${lastStatus}` : 'STT_TIMEOUT');
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+  }
+  throw new Error(lastStatus ? `STT_${lastStatus}` : 'STT_TIMEOUT');
 }
 
 async function extractWithModel(transcript: string, now: Date, timeZone: string, locale: string) {
@@ -450,10 +511,11 @@ async function extractWithModel(transcript: string, now: Date, timeZone: string,
   const endpoint = useOpenAI
     ? 'https://api.openai.com/v1/chat/completions'
     : 'https://api.groq.com/openai/v1/chat/completions';
+  // Fast model first. LLM_MODEL overrides. A failed call or an empty split retries the heavier model.
   const model = useOpenAI
     ? Deno.env.get('OPENAI_LLM_MODEL') ?? 'gpt-4o-mini'
-    : Deno.env.get('LLM_MODEL') ?? 'openai/gpt-oss-120b';
-  const fallbackModel = useOpenAI ? null : Deno.env.get('LLM_MODEL_FALLBACK') ?? 'openai/gpt-oss-20b';
+    : Deno.env.get('LLM_MODEL') ?? 'openai/gpt-oss-20b';
+  const fallbackModel = useOpenAI ? null : Deno.env.get('LLM_MODEL_FALLBACK') ?? 'openai/gpt-oss-120b';
   const stamp = localTimestamp(now, timeZone);
   const messages = buildExtractionMessages({
     transcript,
@@ -466,9 +528,10 @@ async function extractWithModel(transcript: string, now: Date, timeZone: string,
     fetch(endpoint, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(18_000),
       body: JSON.stringify({
         model: chosen,
-        temperature: 0.1,
+        temperature: 0,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: messages.system },
@@ -476,14 +539,29 @@ async function extractWithModel(transcript: string, now: Date, timeZone: string,
         ],
       }),
     });
+  const readItems = async (response: Response) => {
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const content = payload.choices?.[0]?.message?.content ?? '{}';
+    const parsed = JSON.parse(content.replace(/^```(?:json)?/i, '').replace(/```$/, ''));
+    return normalizeExtraction(parsed, { now, timeZone, locale });
+  };
   let response = await ask(model);
   if (!response.ok && fallbackModel && fallbackModel !== model) response = await ask(fallbackModel);
   if (!response.ok) throw new Error(`LLM_${response.status}`);
-  const payload = await response.json();
-  const content = payload.choices?.[0]?.message?.content ?? '{}';
-  const parsed = JSON.parse(content.replace(/^```(?:json)?/i, '').replace(/```$/, ''));
-  const normalized = normalizeExtraction(parsed, { now, timeZone, locale });
-  const items = normalized.length > 0 ? normalized : extractItems(transcript, { now, timeZone, locale });
+  let normalized = await readItems(response);
+  if (
+    normalized &&
+    normalized.length === 0 &&
+    transcript.trim().length > 12 &&
+    fallbackModel &&
+    fallbackModel !== model
+  ) {
+    const heavier = await ask(fallbackModel);
+    const again = await readItems(heavier);
+    if (again && again.length > 0) normalized = again;
+  }
+  const items = normalized && normalized.length > 0 ? normalized : extractItems(transcript, { now, timeZone, locale });
   return mergeSpokenOffsets(items, transcript);
 }
 
@@ -497,7 +575,7 @@ async function summarizeWithModel(transcript: string, locale: string) {
     : 'https://api.groq.com/openai/v1/chat/completions';
   const model = useOpenAI
     ? Deno.env.get('OPENAI_LLM_MODEL') ?? 'gpt-4o-mini'
-    : Deno.env.get('LLM_MODEL') ?? 'openai/gpt-oss-120b';
+    : Deno.env.get('LLM_MODEL') ?? 'openai/gpt-oss-20b';
   const messages = buildSummaryMessages({ transcript, locale });
   const response = await fetch(endpoint, {
     method: 'POST',
