@@ -1,5 +1,6 @@
 import { Bell, ChevronRight, Share2, Users } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pressable, ScrollView, Share, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +27,9 @@ import { useI18n } from '@/i18n';
 import { formatInviteCode, inviteLink, loadSharedLists, type SharedList } from '@/services/shared-lists';
 import { useTheme } from '@/theme/ThemeProvider';
 import { deviceTimeZone, isSameZonedDay } from '../../shared/parse/time';
+import { localWeekKey, summarizeWeek } from '@/lib/week-summary';
+import { streakCount, streakMilestone } from '@/lib/streak';
+import { CATEGORIES, type Category } from '../../shared/parse/category';
 
 type Filter = 'today' | 'overdue' | 'reminders' | 'calendar' | 'shopping' | 'all';
 
@@ -41,6 +45,9 @@ export function InboxScreen() {
   const params = useLocalSearchParams<{ item?: string | string[] }>();
   const linkedId = Array.isArray(params.item) ? params.item[0] : params.item;
   const [filter, setFilter] = useState<Filter>('today');
+  const [category, setCategory] = useState<Category | 'all'>('all');
+  const [weekOpen, setWeekOpen] = useState(false);
+  const [tip, setTip] = useState(false);
   const [query, setQuery] = useState('');
   const searching = query.trim().length > 0;
   const shownItems = items.filter((item) => !undo.hiddenItemIds.includes(item.id));
@@ -63,7 +70,7 @@ export function InboxScreen() {
   const overdue = shownItems
     .filter((item) => isOverdue(item, now, profile.timezone))
     .sort((a, b) => (a.dueAt ?? '').localeCompare(b.dueAt ?? ''));
-  const visible = filterItems(shownItems, filter, now, profile.timezone);
+  const visible = filterItems(shownItems, filter, now, profile.timezone, category);
   const shown =
     filter === 'overdue'
       ? overdue
@@ -84,6 +91,14 @@ export function InboxScreen() {
     (item) => item.type === 'note' && isSameZonedDay(new Date(item.createdAt), now, profile.timezone),
   ).length;
   const greeting = t(`greet.${greetingKey(now, deviceTimeZone())}`);
+  const streak = streakCount(shownItems.map((item) => item.completedAt), now, profile.timezone);
+  const milestone = streakMilestone(streak);
+  const week = summarizeWeek(items, recordings, now, profile.timezone);
+  useEffect(() => {
+    const key = `talktray.week.${localWeekKey(now, profile.timezone)}`;
+    void AsyncStorage.getItem(key).then((value) => setWeekOpen(value !== '1' && (week.done > 0 || week.recordings > 0)));
+    void AsyncStorage.getItem('talktray.tip.round3').then((value) => setTip(value !== '1'));
+  }, [now, profile.timezone, week.done, week.recordings]);
   useFocusEffect(() => {
     let alive = true;
     void loadSharedLists(profile.locale)
@@ -138,6 +153,9 @@ export function InboxScreen() {
             {profile.displayName ? t('greet.hello', { greeting, name: profile.displayName }) : greeting}
           </AppText>
           <AppText color={colors.muted}>{t('greet.subtitle')}</AppText>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('stats.streak', { count: streak })} onPress={() => router.push('/stats')} style={{ minHeight: 44, justifyContent: 'center' }}>
+            <AppText weight="bold">{t('stats.streak', { count: streak })}{milestone ? ` · ${t('stats.milestone', { count: milestone })}` : ''}</AppText>
+          </Pressable>
         </View>
         <View style={{ alignItems: 'center', marginVertical: 4 }}>
           <RecordOrb
@@ -152,6 +170,7 @@ export function InboxScreen() {
         </View>
         <SearchBar value={query} onChangeText={setQuery} />
         {searching ? null : (
+          <>
           <GlassCard onPress={() => router.push('/lists')} padding={14}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Users color={colors.primary} size={18} />
@@ -178,6 +197,52 @@ export function InboxScreen() {
               <ChevronRight color={colors.soft} size={16} />
             </View>
           </GlassCard>
+          {weekOpen ? (
+            <GlassCard padding={14} style={{ gap: 6 }}>
+              <AppText weight="bold">{t('stats.weekTitle')}</AppText>
+              <AppText>{t('stats.done', { count: week.done })}</AppText>
+              <AppText>{t('stats.recordings', { count: week.recordings })}</AppText>
+              <PrimaryButton
+                tone="glass"
+                label={t('stats.open')}
+                onPress={() => {
+                  void AsyncStorage.setItem(`talktray.week.${localWeekKey(now, profile.timezone)}`, '1');
+                  setWeekOpen(false);
+                  router.push('/stats');
+                }}
+              />
+              <PrimaryButton
+                tone="glass"
+                label={t('stats.dismiss')}
+                onPress={() => {
+                  void AsyncStorage.setItem(`talktray.week.${localWeekKey(now, profile.timezone)}`, '1');
+                  setWeekOpen(false);
+                }}
+              />
+            </GlassCard>
+          ) : null}
+          {tip ? (
+            <GlassCard padding={14} style={{ gap: 8 }}>
+              <AppText>{t('tips.round3')}</AppText>
+              <PrimaryButton
+                tone="glass"
+                label={t('tips.dismiss')}
+                onPress={() => {
+                  void AsyncStorage.setItem('talktray.tip.round3', '1');
+                  setTip(false);
+                }}
+              />
+            </GlassCard>
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              <PrimaryButton tone="glass" label={t('groups.open')} onPress={() => router.push('/groups')} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <PrimaryButton tone="glass" label={t('archive.open')} onPress={() => router.push('/archive')} />
+            </View>
+          </View>
+          </>
         )}
         {searching ? (
           <View style={{ gap: 10 }}>
@@ -221,6 +286,12 @@ export function InboxScreen() {
           >
             {(['today', 'overdue', 'reminders', 'calendar', 'shopping', 'all'] as Filter[]).map((key) => (
               <Chip key={key} label={t(`filters.${key}`)} active={filter === key} onPress={() => setFilter(key)} />
+            ))}
+          </ScrollView>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <Chip label={t('categories.all')} active={category === 'all'} onPress={() => setCategory('all')} />
+            {CATEGORIES.map((key) => (
+              <Chip key={key} label={t(`categories.${key}`)} active={category === key} onPress={() => setCategory(key)} />
             ))}
           </ScrollView>
           {showOverdueSection ? (
@@ -432,9 +503,10 @@ function Stat({
   );
 }
 
-function filterItems(items: InboxItem[], filter: Filter, now: Date, timeZone: string) {
+function filterItems(items: InboxItem[], filter: Filter, now: Date, timeZone: string, category: Category | 'all') {
   return items.filter((item) => {
-    if (item.completedAt && filter !== 'all') return false;
+    if (item.completedAt) return false;
+    if (category !== 'all' && (item.category ?? 'other') !== category && !(category === 'shopping' && item.type === 'shopping')) return false;
     if (filter === 'overdue') return isOverdue(item, now, timeZone);
     if (filter === 'all') return true;
     if (filter === 'reminders') return item.type === 'reminder';

@@ -27,6 +27,8 @@ import { persistRemoteProfile } from '@/data/save-profile';
 import { registerAdminPushToken, registerUserPushToken } from '@/services/admin-push';
 import { markRatingAsked, noteSavedRecording, rememberFirstOpen } from '@/services/rating-store';
 import { cleanLongText } from '../../shared/parse/long-text';
+import { parseVoiceCommands, type VoiceAction } from '../../shared/parse/commands';
+import { inferCategory } from '../../shared/parse/category';
 import { touchPresence } from '@/services/presence';
 import { cancelRemindersForItem, ensureReminderChannel, promptExactAlarmOnce, requestReminderPermission, syncItemNotifications, syncWeeklyDigest } from '@/services/notifications';
 import { mergeReminderSources, type ReminderSource } from '@/services/reminder-schedule';
@@ -70,6 +72,8 @@ type AppValue = {
   /** Active admin gift. Null when there is no gift. A failed read keeps the previous value. */
   giftUntil: string | null;
   draft: Draft | null;
+  voiceActions: VoiceAction[] | null;
+  clearVoiceActions: () => void;
   banner: string | null;
   finishOnboarding: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -88,7 +92,7 @@ type AppValue = {
     durationMs: number;
     transcript?: string;
     recordingId?: string | null;
-  }) => Promise<'review' | 'quota'>;
+  }) => Promise<'review' | 'quota' | 'commands'>;
   updateDraftItem: (localId: string, patch: Partial<DraftItem>) => void;
   removeDraftItem: (localId: string) => void;
   addDraftItem: () => void;
@@ -112,7 +116,7 @@ type AppValue = {
   purchase: (plan: 'monthly' | 'yearly') => Promise<PurchaseResult>;
   restore: () => Promise<RestoreResult>;
   clearBanner: () => void;
-  openSample: (locale: Locale) => Promise<'review' | 'quota'>;
+  openSample: (locale: Locale) => Promise<'review' | 'quota' | 'commands'>;
 };
 
 const AppContext = createContext<AppValue | null>(null);
@@ -165,6 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isPro: false,
   });
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [voiceActions, setVoiceActions] = useState<VoiceAction[] | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [askRating, setAskRating] = useState(false);
   const [giftUntil, setGiftUntil] = useState<string | null>(null);
@@ -471,6 +476,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void rememberFirstOpen();
   }, []);
 
+  useEffect(() => {
+    if (mode !== 'supabase' || !user) return;
+    const days = usage.isPro ? 30 : 7;
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    let alive = true;
+    void supabase
+      .from('items')
+      .delete()
+      .not('completed_at', 'is', null)
+      .lt('completed_at', cutoff)
+      .then(({ error }) => {
+        if (!alive || error) return;
+        setItems((current) => current.filter((item) => !item.completedAt || item.completedAt >= cutoff));
+      });
+    return () => {
+      alive = false;
+    };
+  }, [mode, usage.isPro, user]);
+
   const familyReminders = sharedReminders.userId === user?.id ? sharedReminders.items : NO_SHARED_REMINDERS;
 
   useEffect(() => {
@@ -572,6 +596,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           due_at: updated.dueAt,
           all_day: updated.allDay,
           list_name: updated.listName,
+          category: updated.category ?? null,
           reminder_offsets: updated.reminderOffsets,
           repeat: updated.dueAt ? updated.repeat ?? null : null,
           notification_id: updated.notificationId,
@@ -608,6 +633,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       usage,
       giftUntil,
       draft,
+      voiceActions,
+      clearVoiceActions: () => setVoiceActions(null),
       banner,
       askRating,
       dismissRating: () => {
@@ -977,6 +1004,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           locale: profile.locale,
           now: new Date().toISOString(),
           useStoredTranscript: !input.audioUri && !storagePath,
+          openItems: items
+            .filter((item) => !item.completedAt)
+            .slice(0, 40)
+            .map((item) => ({ id: item.id, title: item.title, dueAt: item.dueAt })),
         });
         if (invoked.code) {
           if (invoked.code === 'QUOTA_EXCEEDED' || invoked.code === 'quota_exceeded') return 'quota';
@@ -990,6 +1021,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           transcript?: string;
           language?: string | null;
           items?: Omit<DraftItem, 'localId'>[];
+          actions?: VoiceAction[];
           usage?: { count: number; limit: number | null; isPro: boolean };
         };
         if (payload.usage) {
@@ -1005,12 +1037,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
           refreshUsage(merged.count, merged.isPro, usage.period, merged.limit);
         }
+        const spokenText = payload.transcript || spoken;
+        const localActions = parseVoiceCommands(
+          spokenText,
+          items.filter((item) => !item.completedAt).slice(0, 40).map((item) => ({ id: item.id, title: item.title, dueAt: item.dueAt })),
+          { now: new Date(), timeZone: profile.timezone },
+        );
+        const voice = payload.actions?.length ? payload.actions : localActions;
+        if (voice.length) {
+          setVoiceActions(voice);
+          setRecordings((current) => [
+            {
+              id: recordingId,
+              transcript: spokenText,
+              language: payload.language ?? profile.locale,
+              durationMs: input.durationMs,
+              status: 'ready',
+              storagePath,
+              createdAt: now,
+            },
+            ...current.filter((recording) => recording.id !== recordingId),
+          ]);
+          return 'commands';
+        }
         setDraft({
           recordingId,
-          transcript: payload.transcript || spoken,
+          transcript: spokenText,
           language: payload.language ?? profile.locale,
           durationMs: input.durationMs,
-          items: (payload.items ?? []).map((item) => ({ ...item, localId: createId() })),
+          items: (payload.items ?? []).map((item) => ({
+            ...item,
+            category: item.category ?? inferCategory(item),
+            localId: createId(),
+          })),
           mocked: false,
           audioUri: input.audioUri ?? null,
         });
@@ -1134,24 +1193,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         if (mode === 'supabase') {
           if (saved.length) {
-            const { error } = await supabase.from('items').insert(
-              saved.map((item) => ({
-                id: item.id,
-                user_id: user.id,
-                recording_id: item.recordingId,
-                type: item.type,
-                title: item.title,
-                notes: item.notes,
-                due_at: item.dueAt,
-                all_day: item.allDay,
-                list_name: item.listName,
-                reminder_offsets: item.reminderOffsets,
-                repeat: item.repeat ?? null,
-                notification_id: item.notificationId,
-                calendar_event_id: item.calendarEventId,
-              })),
-            );
-            if (error) throw error;
+            const rows = saved.map((item) => ({
+              id: item.id,
+              user_id: user.id,
+              recording_id: item.recordingId,
+              type: item.type,
+              title: item.title,
+              notes: item.notes,
+              due_at: item.dueAt,
+              all_day: item.allDay,
+              list_name: item.listName,
+              category: item.category ?? inferCategory(item),
+              reminder_offsets: item.reminderOffsets,
+              repeat: item.repeat ?? null,
+              notification_id: item.notificationId,
+              calendar_event_id: item.calendarEventId,
+            }));
+            let inserted = await supabase.from('items').insert(rows);
+            if (inserted.error && /category/i.test(inserted.error.message ?? '')) {
+              inserted = await supabase.from('items').insert(rows.map(({ category: _drop, ...rest }) => rest));
+            }
+            if (inserted.error) throw inserted.error;
           }
         } else {
           await persistDemo({
@@ -1343,22 +1405,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const current = items.find((item) => item.id === id);
         if (!current) return;
         if (current.repeat && current.dueAt && !current.completedAt) {
-          // Finishing a repeating item moves it to the next occurrence. It never sits in "done".
           const dueAt = nextOccurrence(current.dueAt, current.repeat, profile.timezone, new Date());
-          const advanced = items.map((item) =>
-            item.id === id ? { ...item, dueAt, updatedAt: new Date().toISOString() } : item,
-          );
-          setItems(advanced);
-          if (mode === 'supabase') {
-            const { error } = await supabase.from('items').update({ due_at: dueAt }).eq('id', id);
-            if (error) {
-              setItems((list) => list.map((item) => (item.id === id ? { ...item, dueAt: current.dueAt } : item)));
+          const completedAt = new Date().toISOString();
+          const done = { ...current, completedAt, updatedAt: completedAt };
+          const nextItem: InboxItem = {
+            ...current,
+            id: createId(),
+            completedAt: null,
+            dueAt,
+            calendarEventId: null,
+            notificationId: null,
+            createdAt: completedAt,
+            updatedAt: completedAt,
+          };
+          const nextItems = [nextItem, ...items.map((item) => (item.id === id ? done : item))];
+          setItems(nextItems);
+          if (mode === 'supabase' && user) {
+            const updated = await supabase.from('items').update({ completed_at: completedAt }).eq('id', id);
+            const inserted = await supabase.from('items').insert({
+              id: nextItem.id,
+              user_id: user.id,
+              recording_id: nextItem.recordingId,
+              type: nextItem.type,
+              title: nextItem.title,
+              notes: nextItem.notes,
+              due_at: nextItem.dueAt,
+              all_day: nextItem.allDay,
+              list_name: nextItem.listName,
+              category: nextItem.category ?? null,
+              reminder_offsets: nextItem.reminderOffsets,
+              repeat: nextItem.repeat,
+            });
+            if (updated.error || inserted.error) {
+              setItems(items);
               setBanner(translate(profile.locale, 'errors.saveFailed'));
             } else {
               setBanner(translate(profile.locale, 'repeat.moved'));
             }
           } else if (user) {
-            await snapshotDemo({ items: advanced });
+            await snapshotDemo({ items: nextItems });
             setBanner(translate(profile.locale, 'repeat.moved'));
           }
           return;
@@ -1475,6 +1560,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [
     applyProfile,
     askRating,
+    voiceActions,
     banner,
     draft,
     flushWrites,
@@ -1552,6 +1638,7 @@ function mapItem(row: Record<string, unknown>): InboxItem {
     dueAt: (row.due_at as string | null) ?? null,
     allDay: Boolean(row.all_day),
     listName: (row.list_name as string | null) ?? null,
+    category: (row.category as InboxItem['category']) ?? null,
     reminderOffsets: Array.isArray(row.reminder_offsets) ? row.reminder_offsets.map((value) => Number(value)) : null,
     repeat: asRepeat(row.repeat),
     completedAt: (row.completed_at as string | null) ?? null,
@@ -1591,6 +1678,7 @@ async function invokeProcessRecording(body: {
   now: string;
   useStoredTranscript: boolean;
   mode?: 'long';
+  openItems?: { id: string; title: string; dueAt: string | null }[];
 }): Promise<{ data: unknown; code: string | null }> {
   let lastCode = '';
   for (let attempt = 0; attempt < 3; attempt += 1) {

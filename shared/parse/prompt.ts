@@ -32,6 +32,7 @@ Rules:
 - Keep mixed Turkish and English as spoken. Do not translate either part.
 - When a time is spoken with an action, it is a reminder or an event, not a note.
 - One product per shopping item, even when several are spoken in a single sentence.
+- category is shopping, work, home, health, personal, or other. A shopping item is shopping.
 - Do not invent items that are not in the transcript.`;
   return { system, user: input.transcript };
 }

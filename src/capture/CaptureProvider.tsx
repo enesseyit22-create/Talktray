@@ -115,6 +115,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       try {
         const result = await processThought({ audioUri: uri, durationMs, recordingId });
         setPending(null);
+        if (result === 'commands') return;
         const seen = recordings.filter((recording) => recording.status !== 'failed').length;
         if (result === 'quota') {
           if (shouldPresentPaywall(seen, usage.isPro)) router.push('/paywall');
@@ -218,6 +219,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
         recordingId: pending.recordingId,
       });
       setPending(null);
+      if (result === 'commands') return;
       const seen = recordings.filter((recording) => recording.status !== 'failed').length;
       if (result === 'quota') {
         if (shouldPresentPaywall(seen, usage.isPro)) router.push('/paywall');
