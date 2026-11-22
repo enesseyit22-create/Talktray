@@ -84,6 +84,16 @@ export function AdminScreen() {
   const [proNotice, setProNotice] = useState<string | null>(null);
   const [proFailed, setProFailed] = useState(false);
   const [busyUser, setBusyUser] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<Record<string, string>>({});
+  const [families, setFamilies] = useState<{ id: string; name: string; owner: string; members: number; items: number }[]>([]);
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushBody, setPushBody] = useState('');
+  const [audience, setAudience] = useState<'all' | 'user' | 'free' | 'pro' | 'language'>('all');
+  const [pushUser, setPushUser] = useState('');
+  const [pushLocale, setPushLocale] = useState('tr');
+  const [pushNotice, setPushNotice] = useState<string | null>(null);
+  const [pushing, setPushing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const request = useRef(0);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -142,7 +152,7 @@ export function AdminScreen() {
       setHasMore(page.length === PAGE);
       setOffset(nextOffset);
       setFailures((failedResult.data ?? []) as FailedRecording[]);
-      const activeResult = await supabase.rpc('admin_active_users', { p_within_seconds: 180 });
+      const activeResult = await supabase.rpc('admin_active_users', { p_within_seconds: 90 });
       if (ticket !== request.current) return;
       if (!activeResult.error) setActiveUsers((activeResult.data ?? []) as ActiveUser[]);
     },
@@ -150,7 +160,7 @@ export function AdminScreen() {
   );
 
   const loadActive = useCallback(async () => {
-    const { data, error: activeError } = await supabase.rpc('admin_active_users', { p_within_seconds: 180 });
+    const { data, error: activeError } = await supabase.rpc('admin_active_users', { p_within_seconds: 90 });
     if (!activeError) setActiveUsers((data ?? []) as ActiveUser[]);
   }, []);
 
@@ -173,6 +183,57 @@ export function AdminScreen() {
     setProNotice(t('admin.proSaved'));
   };
 
+  const setBlockedUser = async (userId: string, next: boolean) => {
+    const { data, error: blockError } = await supabase.rpc('admin_set_blocked', { p_user_id: userId, p_blocked: next });
+    if (blockError) {
+      setProFailed(true);
+      setProNotice(t('admin.proError'));
+      return;
+    }
+    setBlocked((current) => {
+      const copy = { ...current };
+      if (next && typeof data === 'string') copy[userId] = data;
+      else delete copy[userId];
+      return copy;
+    });
+  };
+
+  const deleteUser = async (userId: string) => {
+    const { error: deleteError } = await supabase.rpc('admin_delete_user', { p_user_id: userId });
+    setConfirmDelete(null);
+    if (deleteError) {
+      setProFailed(true);
+      setProNotice(t('admin.deleteUserError'));
+      return;
+    }
+    setUsers((current) => current.filter((user) => user.id !== userId));
+    setActiveUsers((current) => current.filter((user) => user.id !== userId));
+    setProFailed(false);
+    setProNotice(t('admin.deletedUser'));
+  };
+
+  const sendPush = async () => {
+    setPushing(true);
+    setPushNotice(null);
+    const { data, error: sendError } = await supabase.functions.invoke('admin-push', {
+      body: {
+        kind: 'broadcast',
+        title: pushTitle.trim(),
+        body: pushBody.trim(),
+        audience,
+        userId: audience === 'user' ? pushUser.trim() : null,
+        locale: audience === 'language' ? pushLocale.trim() : null,
+      },
+    });
+    setPushing(false);
+    if (sendError) {
+      setPushNotice(t('admin.pushError'));
+      return;
+    }
+    const sent = typeof data === 'object' && data && 'sent' in data ? Number((data as { sent: number }).sent) : 0;
+    setPushNotice(t('admin.pushSent', { count: Number.isFinite(sent) ? sent : 0 }));
+  };
+
   useEffect(() => {
     let active = true;
     void supabase.rpc('is_admin').then(({ data, error: gateError }) => {
@@ -184,6 +245,14 @@ export function AdminScreen() {
       }
       void load('', 0, true);
       void loadLimits();
+      void supabase.rpc('admin_blocked_users').then(({ data }) => {
+        const map: Record<string, string> = {};
+        for (const row of (data ?? []) as { id: string; blocked_at: string }[]) map[row.id] = row.blocked_at;
+        setBlocked(map);
+      });
+      void supabase.rpc('admin_family_groups').then(({ data }) => {
+        if (Array.isArray(data)) setFamilies(data as { id: string; name: string; owner: string; members: number; items: number }[]);
+      });
     });
     return () => {
       active = false;
@@ -192,8 +261,15 @@ export function AdminScreen() {
 
   useEffect(() => {
     if (!allowed) return;
-    const timer = setInterval(() => void loadActive(), 20_000);
-    return () => clearInterval(timer);
+    const timer = setInterval(() => void loadActive(), 5_000);
+    const channel = supabase
+      .channel('admin-presence')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_presence' }, () => void loadActive())
+      .subscribe();
+    return () => {
+      clearInterval(timer);
+      void supabase.removeChannel(channel);
+    };
   }, [allowed, loadActive]);
 
   const refresh = async () => {
@@ -417,6 +493,28 @@ export function AdminScreen() {
                     </AppText>
                   ) : null}
                   {grantChips(user.id)}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                    <Chip
+                      label={blocked[user.id] ? t('admin.unblock') : t('admin.block')}
+                      onPress={() => void setBlockedUser(user.id, !blocked[user.id])}
+                    />
+                    <Chip
+                      label={t('admin.pushUser')}
+                      onPress={() => {
+                        setAudience('user');
+                        setPushUser(user.id);
+                      }}
+                    />
+                    <Chip label={t('admin.deleteUser')} onPress={() => setConfirmDelete(user.id)} />
+                  </View>
+                  {blocked[user.id] ? <AppText size={12} color={colors.danger}>{t('admin.blocked')}</AppText> : null}
+                  {confirmDelete === user.id ? (
+                    <View style={{ gap: 8, marginTop: 8 }}>
+                      <AppText>{t('admin.deleteUserBody')}</AppText>
+                      <PrimaryButton label={t('admin.deleteUser')} onPress={() => void deleteUser(user.id)} />
+                      <PrimaryButton tone="glass" label={t('cancel')} onPress={() => setConfirmDelete(null)} />
+                    </View>
+                  ) : null}
                 </GlassCard>
               );
             })}
@@ -442,6 +540,67 @@ export function AdminScreen() {
                 </AppText>
               </GlassCard>
             ))}
+          </>
+        ) : null}
+        {allowed ? (
+          <>
+            <AppText size={18} weight="extrabold">
+              {t('admin.families')}
+            </AppText>
+            {families.length === 0 ? <EmptyState title={t('admin.families')} body={t('admin.familiesEmpty')} /> : null}
+            {families.map((group) => (
+              <GlassCard key={group.id} style={{ gap: 2 }}>
+                <AppText weight="bold">{group.name}</AppText>
+                <AppText size={13} color={colors.muted}>
+                  {t('admin.familyMeta', { owner: group.owner, members: group.members, items: group.items })}
+                </AppText>
+              </GlassCard>
+            ))}
+            <GlassCard style={{ gap: 10 }}>
+              <AppText size={18} weight="extrabold">
+                {t('admin.pushTitle')}
+              </AppText>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {(['all', 'user', 'free', 'pro', 'language'] as const).map((kind) => (
+                  <Chip
+                    key={kind}
+                    label={t(
+                      kind === 'all'
+                        ? 'admin.pushAll'
+                        : kind === 'user'
+                          ? 'admin.pushUser'
+                          : kind === 'free'
+                            ? 'admin.pushFree'
+                            : kind === 'pro'
+                              ? 'admin.pushPro'
+                              : 'admin.pushLanguage',
+                    )}
+                    active={audience === kind}
+                    onPress={() => setAudience(kind)}
+                  />
+                ))}
+              </View>
+              {audience === 'user' ? (
+                <Field label={t('admin.pushUser')} value={pushUser} onChangeText={setPushUser} autoCapitalize="none" />
+              ) : null}
+              {audience === 'language' ? (
+                <Field label={t('admin.locale')} value={pushLocale} onChangeText={setPushLocale} autoCapitalize="none" />
+              ) : null}
+              <Field label={t('admin.pushTitle')} value={pushTitle} onChangeText={setPushTitle} autoCapitalize="sentences" />
+              <Field label={t('admin.pushBody')} value={pushBody} onChangeText={setPushBody} autoCapitalize="sentences" multiline />
+              <GlassCard padding={12} style={{ gap: 4 }}>
+                <AppText size={12} color={colors.muted}>{t('admin.pushPreview')}</AppText>
+                <AppText weight="bold">{pushTitle || '—'}</AppText>
+                <AppText>{pushBody || '—'}</AppText>
+              </GlassCard>
+              {pushNotice ? <AppText size={13}>{pushNotice}</AppText> : null}
+              <PrimaryButton
+                label={t('admin.pushSend')}
+                loading={pushing}
+                disabled={!pushTitle.trim() || !pushBody.trim() || (audience === 'user' && !pushUser.trim())}
+                onPress={() => void sendPush()}
+              />
+            </GlassCard>
           </>
         ) : null}
         <PrimaryButton tone="glass" label={t('admin.back')} onPress={() => router.back()} />

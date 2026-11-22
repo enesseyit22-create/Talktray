@@ -289,7 +289,7 @@ export function SharedListScreen({ listId }: { listId: string }) {
                         </AppText>
                       ) : null}
                       {item.dueAt && !item.doneAt ? (
-                        <AppText size={12} color={colors.muted}>
+                        <AppText size={12} numberOfLines={1} color={colors.muted}>
                           {formatDueLabel(item.dueAt, now, app.profile.timezone, locale, t('today'), t('tomorrow'), false)}
                         </AppText>
                       ) : null}

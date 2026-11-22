@@ -72,7 +72,7 @@ export function GlassTabBar({ state, navigation }: TabBarProps) {
                 <AppText
                   size={11}
                   weight="semibold"
-                  numberOfLines={2}
+                  numberOfLines={1}
                   color={focused || capture.isRecording ? colors.tabActive : colors.tab}
                   style={styles.label}
                 >
@@ -90,7 +90,7 @@ export function GlassTabBar({ state, navigation }: TabBarProps) {
           return (
             <Pressable key={route.key} onPress={onPress} style={styles.slot}>
               <Icon color={focused ? colors.tabActive : colors.tab} size={22} strokeWidth={focused ? 2.5 : 2.1} />
-              <AppText size={11} weight="semibold" numberOfLines={2} color={focused ? colors.tabActive : colors.tab} style={styles.label}>
+              <AppText size={11} weight="semibold" numberOfLines={1} color={focused ? colors.tabActive : colors.tab} style={styles.label}>
                 {label}
               </AppText>
             </Pressable>

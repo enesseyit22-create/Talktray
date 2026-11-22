@@ -7,6 +7,7 @@ import { Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CaptureProvider } from '@/capture/CaptureProvider';
+import { RatingSheet } from '@/components/RatingSheet';
 import { AppText } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
@@ -64,6 +65,7 @@ export default function AppLayout() {
         <Stack.Screen name="lists/[id]" />
         <Stack.Screen name="join" />
       </Stack>
+      <RatingSheet />
       {banner ? (
         <View style={{ position: 'absolute', top: insets.top + 8, left: 16, right: 16 }}>
           <Pressable onPress={clearBanner}>

@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { cleanLongText } from '../_shared/parse/long-text.ts';
 import {
   buildExtractionMessages,
   buildSummaryMessages,
@@ -29,6 +30,8 @@ type Body = {
   locale?: string;
   now?: string;
   useStoredTranscript?: boolean;
+  /** "long" keeps one cleaned note. Older servers ignore this field. */
+  mode?: string;
 };
 
 Deno.serve(async (req) => {
@@ -62,6 +65,8 @@ Deno.serve(async (req) => {
     await sweepStuck(admin, userId, recordingId).catch(() => undefined);
 
     const { data: profile } = await admin.from('profiles').select('timezone, locale').eq('id', userId).maybeSingle();
+    const blocked = await admin.from('profiles').select('blocked_at').eq('id', userId).maybeSingle();
+    if (!blocked.error && blocked.data?.blocked_at) return json({ error: 'BLOCKED' }, 403);
     const timeZone = safeTimeZone(profile?.timezone || body.timezone || 'UTC');
     const locale = resolveLocale(profile?.locale, body.locale);
     // The phone's clock is used only to read "tomorrow at 9" and the like.
@@ -117,6 +122,21 @@ Deno.serve(async (req) => {
         transcript = spoken.text;
         language = spoken.language ?? language;
       }
+      if (body.mode === 'long') {
+        const cleaned = cleanLongText(transcript);
+        items = [
+          {
+            type: 'note' as const,
+            title: cleaned.title || transcript.slice(0, 72),
+            notes: cleaned.body || transcript,
+            dueAt: null,
+            allDay: false,
+            listName: null,
+            reminderOffsets: null,
+            repeat: null,
+          },
+        ];
+      } else {
       const summaryPromise =
         isPro && shouldSummarize(Number(recording.duration_ms ?? 0), transcript)
           ? summarizeWithModel(transcript, locale).catch((error) => {
@@ -134,10 +154,16 @@ Deno.serve(async (req) => {
         const summary = await summaryPromise;
         if (summary) items = [summaryToNote(summary), ...items];
       }
+      }
     } catch (error) {
       if (replay && recording.transcript) {
         transcript = recording.transcript;
-        items = extractItems(transcript, { now, timeZone, locale });
+        if (body.mode === 'long') {
+          const cleaned = cleanLongText(transcript);
+          items = [{ type: 'note' as const, title: cleaned.title || transcript.slice(0, 72), notes: cleaned.body || transcript, dueAt: null, allDay: false, listName: null, reminderOffsets: null, repeat: null }];
+        } else {
+          items = extractItems(transcript, { now, timeZone, locale });
+        }
       } else {
         // The credit comes back. The audio stays so the phone can retry the same take.
         const message = error instanceof Error ? error.message : 'UNKNOWN';

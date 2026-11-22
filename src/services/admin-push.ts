@@ -21,7 +21,21 @@ function missingFunction(error: { code?: string; message?: string }) {
   return /save_admin_push_token/i.test(message) && /could not find|schema cache|not found/i.test(message);
 }
 
-/** Saves this device's Expo push token when the signed-in user is an admin. */
+async function saveExpoToken(rpc: 'save_admin_push_token' | 'save_push_token'): Promise<void> {
+  const id = projectId();
+  if (!id) return;
+  try {
+    const token = await Notifications.getExpoPushTokenAsync({ projectId: id });
+    const saved = await supabase.rpc(rpc, { p_token: token.data });
+    if (saved.error && !missingFunction(saved.error) && !/save_push_token/i.test(saved.error.message ?? '')) {
+      console.warn('[push] token not saved', saved.error.code ?? '');
+    }
+  } catch (error) {
+    console.warn('[push] token unavailable', error);
+  }
+}
+
+/** Saves this device's Expo push token for admin alerts and for broadcasts. */
 export async function registerAdminPushToken(): Promise<void> {
   if (Platform.OS === 'web') return;
   const gate = await supabase.rpc('is_admin');
@@ -31,15 +45,14 @@ export async function registerAdminPushToken(): Promise<void> {
   const granted = await requestReminderPermission();
   if (!granted) return;
 
-  const id = projectId();
-  if (!id) return;
-  try {
-    const token = await Notifications.getExpoPushTokenAsync({ projectId: id });
-    const saved = await supabase.rpc('save_admin_push_token', { p_token: token.data });
-    if (saved.error && !missingFunction(saved.error)) {
-      console.warn('[admin-push] token not saved', saved.error.message);
-    }
-  } catch (error) {
-    console.warn('[admin-push] token unavailable', error);
-  }
+  await saveExpoToken('save_admin_push_token');
+}
+
+/** Any signed-in phone, so an admin broadcast can reach it. Missing RPC is ignored. */
+export async function registerUserPushToken(locale: string): Promise<void> {
+  if (Platform.OS === 'web') return;
+  await ensureReminderChannel(locale);
+  const granted = await requestReminderPermission();
+  if (!granted) return;
+  await saveExpoToken('save_push_token');
 }

@@ -1,7 +1,7 @@
 import { useFocusEffect, router } from 'expo-router';
-import { ChevronLeft, ChevronRight, Lock, Users } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Lock, Share2, Users } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Platform, Pressable, ScrollView, StatusBar, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Share, StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
@@ -11,6 +11,8 @@ import { useI18n } from '@/i18n';
 import { sheetTopInset } from '@/lib/layout';
 import {
   createSharedList,
+  formatInviteCode,
+  inviteLink,
   joinSharedList,
   loadSharedLists,
   normalizeInviteCode,
@@ -141,6 +143,20 @@ export function SharedListsScreen() {
                       {list.ownerId === app.user?.id ? t('shared.youOwn') : t('shared.youJoined')}
                     </AppText>
                   </View>
+                  <Pressable
+                    onPress={() => {
+                      const code = formatInviteCode(list.inviteCode);
+                      void Share.share({
+                        message: t('shared.inviteMessage', { name: list.name, code, link: inviteLink(list.inviteCode) }),
+                      });
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('shared.share')}
+                    hitSlop={8}
+                    style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Share2 color={colors.primary} size={18} />
+                  </Pressable>
                   <ChevronRight color={colors.soft} size={16} />
                 </View>
               </GlassCard>

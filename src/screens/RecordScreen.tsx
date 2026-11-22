@@ -140,6 +140,7 @@ export function RecordScreen() {
               />
             </View>
           </View>
+          <PrimaryButton tone="glass" label={t('record.longText')} onPress={() => router.push('/write')} />
           <PrimaryButton tone="glass" label={t('record.typeInstead')} onPress={() => setShowType((value) => !value)} />
           {showType ? (
             <View style={{ gap: 10 }}>

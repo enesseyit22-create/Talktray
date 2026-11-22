@@ -98,7 +98,16 @@ export function ItemCard({
   const accent = colors[item.type].icon;
 
   const card = (
-    <GlassCard onPress={onPress} onLongPress={onLongPress} padding={14}>
+    <GlassCard
+      onPress={onPress}
+      onLongPress={onLongPress}
+      padding={14}
+      style={
+        item.dueAt && !item.completedAt
+          ? { borderLeftWidth: 3, borderLeftColor: overdue ? colors.danger : colors.primary }
+          : undefined
+      }
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Pressable
           onPress={() => {
@@ -109,7 +118,7 @@ export function ItemCard({
           <TypeIcon type={item.type} done={Boolean(item.completedAt)} />
         </Pressable>
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <AppText weight="bold" numberOfLines={3} style={item.completedAt ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}>
+          <AppText weight="bold" numberOfLines={2} style={item.completedAt ? { textDecorationLine: 'line-through', opacity: 0.6 } : undefined}>
             {t(`types.${item.type}`)}: {item.title}
           </AppText>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

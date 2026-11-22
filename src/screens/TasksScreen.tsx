@@ -3,7 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
-import { ConfirmDelete } from '@/components/ConfirmDelete';
+import { UndoToast, useUndoDelete } from '@/components/UndoToast';
 import { EditSheet } from '@/components/EditSheet';
 import { tabBarClearance } from '@/components/GlassTabBar';
 import { ItemCard } from '@/components/ItemCard';
@@ -20,12 +20,12 @@ export function TasksScreen() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const { items, profile, toggleComplete, updateItem, deleteItem } = useApp();
+  const undo = useUndoDelete({ deleteItem });
   const now = useNow();
   const [done, setDone] = useState(false);
   const [editing, setEditing] = useState<InboxItem | null>(null);
   const [query, setQuery] = useState('');
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const list = searchItems(items, query)
+  const list = searchItems(items.filter((item) => !undo.hiddenItemIds.includes(item.id)), query)
     .filter((item) => item.type === 'task' && Boolean(item.completedAt) === done)
     .sort((a, b) => Number(isOverdue(b, now, profile.timezone)) - Number(isOverdue(a, now, profile.timezone)));
   return (
@@ -53,7 +53,7 @@ export function TasksScreen() {
             timeZone={profile.timezone}
             onPress={() => setEditing(item)}
             onToggle={() => void toggleComplete(item.id)}
-            onDelete={() => setPendingId(item.id)}
+            onDelete={() => undo.removeItem(item.id)}
           />
         ))}
       </ScrollView>
@@ -70,21 +70,11 @@ export function TasksScreen() {
         }}
         onDelete={() => {
           if (!editing) return;
-          setPendingId(editing.id);
+          undo.removeItem(editing.id);
+          setEditing(null);
         }}
       />
-      <ConfirmDelete
-        visible={pendingId != null}
-        title={t('confirmDelete.itemTitle')}
-        body={t('confirmDelete.itemBody')}
-        onCancel={() => setPendingId(null)}
-        onConfirm={() => {
-          if (!pendingId) return;
-          void deleteItem(pendingId);
-          if (editing?.id === pendingId) setEditing(null);
-          setPendingId(null);
-        }}
-      />
+      <UndoToast visible={undo.visible} bottom={tabBarClearance(insets.bottom) - 8} onUndo={undo.undo} onDismiss={undo.dismiss} />
     </Aurora>
   );
 }
