@@ -36,7 +36,8 @@ export function RecordScreen() {
   const seen = recordings.filter((recording) => recording.status !== 'failed').length;
 
   const afterThought = useCallback(
-    (result: 'review' | 'quota') => {
+    (result: 'review' | 'quota' | 'commands') => {
+      if (result === 'commands') return;
       if (result === 'quota') {
         if (shouldPresentPaywall(seen, usage.isPro)) router.push('/paywall');
         else setError(t(usage.isPro ? 'errors.quotaPro' : 'errors.quota'));

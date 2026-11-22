@@ -7,6 +7,7 @@ import { Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CaptureProvider } from '@/capture/CaptureProvider';
+import { CommandSheet } from '@/components/CommandSheet';
 import { RatingSheet } from '@/components/RatingSheet';
 import { AppText } from '@/components/ui/primitives';
 import { useApp } from '@/data/AppProvider';
@@ -66,6 +67,7 @@ export default function AppLayout() {
         <Stack.Screen name="join" />
       </Stack>
       <RatingSheet />
+      <CommandSheet />
       {banner ? (
         <View style={{ position: 'absolute', top: insets.top + 8, left: 16, right: 16 }}>
           <Pressable onPress={clearBanner}>

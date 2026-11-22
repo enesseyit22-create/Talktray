@@ -10,6 +10,7 @@ export type ParsedItem = {
   dueAt: string | null;
   allDay: boolean;
   listName: string | null;
+  category?: 'shopping' | 'work' | 'home' | 'health' | 'personal' | 'other' | null;
   /** Minutes before dueAt. Null means the profile default. */
   reminderOffsets: number[] | null;
   /** Repeating schedule (Pro). Missing or null means it happens once. */

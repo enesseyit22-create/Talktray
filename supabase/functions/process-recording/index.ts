@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { parseVoiceCommands } from '../_shared/parse/commands.ts';
 import { cleanLongText } from '../_shared/parse/long-text.ts';
 import {
   buildExtractionMessages,
@@ -32,6 +33,7 @@ type Body = {
   useStoredTranscript?: boolean;
   /** "long" keeps one cleaned note. Older servers ignore this field. */
   mode?: string;
+  openItems?: Array<{ id?: string; title?: string; dueAt?: string | null }>;
 };
 
 Deno.serve(async (req) => {
@@ -109,6 +111,7 @@ Deno.serve(async (req) => {
     let transcript = '';
     let language: string | null = locale;
     let items;
+    let actions: unknown[] = [];
     try {
       if ((body.useStoredTranscript || replay) && recording.transcript) {
         transcript = recording.transcript;
@@ -122,7 +125,16 @@ Deno.serve(async (req) => {
         transcript = spoken.text;
         language = spoken.language ?? language;
       }
-      if (body.mode === 'long') {
+      if (body.mode !== 'long') {
+        const openItems = (body.openItems ?? [])
+          .filter((item) => item && typeof item.id === 'string' && typeof item.title === 'string' && item.title.trim())
+          .slice(0, 40)
+          .map((item) => ({ id: String(item.id), title: String(item.title), dueAt: item.dueAt ?? null }));
+        actions = parseVoiceCommands(transcript, openItems, { now, timeZone });
+      }
+      if (actions.length) {
+        items = [];
+      } else if (body.mode === 'long') {
         const cleaned = cleanLongText(transcript);
         items = [
           {
@@ -183,6 +195,7 @@ Deno.serve(async (req) => {
       transcript,
       language,
       items,
+      actions,
       usage: {
         count: monthCount,
         limit: usageLimit,

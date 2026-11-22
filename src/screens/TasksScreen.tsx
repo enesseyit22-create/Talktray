@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora } from '@/components/Aurora';
@@ -37,7 +38,7 @@ export function TasksScreen() {
         <SearchBar value={query} onChangeText={setQuery} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Chip label={t('tasks.open')} active={!done} onPress={() => setDone(false)} />
-          <Chip label={t('tasks.completed')} active={done} onPress={() => setDone(true)} />
+          <Chip label={t('archive.open')} active={false} onPress={() => router.push('/archive')} />
         </View>
         {list.length === 0 ? (
           query.trim() ? (

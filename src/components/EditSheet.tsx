@@ -32,6 +32,7 @@ export type EditableItem = {
   dueAt: string | null;
   allDay: boolean;
   listName: string | null;
+  category?: 'shopping' | 'work' | 'home' | 'health' | 'personal' | 'other' | null;
   reminderOffsets: number[] | null;
   repeat?: Repeat | null;
   completedAt?: string | null;
@@ -121,9 +122,11 @@ export function EditSheet({
           autoCapitalize="words"
         />
       ) : null}
-      <AppText size={13} weight="semibold">
-        {t('remind.title')}
-      </AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {(['shopping', 'work', 'home', 'health', 'personal', 'other'] as const).map((key) => (
+          <Chip key={key} label={t(`categories.${key}`)} active={item.category === key} onPress={() => onChange({ category: key })} />
+        ))}
+      </View>
       <ScrollView
         horizontal
         nestedScrollEnabled
