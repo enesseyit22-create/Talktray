@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     const admin = createClient(url, serviceKey);
     const { data: recording, error: recordingError } = await admin
       .from('recordings')
-      .select('id, user_id, storage_path, transcript, duration_ms')
+      .select('id, user_id, status, storage_path, transcript, duration_ms')
       .eq('id', recordingId)
       .maybeSingle();
     if (recordingError || !recording || recording.user_id !== userId) {
@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
         return await refuse(admin, recordingId, recording.storage_path ?? null, credit.reason);
       }
     }
+    // The retry above can still come back blocked. A replay of a stored transcript is allowed.
     if (credit.state === 'blocked' && !replay) {
       if (credit.reason === 'repeat') return json({ error: 'ALREADY_PROCESSED' }, 409);
       return await refuse(admin, recordingId, recording.storage_path ?? null, credit.reason);
@@ -122,6 +123,14 @@ Deno.serve(async (req) => {
         const audio = await admin.storage.from('recordings').download(recording.storage_path);
         if (audio.error || !audio.data) throw new Error('AUDIO_NOT_FOUND');
         const spoken = await transcribe(new Uint8Array(await audio.data.arrayBuffer()));
+        // duration_ms is written by the phone. The transcriber's own length is the real one.
+        if (spoken.durationSeconds != null) {
+          const maxSeconds = isPro ? PRO_MAX_SECONDS_PER_RECORDING : (await readFreeLimits(admin)).free_max_seconds_per_recording;
+          if (maxSeconds != null && spoken.durationSeconds > maxSeconds + 15) {
+            await admin.from('recording_credits').delete().eq('recording_id', recordingId);
+            return await refuse(admin, recordingId, recording.storage_path ?? null, 'seconds');
+          }
+        }
         transcript = spoken.text;
         language = spoken.language ?? language;
       }
@@ -487,7 +496,9 @@ async function subscriberIsPro(admin: ReturnType<typeof createClient>, userId: s
 const STT_ATTEMPTS = 2;
 const STT_TIMEOUT_MS = 28_000;
 
-async function transcribe(bytes: Uint8Array): Promise<{ text: string; language: string | null }> {
+async function transcribe(
+  bytes: Uint8Array,
+): Promise<{ text: string; language: string | null; durationSeconds: number | null }> {
   const provider = (Deno.env.get('STT_PROVIDER') ?? 'groq').toLowerCase();
   const groq = Deno.env.get('GROQ_API_KEY');
   const openai = Deno.env.get('OPENAI_API_KEY');
@@ -521,7 +532,8 @@ async function transcribe(bytes: Uint8Array): Promise<{ text: string; language: 
         const payload = await response.json();
         const text = String(payload.text ?? '').trim();
         if (!text) throw new Error('STT_EMPTY');
-        return { text, language: payload.language ?? null };
+        const seconds = Number(payload.duration);
+        return { text, language: payload.language ?? null, durationSeconds: Number.isFinite(seconds) ? seconds : null };
       }
       lastStatus = response.status;
       if (response.status !== 429 && response.status < 500) throw new Error(`STT_${response.status}`);

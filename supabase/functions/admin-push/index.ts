@@ -153,10 +153,11 @@ async function adminCaller(req: Request, url: string): Promise<string | null> {
 }
 
 async function broadcast(admin: SupabaseClient, body: BroadcastBody & { title: string; body: string; audience: PushAudience }): Promise<number> {
-  const tokens = await admin.from('user_push_tokens').select('user_id, token');
+  // PostgREST returns at most 1000 rows per request, so every table is read in pages.
+  const tokens = await readAll(admin, 'user_push_tokens', 'user_id, token', 'user_id');
   if (tokens.error) throw new Error(tokens.error.message);
-  const profiles = await admin.from('profiles').select('id, locale, pro_override_until');
-  const presence = await admin.from('user_presence').select('user_id, store_is_pro');
+  const profiles = await readAll(admin, 'profiles', 'id, locale, pro_override_until', 'id');
+  const presence = await readAll(admin, 'user_presence', 'user_id, store_is_pro', 'user_id');
   const now = Date.now();
   const localeOf = new Map((profiles.data ?? []).map((row) => [String(row.id), (row.locale as string | null) ?? null]));
   const proOf = new Map<string, boolean>();
@@ -199,6 +200,23 @@ async function broadcast(admin: SupabaseClient, body: BroadcastBody & { title: s
     if (!response.ok) throw new Error(`EXPO_${response.status}`);
   }
   return to.length;
+}
+
+async function readAll(
+  admin: SupabaseClient,
+  table: string,
+  columns: string,
+  orderBy: string,
+): Promise<{ data: Record<string, unknown>[]; error: { message: string } | null }> {
+  const page = 1000;
+  const rows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += page) {
+    const { data, error } = await admin.from(table).select(columns).order(orderBy).range(from, from + page - 1);
+    if (error) return { data: rows, error };
+    const chunk = (data ?? []) as unknown as Record<string, unknown>[];
+    rows.push(...chunk);
+    if (chunk.length < page) return { data: rows, error: null };
+  }
 }
 
 function publishableKey() {

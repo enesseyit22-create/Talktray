@@ -5,6 +5,7 @@ const expoConfig = require("eslint-config-expo/flat");
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ["dist/*"],
+    // Edge functions run on Deno (npm: imports) and scripts/ on Node; the Expo config does not fit them.
+    ignores: ["dist/*", "supabase/functions/**", "scripts/**"],
   }
 ]);

@@ -1,7 +1,11 @@
 import { supabase } from '@/lib/supabase';
 
-/** Re-read gifts and free limits while the app is open, in case realtime is quiet. */
-export const ACCESS_REFRESH_MS = 5_000;
+/**
+ * Fallback re-read of gifts and free limits while the app is open, in case realtime is quiet.
+ * Realtime delivers changes instantly, so this only needs to be slow. At 5 s every open phone
+ * sent two queries every five seconds, which does not scale.
+ */
+export const ACCESS_REFRESH_MS = 120_000;
 
 /**
  * Push updates for this user's Pro gift and the shared free-plan limits.
