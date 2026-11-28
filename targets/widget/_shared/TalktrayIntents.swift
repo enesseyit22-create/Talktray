@@ -8,9 +8,7 @@ struct RecordTalktrayIntent: AppIntent {
 
   @MainActor
   func perform() async throws -> some IntentResult & OpensIntent {
-    guard let url = URL(string: "talktray://record?autostart=1") else {
-      return .result()
-    }
+    let url = URL(string: "talktray://record?autostart=1") ?? URL(fileURLWithPath: "/")
     return .result(opensIntent: OpenURLIntent(url))
   }
 }
