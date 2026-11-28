@@ -24,26 +24,48 @@ Deno.serve(async (req) => {
   const freeCutoff = new Date(Date.now() - FREE_DAYS * 86_400_000).toISOString();
   const proCutoff = new Date(Date.now() - PRO_DAYS * 86_400_000).toISOString();
 
-  const { data, error } = await admin
+  // Two passes. Past 30 days every file goes. Between 7 and 30 days only free users' files go;
+  // that window is walked in pages so kept Pro files cannot crowd free files out of one big read.
+  const select = 'id, user_id, storage_path, created_at';
+  const old = await admin
     .from('recordings')
-    .select('id, user_id, storage_path, created_at')
+    .select(select)
     .not('storage_path', 'is', null)
-    .lt('created_at', freeCutoff)
+    .lt('created_at', proCutoff)
     .order('created_at', { ascending: true })
     .limit(MAX_ROWS);
-  if (error) return json({ error: error.message }, 500);
+  if (old.error) return json({ error: old.error.message }, 500);
 
-  const rows = (data ?? []) as Row[];
+  const expired: Row[] = [...((old.data ?? []) as Row[])];
   const proCache = new Map<string, boolean>();
-  const expired: Row[] = [];
-  for (const row of rows) {
-    if (row.created_at < proCutoff) {
-      expired.push(row);
-      continue;
+  let checked = expired.length;
+  let after = proCutoff;
+  while (checked < MAX_ROWS) {
+    const page = await admin
+      .from('recordings')
+      .select(select)
+      .not('storage_path', 'is', null)
+      .gte('created_at', after)
+      .lt('created_at', freeCutoff)
+      .order('created_at', { ascending: true })
+      .limit(1000);
+    if (page.error) return json({ error: page.error.message }, 500);
+    const rows = (page.data ?? []) as Row[];
+    for (const row of rows) {
+      if (!proCache.has(row.user_id)) proCache.set(row.user_id, await keepsLonger(admin, row.user_id));
+      if (!proCache.get(row.user_id)) expired.push(row);
     }
-    if (!proCache.has(row.user_id)) proCache.set(row.user_id, await keepsLonger(admin, row.user_id));
-    if (!proCache.get(row.user_id)) expired.push(row);
+    checked += rows.length;
+    if (rows.length < 1000) break;
+    const last = rows[rows.length - 1].created_at;
+    // Rows sharing the last timestamp are read again next page; storage removal is idempotent.
+    if (last === after) break;
+    after = last;
   }
+
+  const unique = [...new Map(expired.map((row) => [row.id, row])).values()];
+  expired.length = 0;
+  expired.push(...unique);
 
   let removed = 0;
   for (let index = 0; index < expired.length; index += BATCH) {
@@ -61,8 +83,8 @@ Deno.serve(async (req) => {
     else removed += batch.length;
   }
 
-  console.log('[purge-audio]', JSON.stringify({ checked: rows.length, removed, users: proCache.size }));
-  return json({ checked: rows.length, removed });
+  console.log('[purge-audio]', JSON.stringify({ checked, removed, users: proCache.size }));
+  return json({ checked, removed });
 });
 
 /** Pro (store or admin gift) keeps audio 30 days. If RevenueCat cannot answer, keep it: never cut a paying user short. */

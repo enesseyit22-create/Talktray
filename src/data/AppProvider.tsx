@@ -412,7 +412,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (accessTimer) return;
       beatPresence();
       accessTimer = setInterval(refreshAccess, ACCESS_REFRESH_MS);
-      presenceTimer = setInterval(beatPresence, 30_000);
+      presenceTimer = setInterval(beatPresence, 120_000);
     };
     const stop = () => {
       if (accessTimer) clearInterval(accessTimer);

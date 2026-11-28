@@ -199,7 +199,10 @@ export function AdminScreen() {
   };
 
   const deleteUser = async (userId: string) => {
-    const { error: deleteError } = await supabase.rpc('admin_delete_user', { p_user_id: userId });
+    // The edge function also removes the user's audio files, which SQL cannot reach.
+    const { error: deleteError } = await supabase.functions.invoke('admin-push', {
+      body: { kind: 'delete-user', userId },
+    });
     setConfirmDelete(null);
     if (deleteError) {
       setProFailed(true);

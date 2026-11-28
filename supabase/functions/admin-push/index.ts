@@ -61,6 +61,19 @@ Deno.serve(async (req) => {
     }
   }
 
+  if (isDeleteUser(payload)) {
+    const caller = await adminCaller(req, url);
+    if (!caller) return json({ error: 'UNAUTHORIZED' }, 401);
+    if (payload.userId === caller) return json({ error: 'USER_INVALID' }, 400);
+    try {
+      await deleteUserEverywhere(admin, payload.userId);
+      return json({ ok: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'DELETE_FAILED';
+      return json({ error: message }, 500);
+    }
+  }
+
   const internalSecret = Deno.env.get('ADMIN_PUSH_SECRET') ?? '';
   const revenueAuth = Deno.env.get('REVENUECAT_WEBHOOK_AUTHORIZATION') ?? '';
   const isInternal = internalSecret.length > 0 && req.headers.get('x-admin-push-secret') === internalSecret;
@@ -198,8 +211,47 @@ async function broadcast(admin: SupabaseClient, body: BroadcastBody & { title: s
       ),
     });
     if (!response.ok) throw new Error(`EXPO_${response.status}`);
+    await dropDeadTokens(admin, slice, response);
   }
   return to.length;
+}
+
+type DeleteUserBody = { kind: 'delete-user'; userId: string };
+
+function isDeleteUser(value: unknown): value is DeleteUserBody {
+  if (!value || typeof value !== 'object') return false;
+  const body = value as { kind?: unknown; userId?: unknown };
+  return body.kind === 'delete-user' && typeof body.userId === 'string' && body.userId.length > 0;
+}
+
+/**
+ * Deletes the user's audio through the Storage API first (SQL cannot remove storage files),
+ * then the auth user. Tables that reference auth.users cascade.
+ */
+async function deleteUserEverywhere(admin: SupabaseClient, userId: string): Promise<void> {
+  for (let round = 0; round < 200; round++) {
+    const { data, error } = await admin.storage.from('recordings').list(userId, { limit: 100 });
+    if (error) throw new Error(error.message);
+    const paths = (data ?? []).filter((file) => file.name && file.id !== null).map((file) => `${userId}/${file.name}`);
+    if (!paths.length) break;
+    const removed = await admin.storage.from('recordings').remove(paths);
+    if (removed.error) throw new Error(removed.error.message);
+  }
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) throw new Error(error.message);
+}
+
+/** Expo answers each message with a ticket. Tokens of uninstalled apps are removed so later sends stay small. */
+async function dropDeadTokens(admin: SupabaseClient, tokens: string[], response: Response): Promise<void> {
+  try {
+    const payload = (await response.json()) as { data?: Array<{ status?: string; details?: { error?: string } }> };
+    const dead = (payload.data ?? [])
+      .map((ticket, index) => (ticket?.status === 'error' && ticket.details?.error === 'DeviceNotRegistered' ? tokens[index] : null))
+      .filter((token): token is string => Boolean(token));
+    if (dead.length) await admin.from('user_push_tokens').delete().in('token', dead);
+  } catch (error) {
+    console.warn('[admin-push] receipts', error instanceof Error ? error.message : error);
+  }
 }
 
 async function readAll(
