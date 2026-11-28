@@ -2,42 +2,90 @@
 
 ## App Store
 
-**Name:** Talktray: Notes Vocales
+**Name:** Talktray: Note vocale & tâches
 
-**Subtitle:** Boîte vocale et IA
+**Subtitle:** Rappels et transcription IA
 
-**Keywords:** notevocale,transcription,ia,rappels,taches,dictee,inbox,notes,voix,agenda
+**Keywords:** dictée,todo,liste,agenda,calendrier,courses,enregistreur,mémo,texte,organiseur,idées,planificateur
 
-**Promotional text:** Dis-le une fois. Talktray transforme une pensée parlée en tâches, rappels, événements et notes, dans une seule boîte vocale.
+**Promotional text:** Dites-le une fois. Talktray transforme une note vocale en tâches, rappels, événements, courses et notes. Vérifiez, enregistrez, avancez.
 
 **Description:**
 
-Talktray est une boîte vocale pour les idées que tu ne veux pas taper. Touche le micro et dis une tâche, un rappel, les courses ou une idée à moitié formée. Talktray transcrit et range les morceaux.
+Talktray est la boîte vocale avec IA pour tout ce que vous ne voulez pas taper. Touchez le micro, dites ce qui vous passe par la tête : Talktray transcrit votre note vocale et la transforme en tâches, rappels, événements, courses et notes, le tout à partir d'un seul enregistrement.
 
-Ce que tu peux faire
-• Capturer une note vocale d’un geste
-• Transformer la parole en tâches, rappels, événements, courses et notes
-• Relire la transcription avant d’enregistrer
-• Garder les rappels sur le téléphone
-• Exporter les événements confirmés vers le calendrier
+Dites « Appeler la banque demain à 10 h, acheter du lait et des œufs, dentiste vendredi à 16 h » et vous obtenez une tâche, une liste de courses et un événement à la bonne date et à la bonne heure. Vérifiez tout avant d'enregistrer, corrigez d'un geste et passez à la suite.
 
-Talktray Pro laisse le mois ouvert, avec un plafond d’usage raisonnable et sans pub. La boîte gratuite garde 25 enregistrements par mois.
+COMMENT ÇA MARCHE
+1. Touchez Enregistrer et parlez naturellement.
+2. L'IA transcrit votre voix en texte.
+3. Talktray répartit l'idée en tâches, rappels, événements, courses et notes.
+4. Vérifiez le résultat, modifiez-le si besoin, puis enregistrez.
 
-Pour celles et ceux qui pensent à voix haute, en marchant, en conduisant ou au milieu du café.
+CE QUE VOUS OBTENEZ
+• De la note vocale à la to-do list : dites vos tâches au lieu de les taper
+• Des rappels avec date et heure, programmés sur votre téléphone
+• Des événements à ajouter à votre calendrier après confirmation
+• Des listes de courses tirées directement de ce que vous avez dit
+• Notes et idées rangées dans une seule boîte vocale
+• Vues Aujourd'hui et En retard pour ne rien laisser filer
+• Widget d'écran d'accueil pour enregistrer d'un geste
+• 10 langues dans l'app : français, anglais, turc, espagnol, portugais, allemand, italien, japonais, coréen et indonésien
+• Mode clair et sombre
+
+POUR CEUX QUI PENSENT À VOIX HAUTE
+Étudiants, entrepreneurs, parents, en voiture ou à pied, et tous ceux dont les meilleures idées arrivent pendant le café. Utilisez Talktray comme dictaphone, app de dictée, liste de tâches ou simple app de rappels.
+
+VOTRE VOIX, VOTRE CHOIX
+Talktray n'utilise le micro que pendant l'enregistrement. Il n'enregistre rien en arrière-plan. Rien n'est sauvegardé sans votre confirmation.
+
+GRATUIT ET PRO
+• Gratuit : 25 enregistrements par mois
+• Talktray Pro : 7,99 $ par mois ou 49,99 $ par an, avec une limite d'usage raisonnable et généreuse
+• Aucune publicité, quelle que soit l'offre
+Prix en dollars américains ; le prix local s'affiche dans l'app avant l'achat. L'abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours. Vous pouvez le gérer ou le résilier dans les réglages de votre compte.
+
+Dites-le une fois. Talktray s'occupe du tri.
 
 ## Google Play
 
-**Title:** Talktray: Notes Vocales
+**Title:** Talktray: Note vocale & tâches
 
-**Short description:** Boîte vocale qui transcrit la parole en tâches, rappels et notes.
+**Short description:** Parlez une fois : l'IA transforme votre voix en tâches, rappels et notes
 
 **Full description:**
 
-Talktray est la boîte vocale pour ce que tu ne veux pas écrire. Enregistre une note vocale. Talktray la transcrit, puis sépare une pensée en tâches, rappels, événements, courses et notes.
+Talktray est la boîte vocale avec IA pour tout ce que vous ne voulez pas taper. Touchez le micro, dites ce qui vous passe par la tête : Talktray transcrit votre note vocale et la transforme en tâches, rappels, événements, courses et notes, le tout à partir d'un seul enregistrement.
 
-Parle naturellement. Relis la transcription. Enregistre seulement ce qui est juste. Les rappels restent sur le téléphone, les événements confirmés peuvent aller au calendrier.
+Dites « Appeler la banque demain à 10 h, acheter du lait et des œufs, dentiste vendredi à 16 h » et vous obtenez une tâche, une liste de courses et un événement à la bonne date et à la bonne heure. Vérifiez tout avant d'enregistrer, corrigez d'un geste et passez à la suite.
 
-Talktray Pro ouvre le mois, avec un plafond raisonnable et sans publicité. L’offre gratuite inclut 25 enregistrements par mois.
+COMMENT ÇA MARCHE
+1. Touchez Enregistrer et parlez naturellement.
+2. L'IA transcrit votre voix en texte.
+3. Talktray répartit l'idée en tâches, rappels, événements, courses et notes.
+4. Vérifiez le résultat, modifiez-le si besoin, puis enregistrez.
 
-Si tu cherches des notes vocales, une transcription IA ou une liste de tâches parlée, commence ici.
+CE QUE VOUS OBTENEZ
+• De la note vocale à la to-do list : dites vos tâches au lieu de les taper
+• Des rappels avec date et heure, programmés sur votre téléphone
+• Des événements à ajouter à votre calendrier après confirmation
+• Des listes de courses tirées directement de ce que vous avez dit
+• Notes et idées rangées dans une seule boîte vocale
+• Vues Aujourd'hui et En retard pour ne rien laisser filer
+• Widget d'écran d'accueil pour enregistrer d'un geste
+• 10 langues dans l'app : français, anglais, turc, espagnol, portugais, allemand, italien, japonais, coréen et indonésien
+• Mode clair et sombre
 
+POUR CEUX QUI PENSENT À VOIX HAUTE
+Étudiants, entrepreneurs, parents, en voiture ou à pied, et tous ceux dont les meilleures idées arrivent pendant le café. Utilisez Talktray comme dictaphone, app de dictée, liste de tâches ou simple app de rappels.
+
+VOTRE VOIX, VOTRE CHOIX
+Talktray n'utilise le micro que pendant l'enregistrement. Il n'enregistre rien en arrière-plan. Rien n'est sauvegardé sans votre confirmation.
+
+GRATUIT ET PRO
+• Gratuit : 25 enregistrements par mois
+• Talktray Pro : 7,99 $ par mois ou 49,99 $ par an, avec une limite d'usage raisonnable et généreuse
+• Aucune publicité, quelle que soit l'offre
+Prix en dollars américains ; le prix local s'affiche dans l'app avant l'achat. L'abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours. Vous pouvez le gérer ou le résilier dans les réglages de votre compte.
+
+Dites-le une fois. Talktray s'occupe du tri.
