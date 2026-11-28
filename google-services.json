@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "542717674392",
+    "project_id": "talktray-app",
+    "storage_bucket": "talktray-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:542717674392:android:044342f2f87c8a0e7361ed",
+        "android_client_info": {
+          "package_name": "com.talktray.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBErcdRQ1JWCT5ms9Np7TlqyEq8QM24mE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
