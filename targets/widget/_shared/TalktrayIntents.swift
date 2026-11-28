@@ -20,7 +20,6 @@ struct TalktrayShortcuts: AppShortcutsProvider {
     AppShortcut(
       intent: RecordTalktrayIntent(),
       phrases: [
-        "Talktray ile kaydet",
         "\(.applicationName) ile kaydet",
         "Record a thought with \(.applicationName)",
       ],
