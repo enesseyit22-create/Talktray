@@ -1,6 +1,7 @@
 import AppIntents
 import WidgetKit
 
+@available(iOS 18.0, *)
 struct RecordTalktrayIntent: AppIntent {
   static var title: LocalizedStringResource = "Talktray ile kaydet"
   static var description = IntentDescription("Opens Talktray and starts a voice note.")
@@ -13,6 +14,7 @@ struct RecordTalktrayIntent: AppIntent {
   }
 }
 
+@available(iOS 18.0, *)
 struct TalktrayShortcuts: AppShortcutsProvider {
   static var appShortcuts: [AppShortcut] {
     AppShortcut(
