@@ -124,8 +124,14 @@ Deno.serve(async (req) => {
         if (audio.error || !audio.data) throw new Error('AUDIO_NOT_FOUND');
         const spoken = await transcribe(new Uint8Array(await audio.data.arrayBuffer()));
         // duration_ms is written by the phone. The transcriber's own length is the real one.
+        // Same rule as freeLimitReason: a free account's first recordings are never cut short.
         if (spoken.durationSeconds != null) {
-          const maxSeconds = isPro ? PRO_MAX_SECONDS_PER_RECORDING : (await readFreeLimits(admin)).free_max_seconds_per_recording;
+          let maxSeconds: number | null = PRO_MAX_SECONDS_PER_RECORDING;
+          if (!isPro) {
+            // This recording's credit is already reserved, so it is counted once too many.
+            const earlier = (await countCreditsSince(admin, userId, null)) - 1;
+            maxSeconds = earlier < RECORDINGS_BEFORE_PAYWALL ? null : (await readFreeLimits(admin)).free_max_seconds_per_recording;
+          }
           if (maxSeconds != null && spoken.durationSeconds > maxSeconds + 15) {
             await admin.from('recording_credits').delete().eq('recording_id', recordingId);
             return await refuse(admin, recordingId, recording.storage_path ?? null, 'seconds');
