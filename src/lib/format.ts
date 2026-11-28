@@ -99,3 +99,9 @@ export function formatDuration(ms: number): string {
   const seconds = total % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
+
+/** "0:42" while recording, or "0:42 / 1:00" when the take has a length limit. */
+export function recordingClock(durationMs: number, maxSeconds: number | null): string {
+  const elapsed = formatDuration(durationMs);
+  return maxSeconds ? `${elapsed} / ${formatDuration(maxSeconds * 1000)}` : elapsed;
+}

@@ -17,16 +17,22 @@ Preferred locale: ${locale}
 Resolve relative dates (yarın, bugün, öbür gün, haftaya, gelecek pazartesi, bu akşam, tomorrow, next Friday, in 3 days, this evening) to ISO 8601 datetimes with a numeric offset in this timezone. If only a calendar day is known, set all_day true and use 09:00 local. If no date is mentioned, due_at is null.
 
 Return ONLY JSON with this shape:
-{"items":[{"type":"task"|"reminder"|"event"|"shopping"|"note","title":"string","due_at":"string or null","all_day":false,"list_name":"string or null","notes":"string or null","reminder_offsets":"array of minutes or null"}]}
+{"items":[{"type":"task"|"reminder"|"event"|"shopping"|"note","title":"string","due_at":"string or null","all_day":false,"list_name":"string or null","notes":"string or null","reminder_offsets":"array of minutes or null","repeat":"daily"|"weekdays"|"weekly"|"monthly"|"yearly"|null}]}
 
 Rules:
 - shopping: one object per product. Set list_name to the list the speaker names. If they only mention a generic shop, use Shopping for en, Alışveriş for tr, and the natural word for a shopping list in any other locale.
 - reminder: a ping at a time, such as a call or "hatırlat / remind me".
 - reminder_offsets: minutes before due_at. 0 means at the time. "10 dakika kala" and "remind me 15 minutes before" are [10] and [15]. "1 saat önce ve tam zamanında" is [0, 60]. If the speaker names no lead time, null.
+- repeat: only when the speaker says it repeats ("her gün", "hafta içi her sabah", "her pazartesi", "ayda bir", "every day", "every Monday", "every month"). due_at is then the first upcoming occurrence. Otherwise null.
 - event: appointments, meetings, reservations.
 - task: actionable work. It may have a due date.
 - note: ideas and freeform thoughts.
 - Titles are short and drop filler such as "remind me to".
+- Split every spoken action into its own item: task, reminder, event, shopping product, or note. Do not merge two actions into one title.
+- Keep mixed Turkish and English as spoken. Do not translate either part.
+- When a time is spoken with an action, it is a reminder or an event, not a note.
+- One product per shopping item, even when several are spoken in a single sentence.
+- category is shopping, work, home, health, personal, or other. A shopping item is shopping.
 - Do not invent items that are not in the transcript.`;
   return { system, user: input.transcript };
 }

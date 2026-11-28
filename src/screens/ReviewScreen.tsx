@@ -83,10 +83,14 @@ export function ReviewScreen() {
           <GlassCard key={item.localId} onPress={() => setEditing(item)}>
             <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
               <TypeIcon type={item.type} />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <AppText weight="bold">
-                  {t(`types.${item.type}`)}: {item.title}
-                </AppText>
+              <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors[item.type].icon }} />
+                  <AppText size={12} weight="semibold" color={colors[item.type].icon}>
+                    {t(`types.${item.type}`)}
+                  </AppText>
+                </View>
+                <AppText weight="bold">{item.title}</AppText>
                 {item.dueAt ? (
                   <AppText size={12} color={colors.muted}>
                     {formatDueLabel(

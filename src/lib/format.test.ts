@@ -80,3 +80,11 @@ describe('timeZoneForRequest', () => {
     expect(timeZoneForRequest('America/New_York', 'Europe/Istanbul')).toBe('America/New_York');
   });
 });
+
+describe('recordingClock', () => {
+  it('shows the limit only when there is one', async () => {
+    const { recordingClock } = await import('@/lib/format');
+    expect(recordingClock(42_000, null)).toBe('0:42');
+    expect(recordingClock(42_000, 600)).toBe('0:42 / 10:00');
+  });
+});

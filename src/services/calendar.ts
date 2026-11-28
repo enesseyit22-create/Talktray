@@ -56,3 +56,25 @@ export async function exportItemToDevice(item: InboxItem, timeZone: string): Pro
   });
   return event.id ?? null;
 }
+
+/**
+ * Removes the event or reminder that exportItemToDevice made. Never asks for permission:
+ * if access was taken away there is nothing this app can remove. Missing entries are ignored.
+ */
+export async function removeItemFromDevice(calendarEventId: string | null | undefined): Promise<void> {
+  if (Platform.OS === 'web' || !calendarEventId) return;
+  if (Platform.OS === 'ios') {
+    const reminders = await Calendar.getRemindersPermissions().catch(() => null);
+    if (reminders?.granted) {
+      const reminder = await Calendar.ExpoCalendarReminder.get(calendarEventId).catch(() => null);
+      if (reminder) {
+        await reminder.delete().catch(() => undefined);
+        return;
+      }
+    }
+  }
+  const events = await Calendar.getCalendarPermissions(Platform.OS === 'ios').catch(() => null);
+  if (!events?.granted) return;
+  const event = await Calendar.ExpoCalendarEvent.get(calendarEventId).catch(() => null);
+  if (event) await event.delete().catch(() => undefined);
+}

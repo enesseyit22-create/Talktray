@@ -3,7 +3,7 @@ module.exports = (config) => ({
   type: 'widget',
   name: 'TalktrayWidget',
   displayName: 'Talktray',
-  deploymentTarget: '17.0',
+  deploymentTarget: '18.0',
   bundleIdentifier: '.widget',
   frameworks: ['SwiftUI', 'WidgetKit', 'AppIntents'],
   colors: {

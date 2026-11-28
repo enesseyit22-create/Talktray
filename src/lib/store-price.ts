@@ -22,3 +22,29 @@ export function yearlyPerMonthLabel(product: StorePrice | null | undefined): str
     return null;
   }
 }
+
+export type IntroPrice = {
+  price: number;
+  cycles: number;
+  periodUnit: string;
+  periodNumberOfUnits: number;
+};
+
+const UNIT_DAYS: Record<string, number> = { DAY: 1, WEEK: 7, MONTH: 30, YEAR: 365 };
+
+/** Length of a free trial in days, or null when the intro offer is missing or not free. */
+export function freeTrialDays(intro: IntroPrice | null | undefined): number | null {
+  if (!intro || intro.price !== 0) return null;
+  const unit = UNIT_DAYS[intro.periodUnit?.toUpperCase()];
+  const units = intro.periodNumberOfUnits * Math.max(1, intro.cycles || 1);
+  if (!unit || !Number.isFinite(units) || units <= 0) return null;
+  return unit * units;
+}
+
+/** Whole-percent saving of the yearly plan against twelve monthly payments. Null when not a saving. */
+export function yearlySavingsPercent(monthly: number | null | undefined, yearly: number | null | undefined): number | null {
+  if (!monthly || !yearly || !Number.isFinite(monthly) || !Number.isFinite(yearly)) return null;
+  if (monthly <= 0 || yearly <= 0) return null;
+  const pct = Math.floor((1 - yearly / (monthly * 12)) * 100);
+  return pct >= 5 ? pct : null;
+}

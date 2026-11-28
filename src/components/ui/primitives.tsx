@@ -108,7 +108,7 @@ export function GlassCard({
             }
           : undefined
       }
-      delayLongPress={350}
+      delayLongPress={250}
     >
       {inner}
     </Pressable>
@@ -234,7 +234,7 @@ export function Chip({
         },
       ]}
     >
-      <AppText size={13} weight="semibold" color={active ? colors.onPrimary : colors.text} style={styles.chipLabel}>
+      <AppText numberOfLines={1} size={13} weight="semibold" color={active ? colors.onPrimary : colors.text} style={styles.chipLabel}>
         {label}
       </AppText>
     </Pressable>
@@ -435,8 +435,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    maxWidth: '100%',
-    flexShrink: 1,
+    flexShrink: 0,
   },
   chipLabel: {
     textAlign: 'center',

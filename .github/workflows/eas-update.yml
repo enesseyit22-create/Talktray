@@ -43,6 +43,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # A broken bundle must never reach production phones.
+      - name: Typecheck, lint, test
+        run: |
+          npx tsc --noEmit
+          npx eslint .
+          npx vitest run
+
       - name: Set up EAS
         uses: expo/expo-github-action@v8
         with:

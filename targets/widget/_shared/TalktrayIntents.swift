@@ -1,6 +1,7 @@
 import AppIntents
 import WidgetKit
 
+@available(iOS 18.0, *)
 struct RecordTalktrayIntent: AppIntent {
   static var title: LocalizedStringResource = "Talktray ile kaydet"
   static var description = IntentDescription("Opens Talktray and starts a voice note.")
@@ -8,19 +9,17 @@ struct RecordTalktrayIntent: AppIntent {
 
   @MainActor
   func perform() async throws -> some IntentResult & OpensIntent {
-    guard let url = URL(string: "talktray://record?autostart=1") else {
-      return .result()
-    }
+    let url = URL(string: "talktray://record?autostart=1") ?? URL(fileURLWithPath: "/")
     return .result(opensIntent: OpenURLIntent(url))
   }
 }
 
+@available(iOS 18.0, *)
 struct TalktrayShortcuts: AppShortcutsProvider {
   static var appShortcuts: [AppShortcut] {
     AppShortcut(
       intent: RecordTalktrayIntent(),
       phrases: [
-        "Talktray ile kaydet",
         "\(.applicationName) ile kaydet",
         "Record a thought with \(.applicationName)",
       ],

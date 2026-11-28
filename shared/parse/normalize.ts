@@ -1,4 +1,5 @@
 import { resolveRelativeDate } from './dates';
+import { asRepeat } from './repeat';
 import { parseReminderOffsets } from './reminders';
 import { ITEM_TYPES, type ExtractContext, type ItemType, type ParsedItem } from './types';
 
@@ -75,6 +76,7 @@ export function normalizeExtraction(payload: unknown, ctx: ExtractContext): Pars
       allDay: dueAt ? allDay : false,
       listName: stringOrNull(record.list_name ?? record.listName),
       reminderOffsets: readOffsets(record, `${title} ${notes ?? ''}`),
+      repeat: dueAt ? asRepeat(record.repeat) : null,
     });
   }
   return out;

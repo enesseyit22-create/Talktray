@@ -1,14 +1,18 @@
+import { router } from 'expo-router';
+import { Lock, Trash2 } from 'lucide-react-native';
 import { type ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { OverdueBadge, overdueCaption } from '@/components/ItemCard';
 import { WhenField } from '@/components/WhenField';
 import { AppText, Chip, Field, PrimaryButton, Sheet } from '@/components/ui/primitives';
+import { useApp } from '@/data/AppProvider';
 import { useI18n } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
 import { isOverdue, pastDuePhrase } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { resolveRelativeDate } from '../../shared/parse/dates';
+import { REPEATS, type Repeat } from '../../shared/parse/repeat';
 import type { ItemType } from '../../shared/parse/types';
 
 const TYPES: ItemType[] = ['task', 'reminder', 'event', 'shopping', 'note'];
@@ -28,7 +32,9 @@ export type EditableItem = {
   dueAt: string | null;
   allDay: boolean;
   listName: string | null;
+  category?: 'shopping' | 'work' | 'home' | 'health' | 'personal' | 'other' | null;
   reminderOffsets: number[] | null;
+  repeat?: Repeat | null;
   completedAt?: string | null;
 };
 
@@ -51,13 +57,14 @@ export function EditSheet({
 }) {
   const { t, locale } = useI18n();
   const { colors } = useTheme();
+  const { usage } = useApp();
   const now = useNow();
   if (!item) return null;
   const overdue = isOverdue(item, now, timeZone);
   const pastLabel = overdue && item.dueAt ? overdueCaption(t, pastDuePhrase(item.dueAt, now, timeZone, locale, item.allDay)) : '';
   const apply = (phrase: string | null) => {
     if (!phrase) {
-      onChange({ dueAt: null, allDay: false });
+      onChange({ dueAt: null, allDay: false, repeat: null });
       return;
     }
     const resolved = resolveRelativeDate(phrase, { now: new Date(), timeZone });
@@ -66,9 +73,21 @@ export function EditSheet({
   };
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <AppText size={20} weight="extrabold">
-        {t('edit.title')}
-      </AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <AppText size={20} weight="extrabold" style={{ flex: 1 }}>
+          {t('edit.title')}
+        </AppText>
+        {onDelete ? (
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={onDelete}
+            style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Trash2 color={colors.danger} size={20} />
+          </Pressable>
+        ) : null}
+      </View>
       {overdue ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <OverdueBadge />
@@ -103,9 +122,11 @@ export function EditSheet({
           autoCapitalize="words"
         />
       ) : null}
-      <AppText size={13} weight="semibold">
-        {t('remind.title')}
-      </AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {(['shopping', 'work', 'home', 'health', 'personal', 'other'] as const).map((key) => (
+          <Chip key={key} label={t(`categories.${key}`)} active={item.category === key} onPress={() => onChange({ category: key })} />
+        ))}
+      </View>
       <ScrollView
         horizontal
         nestedScrollEnabled
@@ -150,6 +171,34 @@ export function EditSheet({
         timeZone={timeZone}
         onChange={(patch) => onChange(patch)}
       />
+      {item.dueAt && item.type !== 'note' && item.type !== 'shopping' ? (
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <AppText size={13} weight="semibold">
+              {t('repeat.title')}
+            </AppText>
+            {!usage.isPro ? <Lock color={colors.primary} size={13} /> : null}
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Chip label={t('repeat.none')} active={!item.repeat} onPress={() => onChange({ repeat: null })} />
+            {REPEATS.map((repeat) => (
+              <Chip
+                key={repeat}
+                label={t(`repeat.${repeat}`)}
+                active={item.repeat === repeat}
+                onPress={() => {
+                  if (!usage.isPro) {
+                    onClose();
+                    router.push('/paywall');
+                    return;
+                  }
+                  onChange({ repeat });
+                }}
+              />
+            ))}
+          </View>
+        </>
+      ) : null}
       <PrimaryButton label={t('save')} onPress={onClose} />
       {onDelete ? <PrimaryButton label={t('delete')} tone="glass" onPress={onDelete} /> : null}
     </Sheet>

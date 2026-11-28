@@ -3,26 +3,46 @@ import { flushSync } from 'react-dom';
 import { getCalendars } from 'expo-localization';
 import { AppState } from 'react-native';
 
-import { buildSeed } from '@/data/seed';
+import { buildPreviewDraft, buildSeed } from '@/data/seed';
+import { SEED_COPY } from '@/data/seed-copy';
 import { loadDemo, loadPrefs, saveDemo, savePrefs, type DemoState } from '@/data/storage';
 import type { Draft, DraftItem, InboxItem, Profile, Recording, SessionUser, Usage } from '@/domain/types';
-import { asLocale, deviceLocale, translate, useI18n, type Locale } from '@/i18n';
+import { asLocale, deviceLocale, resolveLocalePreference, translate, useI18n, type Locale } from '@/i18n';
 import { isSupabaseConfigured } from '@/lib/config';
-import { processErrorKey } from '@/lib/errors';
-import { loadFreeLimits, zonedDayStart, zonedMonthStart, type FreeLimits } from '@/lib/free-limits';
+import { processErrorKey, RecordingKeptError } from '@/lib/errors';
+import { ACCESS_REFRESH_MS, subscribeAccessChanges } from '@/lib/access-sync';
+import { loadFreeLimits, readFreeLimits, zonedDayStart, zonedMonthStart, type FreeLimits } from '@/lib/free-limits';
 import { timeZoneForRequest } from '@/lib/format';
+import { fetchAllPages } from '@/lib/fetch-all';
 import { createId } from '@/lib/id';
+import { isRetryableProcessCode, retryAsync } from '@/lib/retry';
+import { overrideIsActive } from '@/lib/pro-grant';
+import { readOwnProOverride } from '@/lib/pro-override';
+import { mergeUsageState, nextGiftUntil, nextPlanLimit } from '@/lib/pro-usage';
 import { supabase } from '@/lib/supabase';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
-import { exportItemToDevice } from '@/services/calendar';
-import { ensureReminderChannel, requestReminderPermission, syncItemNotifications } from '@/services/notifications';
+import { removeAllAudio, removeAudio } from '@/services/audio-storage';
+import { exportItemToDevice, removeItemFromDevice } from '@/services/calendar';
+import { persistRemoteProfile } from '@/data/save-profile';
+import { registerAdminPushToken, registerUserPushToken } from '@/services/admin-push';
+import { markRatingAsked, noteSavedRecording, rememberFirstOpen } from '@/services/rating-store';
+import { cleanLongText } from '../../shared/parse/long-text';
+import { parseVoiceCommands, type VoiceAction } from '../../shared/parse/commands';
+import { inferCategory } from '../../shared/parse/category';
+import { touchPresence } from '@/services/presence';
+import { cancelRemindersForItem, ensureReminderChannel, promptExactAlarmOnce, requestReminderPermission, syncItemNotifications, syncWeeklyDigest } from '@/services/notifications';
+import { mergeReminderSources, type ReminderSource } from '@/services/reminder-schedule';
+import { loadSharedReminderSources, onSharedRemindersChanged } from '@/services/shared-reminders';
 import {
   configurePurchases,
   loadStoreOffers,
   logOutPurchases,
+  onProChange,
   purchaseOffer,
+  readStorePro,
   restorePurchases,
 } from '@/services/purchases';
+import type { PurchaseResult, RestoreResult } from '@/services/billing-shared';
 import { syncWidgets } from '@/services/widget-sync';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
@@ -35,6 +55,8 @@ import {
   safeTimeZone,
   deviceTimeZone,
   isSameZonedDay,
+  asRepeat,
+  nextOccurrence,
 } from '../../shared/parse';
 
 type AppValue = {
@@ -47,7 +69,11 @@ type AppValue = {
   items: InboxItem[];
   recordings: Recording[];
   usage: Usage;
+  /** Active admin gift. Null when there is no gift. A failed read keeps the previous value. */
+  giftUntil: string | null;
   draft: Draft | null;
+  voiceActions: VoiceAction[] | null;
+  clearVoiceActions: () => void;
   banner: string | null;
   finishOnboarding: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -61,23 +87,36 @@ type AppValue = {
   deleteRecording: (id: string) => Promise<void>;
   deleteItems: (ids: string[]) => Promise<void>;
   updateProfile: (patch: Partial<Profile>) => Promise<void>;
-  processThought: (input: { audioUri?: string | null; durationMs: number; transcript?: string }) => Promise<'review' | 'quota'>;
+  processThought: (input: {
+    audioUri?: string | null;
+    durationMs: number;
+    transcript?: string;
+    recordingId?: string | null;
+  }) => Promise<'review' | 'quota' | 'commands'>;
   updateDraftItem: (localId: string, patch: Partial<DraftItem>) => void;
   removeDraftItem: (localId: string) => void;
   addDraftItem: () => void;
   setDraftTranscript: (text: string) => void;
   reparseDraft: () => void;
   saveDraft: (exportCalendar: boolean) => Promise<void>;
+  captureLongText: (input: {
+    audioUri?: string | null;
+    durationMs: number;
+    transcript?: string;
+  }) => Promise<{ text: string; recordingId: string | null } | 'quota'>;
+  saveLongDocument: (input: { title: string; body: string; recordingId?: string | null }) => Promise<'saved' | 'quota'>;
+  askRating: boolean;
+  dismissRating: () => void;
   discardDraft: () => void;
   toggleComplete: (id: string) => Promise<void>;
   updateItem: (id: string, patch: Partial<InboxItem>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   clearSamples: () => Promise<void>;
   simulatePro: () => Promise<void>;
-  purchase: (plan: 'monthly' | 'yearly') => Promise<'pro' | 'cancelled' | 'unavailable'>;
-  restore: () => Promise<boolean>;
+  purchase: (plan: 'monthly' | 'yearly') => Promise<PurchaseResult>;
+  restore: () => Promise<RestoreResult>;
   clearBanner: () => void;
-  openSample: (locale: Locale) => Promise<'review' | 'quota'>;
+  openSample: (locale: Locale) => Promise<'review' | 'quota' | 'commands'>;
 };
 
 const AppContext = createContext<AppValue | null>(null);
@@ -88,6 +127,7 @@ function defaultProfile(locale: Locale, timeZone: string): Profile {
     username: null,
     timezone: timeZone,
     locale,
+    localePreference: 'system',
     theme: 'system',
     exportToCalendar: false,
     notificationsEnabled: true,
@@ -105,6 +145,8 @@ function authProvider(user: {
 function sampleTranscript(locale: string): string {
   return locale === 'tr' ? SAMPLE_TRANSCRIPTS.tr : SAMPLE_TRANSCRIPTS.en;
 }
+
+const NO_SHARED_REMINDERS: ReminderSource[] = [];
 
 function phoneTimeZone() {
   return safeTimeZone(getCalendars()[0]?.timeZone ?? deviceTimeZone());
@@ -127,7 +169,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isPro: false,
   });
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [voiceActions, setVoiceActions] = useState<VoiceAction[] | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [askRating, setAskRating] = useState(false);
+  const [giftUntil, setGiftUntil] = useState<string | null>(null);
+  const [sharedReminders, setSharedReminders] = useState<{ userId: string; items: ReminderSource[] }>({
+    userId: '',
+    items: [],
+  });
+  const storePro = useRef(false);
+  const giftUntilRef = useRef<string | null>(null);
+  const giftUserRef = useRef<string | null>(null);
 
   const applyProfile = useCallback(
     (next: Profile) => {
@@ -154,16 +206,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }) => {
       const userId = sessionUser.id;
       const email = sessionUser.email ?? '';
+      const prefs = await loadPrefs();
+      const localePreference = prefs.localePreference;
       const [{ data: profileRow }, { data: itemRows }, { data: recordingRows }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-        supabase.from('items').select('*').order('created_at', { ascending: false }),
-        supabase.from('recordings').select('*').order('created_at', { ascending: false }),
+        fetchAllPages((from, to) =>
+          supabase.from('items').select('*').order('created_at', { ascending: false }).order('id').range(from, to),
+        ),
+        fetchAllPages((from, to) =>
+          supabase.from('recordings').select('*').order('created_at', { ascending: false }).order('id').range(from, to),
+        ),
       ]);
+      if (typeof profileRow?.blocked_at === 'string' && profileRow.blocked_at) {
+        await supabase.auth.signOut();
+        setBanner(translate(deviceLocale(), 'errors.blocked'));
+        return;
+      }
       const nextProfile: Profile = {
         displayName: profileRow?.display_name || email.split('@')[0] || 'TalkTray',
         username: typeof profileRow?.username === 'string' ? profileRow.username : null,
         timezone: timeZoneForRequest(safeTimeZone(profileRow?.timezone || phoneTimeZone()), phoneTimeZone()),
-        locale: asLocale(profileRow?.locale),
+        locale: resolveLocalePreference(localePreference, deviceLocale()),
+        localePreference,
         theme: profileRow?.theme === 'light' || profileRow?.theme === 'dark' ? profileRow.theme : 'system',
         exportToCalendar: Boolean(profileRow?.export_to_calendar),
         notificationsEnabled: profileRow?.notifications_enabled !== false,
@@ -176,22 +240,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
       applyProfile(nextProfile);
       await configurePurchases(userId);
       const store = await loadStoreOffers().catch(() => null);
-      const isPro = store?.isPro ?? false;
+      const storeIsPro = store?.isPro ?? false;
+      storePro.current = storeIsPro;
+      const previousGift = giftUserRef.current === userId ? giftUntilRef.current : null;
+      giftUserRef.current = userId;
+      const grant = await readOwnProOverride(userId);
+      if (giftUserRef.current !== userId) return;
+      const until = nextGiftUntil(previousGift, grant);
+      giftUntilRef.current = until;
       const limits = await loadFreeLimits().catch(() => null);
       const period = monthPeriod(new Date(), nextProfile.timezone);
-      const count = (recordingRows ?? []).filter((row) => {
-        if (row.status === 'failed') return false;
-        return monthPeriod(new Date(String(row.created_at)), nextProfile.timezone) === period;
-      }).length;
+      const count =
+        (await countMonthCredits(nextProfile.timezone)) ??
+        (recordingRows ?? []).filter((row) => {
+          if (row.status === 'failed') return false;
+          return monthPeriod(new Date(String(row.created_at)), nextProfile.timezone) === period;
+        }).length;
       flushSync(() => {
         setUser({ id: userId, email, provider: authProvider(sessionUser) });
         setItems((itemRows ?? []).map(mapItem));
         setRecordings((recordingRows ?? []).map(mapRecording));
+        setGiftUntil(until);
         setUsage({
           period,
           count,
-          limit: isPro ? recordingLimit(true) : freeMonthLimit(limits),
-          isPro,
+          limit: storeIsPro || overrideIsActive(until) ? recordingLimit(true) : freeMonthLimit(limits),
+          isPro: storeIsPro || overrideIsActive(until),
         });
         setAppMode('supabase');
       });
@@ -205,18 +279,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const prefs = await loadPrefs();
       if (!active) return;
       setOnboardingDone(prefs.onboardingDone);
-      const savedLocale = asLocale(prefs.locale);
-      setLocale(savedLocale);
+      const locale = resolveLocalePreference(prefs.localePreference, deviceLocale());
+      setLocale(locale);
       setMode(prefs.theme);
       const preview = process.env.EXPO_PUBLIC_PREVIEW === '1';
-      const locale = asLocale(process.env.EXPO_PUBLIC_PREVIEW_LOCALE || savedLocale || deviceLocale());
+      const previewLocale = asLocale(process.env.EXPO_PUBLIC_PREVIEW_LOCALE || locale);
       if (preview) {
-        const name = process.env.EXPO_PUBLIC_PREVIEW_NAME || 'Enes';
+        const name = process.env.EXPO_PUBLIC_PREVIEW_NAME || SEED_COPY[previewLocale]?.name || 'TalkTray';
         const timeZone = phoneTimeZone();
-        const seeded = buildSeed(new Date(), timeZone, locale === 'tr' ? 'tr' : 'en');
-        const nextProfile = { ...defaultProfile(locale, timeZone), displayName: name };
+        const seeded = buildSeed(new Date(), timeZone, previewLocale);
+        const nextProfile = {
+          ...defaultProfile(previewLocale, timeZone),
+          displayName: name,
+          localePreference: prefs.localePreference,
+        };
         applyProfile(nextProfile);
-        setUser({ id: 'preview', email: 'enes@talktray.app' });
+        setUser({ id: 'preview', email: 'preview@example.com' });
         setItems(seeded.items);
         setRecordings(seeded.recordings);
         setUsage({
@@ -243,13 +321,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
               provider: authProvider(data.session.user),
             });
             setAppMode('supabase');
-            setBanner(translate(savedLocale, 'errors.network'));
+            setBanner(translate(locale, 'errors.network'));
           }
         }
       } else {
         const demo = await loadDemo();
         if (demo) {
-          applyProfile(demo.profile);
+          applyProfile({
+            ...demo.profile,
+            localePreference: prefs.localePreference,
+            locale: resolveLocalePreference(prefs.localePreference, deviceLocale()),
+          });
           setUser(demo.user);
           setItems(demo.items);
           setRecordings(demo.recordings);
@@ -277,6 +359,96 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [applyProfile, loadRemote, setLocale, setMode]);
 
   useEffect(() => {
+    if (mode !== 'supabase' || !user) return;
+    void registerAdminPushToken();
+    void registerUserPushToken(profile.locale);
+  }, [mode, profile.locale, user]);
+
+  useEffect(() => {
+    if (mode !== 'supabase' || !user) return;
+    const userId = user.id;
+    let stopped = false;
+    let accessTimer: ReturnType<typeof setInterval> | undefined;
+    let presenceTimer: ReturnType<typeof setInterval> | undefined;
+
+    const refreshAccess = () => {
+      void (async () => {
+        const [grant, limits] = await Promise.all([
+          readOwnProOverride(userId),
+          readFreeLimits().catch(() => null),
+        ]);
+        if (stopped || giftUserRef.current !== userId) return;
+        const until = nextGiftUntil(giftUntilRef.current, grant);
+        if (giftUntilRef.current !== until) {
+          giftUntilRef.current = until;
+          setGiftUntil(until);
+        }
+        if (grant.status === 'unknown' && !limits) return;
+        setUsage((current) => {
+          const isPro = storePro.current || overrideIsActive(until);
+          const limit = nextPlanLimit({
+            isPro,
+            wasPro: current.isPro,
+            currentLimit: current.limit,
+            freeMonthLimit: limits ? limits.free_recordings_per_month : undefined,
+          });
+          if (current.isPro === isPro && current.limit === limit) return current;
+          return { ...current, isPro, limit };
+        });
+      })();
+    };
+
+    const beatPresence = () => {
+      void (async () => {
+        const store = await readStorePro();
+        if (stopped || giftUserRef.current !== userId) return;
+        if (typeof store === 'boolean') storePro.current = store;
+        void touchPresence(storePro.current);
+        refreshAccess();
+      })();
+    };
+
+    const start = () => {
+      if (accessTimer) return;
+      beatPresence();
+      accessTimer = setInterval(refreshAccess, ACCESS_REFRESH_MS);
+      presenceTimer = setInterval(beatPresence, 120_000);
+    };
+    const stop = () => {
+      if (accessTimer) clearInterval(accessTimer);
+      if (presenceTimer) clearInterval(presenceTimer);
+      accessTimer = undefined;
+      presenceTimer = undefined;
+    };
+    if (AppState.currentState === 'active') start();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') start();
+      else stop();
+    });
+    const unsubscribe = subscribeAccessChanges(userId, refreshAccess);
+    return () => {
+      stopped = true;
+      stop();
+      sub.remove();
+      unsubscribe();
+    };
+  }, [mode, user]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      setProfile((current) => {
+        if (current.localePreference !== 'system') return current;
+        const next = deviceLocale();
+        if (next === current.locale) return current;
+        setLocale(next);
+        return { ...current, locale: next };
+      });
+    });
+    return () => sub.remove();
+  }, [setLocale]);
+
+  useEffect(() => {
     if (!user) return;
     const now = new Date();
     const todayCount = recordings.filter((recording) =>
@@ -286,21 +458,100 @@ export function AppProvider({ children }: { children: ReactNode }) {
     syncWidgets({ todayCount, openTasks });
   }, [items, recordings, user, profile.timezone]);
 
+  // Renewals, expiries, and purchases made elsewhere update the plan without a restart.
+  useEffect(() => {
+    if (mode !== 'supabase') return;
+    return onProChange((isPro) => {
+      setUsage((current) =>
+        current.isPro === isPro ? current : { ...current, isPro, limit: isPro ? recordingLimit(true) : current.limit },
+      );
+    });
+  }, [mode]);
+
   useEffect(() => {
     void ensureReminderChannel(profile.locale);
   }, [profile.locale]);
 
   useEffect(() => {
-    if (!user) return;
-    const run = () => {
-      void syncItemNotifications(profile.notificationsEnabled ? items : [], profile.locale, profile.reminderOffsets);
+    void rememberFirstOpen();
+  }, []);
+
+  useEffect(() => {
+    if (mode !== 'supabase' || !user) return;
+    const days = usage.isPro ? 30 : 7;
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    let alive = true;
+    void supabase
+      .from('items')
+      .delete()
+      .not('completed_at', 'is', null)
+      .lt('completed_at', cutoff)
+      .then(({ error }) => {
+        if (!alive || error) return;
+        setItems((current) => current.filter((item) => !item.completedAt || item.completedAt >= cutoff));
+      });
+    return () => {
+      alive = false;
     };
-    run();
+  }, [mode, usage.isPro, user]);
+
+  const familyReminders = sharedReminders.userId === user?.id ? sharedReminders.items : NO_SHARED_REMINDERS;
+
+  useEffect(() => {
+    if (!user || mode !== 'supabase') return;
+    const userId = user.id;
+    let alive = true;
+    const load = () => {
+      void loadSharedReminderSources().then((next) => {
+        if (alive) setSharedReminders({ userId, items: next });
+      });
+    };
+    load();
+    const stop = onSharedRemindersChanged(load);
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') load();
+    });
+    return () => {
+      alive = false;
+      stop();
+      sub.remove();
+    };
+  }, [user, mode]);
+
+  useEffect(() => {
+    if (!user) return;
+    let followed = phoneTimeZone();
+    const run = () => {
+      const device = phoneTimeZone();
+      if (device !== followed) {
+        const previous = followed;
+        followed = device;
+        setProfile((current) => {
+          if (current.timezone !== previous && current.timezone !== 'UTC') return current;
+          if (current.timezone === device) return current;
+          if (mode === 'supabase') {
+            void supabase.from('profiles').update({ timezone: device }).eq('id', user.id);
+          }
+          return { ...current, timezone: device };
+        });
+      }
+      void syncItemNotifications(
+        profile.notificationsEnabled ? mergeReminderSources(items, familyReminders) : [],
+        profile.locale,
+        profile.reminderOffsets,
+      );
+      void syncWeeklyDigest(items, profile.locale, profile.timezone, profile.notificationsEnabled);
+    };
+    // Typing in an item changes it on every key. Reschedule once the edits settle.
+    const timer = setTimeout(run, 800);
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') run();
     });
-    return () => sub.remove();
-  }, [user, items, profile.notificationsEnabled, profile.locale, profile.reminderOffsets]);
+    return () => {
+      clearTimeout(timer);
+      sub.remove();
+    };
+  }, [user, items, familyReminders, mode, profile.notificationsEnabled, profile.locale, profile.reminderOffsets, profile.timezone]);
 
   const snapshotDemo = useCallback(
     async (overrides: Partial<DemoState> = {}) => {
@@ -322,6 +573,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const actions = useRef<Pick<AppValue, 'enterDemo' | 'updateProfile' | 'processThought'> | null>(null);
 
+  // Item edits are saved to the server after typing pauses, one write per item, newest state wins.
+  const pendingWrites = useRef(new Map<string, InboxItem>());
+  const writeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localeRef = useRef(profile.locale);
+  useEffect(() => {
+    localeRef.current = profile.locale;
+  }, [profile.locale]);
+
+  const flushWrites = useCallback(async () => {
+    if (writeTimer.current) clearTimeout(writeTimer.current);
+    writeTimer.current = null;
+    const batch = [...pendingWrites.current.values()];
+    pendingWrites.current.clear();
+    for (const updated of batch) {
+      const { error } = await supabase
+        .from('items')
+        .update({
+          type: updated.type,
+          title: updated.title,
+          notes: updated.notes,
+          due_at: updated.dueAt,
+          all_day: updated.allDay,
+          list_name: updated.listName,
+          category: updated.category ?? null,
+          reminder_offsets: updated.reminderOffsets,
+          repeat: updated.dueAt ? updated.repeat ?? null : null,
+          notification_id: updated.notificationId,
+        })
+        .eq('id', updated.id);
+      if (error) setBanner(translate(localeRef.current, 'errors.saveFailed'));
+    }
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') void flushWrites();
+    });
+    return () => {
+      sub.remove();
+      void flushWrites();
+    };
+  }, [flushWrites]);
+
   const value = useMemo<AppValue>(() => {
     const refreshUsage = (count: number, isPro: boolean, period = usage.period, limit = recordingLimit(isPro)) => {
       setUsage({ period, count, limit, isPro });
@@ -337,24 +631,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
       items,
       recordings,
       usage,
+      giftUntil,
       draft,
+      voiceActions,
+      clearVoiceActions: () => setVoiceActions(null),
       banner,
+      askRating,
+      dismissRating: () => {
+        setAskRating(false);
+        void markRatingAsked();
+      },
       clearBanner: () => setBanner(null),
       finishOnboarding: async () => {
         setOnboardingDone(true);
         const prefs = await loadPrefs();
-        await savePrefs({ ...prefs, onboardingDone: true, locale: profile.locale, theme: profile.theme });
+        await savePrefs({
+          ...prefs,
+          onboardingDone: true,
+          locale: profile.locale,
+          localePreference: profile.localePreference,
+          theme: profile.theme,
+        });
       },
       updateProfile: async (patch) => {
         const next = { ...profile, ...patch };
-        applyProfile(next);
+        if (next.localePreference === 'system') next.locale = deviceLocale();
         const prefs = await loadPrefs();
-        await savePrefs({
-          ...prefs,
-          onboardingDone,
-          locale: next.locale,
-          theme: next.theme,
-        });
+        const writePrefs = () =>
+          savePrefs({
+            ...prefs,
+            onboardingDone,
+            locale: next.locale,
+            localePreference: next.localePreference,
+            theme: next.theme,
+          });
+        if (mode === 'supabase' && user) {
+          const saved = await persistRemoteProfile(user.id, next);
+          const confirmed = { ...next, displayName: saved.displayName, username: saved.username };
+          await writePrefs();
+          applyProfile(confirmed);
+          if (patch.notificationsEnabled === true) void promptExactAlarmOnce();
+          return;
+        }
+        await writePrefs();
+        applyProfile(next);
+        if (patch.notificationsEnabled === true) void promptExactAlarmOnce();
         if (mode === 'demo' && user) {
           await persistDemo({
             user,
@@ -366,25 +687,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             isPro: usage.isPro,
           });
         }
-        if (mode === 'supabase' && user) {
-          const { error } = await supabase
-            .from('profiles')
-            .update({
-              display_name: next.displayName,
-              username: next.username,
-              timezone: next.timezone,
-              locale: next.locale,
-              theme: next.theme,
-              export_to_calendar: next.exportToCalendar,
-              notifications_enabled: next.notificationsEnabled,
-              reminder_offsets: next.reminderOffsets,
-            })
-            .eq('id', user.id);
-          if (error) {
-            applyProfile(profile);
-            throw error;
-          }
-        }
       },
       enterDemo: async (name, email) => {
         const timeZone = phoneTimeZone();
@@ -393,13 +695,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const seeded = existing ?? null;
         const nextProfile: Profile = {
           ...(seeded?.profile ?? defaultProfile(locale, timeZone)),
-          displayName: name.trim() || seeded?.profile.displayName || 'Enes',
+          displayName: name.trim() || seeded?.profile.displayName || 'TalkTray',
           timezone: timeZone,
           locale,
+          localePreference: profile.localePreference,
           reminderOffsets: seeded?.profile.reminderOffsets?.length ? seeded.profile.reminderOffsets : [0],
         };
         const nextUser = seeded?.user ?? { id: createId(), email: email?.trim() || 'demo@talktray.app' };
-        const seed = seeded ? null : buildSeed(new Date(), timeZone, locale === 'tr' ? 'tr' : 'en');
+        const seed = seeded ? null : buildSeed(new Date(), timeZone, locale);
         const nextItems = seeded?.items ?? seed?.items ?? [];
         const nextRecordings = seeded?.recordings ?? seed?.recordings ?? [];
         const period = monthPeriod(new Date(), timeZone);
@@ -425,7 +728,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       signIn: async (email, password) => {
         if (!isSupabaseConfigured) {
-          await actions.current?.enterDemo(email.split('@')[0] || 'Enes', email);
+          await actions.current?.enterDemo(email.split('@')[0] || 'TalkTray', email);
           return;
         }
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -446,7 +749,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
           return 'confirm';
         }
-        await actions.current?.enterDemo(name || email.split('@')[0] || 'Enes', email);
+        await actions.current?.enterDemo(name || email.split('@')[0] || 'TalkTray', email);
         return 'session';
       },
       signInApple: async () => {
@@ -461,6 +764,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         if (mode === 'supabase') await supabase.auth.signOut();
         await logOutPurchases();
+        storePro.current = false;
+        giftUntilRef.current = null;
+        giftUserRef.current = null;
+        setGiftUntil(null);
         setUser(null);
         setItems([]);
         setRecordings([]);
@@ -470,12 +777,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       deleteAccount: async () => {
         if (mode === 'supabase') {
+          // Audio first, through the Storage API. The database function only removes the account rows.
+          if (user) await removeAllAudio(user.id);
           const { error } = await supabase.rpc('delete_own_account');
           if (error) throw error;
           await supabase.auth.signOut();
         }
+        await purgeFromDevice(items);
         await logOutPurchases();
         await saveDemo(null);
+        storePro.current = false;
+        giftUntilRef.current = null;
+        giftUserRef.current = null;
+        setGiftUntil(null);
         setUser(null);
         setItems([]);
         setRecordings([]);
@@ -485,41 +799,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshUsage(0, false, monthPeriod(new Date(), profile.timezone));
       },
       deleteAllRecordings: async () => {
+        // Everything that came from a recording goes with it: items, reminders, calendar entries.
+        const linked = items.filter((item) => item.recordingId);
+        const linkedIds = new Set(linked.map((item) => item.id));
+        const nextItems = items.filter((item) => !linkedIds.has(item.id));
         if (mode === 'supabase' && user) {
-          await supabase.storage.from('recordings').list(user.id).then(async ({ data }) => {
-            const paths = (data ?? []).map((file) => `${user.id}/${file.name}`);
-            if (paths.length) await supabase.storage.from('recordings').remove(paths);
-          });
+          const removedItems = await supabase.from('items').delete().eq('user_id', user.id).not('recording_id', 'is', null);
+          if (removedItems.error) throw removedItems.error;
+          await removeAllAudio(user.id);
           const { error } = await supabase.from('recordings').delete().eq('user_id', user.id);
-          if (error) throw error;
+          if (error) {
+            setItems(nextItems);
+            throw error;
+          }
         }
+        setItems(nextItems);
         setRecordings([]);
+        await purgeFromDevice(linked);
         if (mode === 'demo' && user) {
           await persistDemo({
             user,
             profile,
-            items,
+            items: nextItems,
             recordings: [],
             usageCount: 0,
             usagePeriod: usage.period,
             isPro: usage.isPro,
           });
         }
-        refreshUsage(0, usage.isPro);
+        // Used recordings stay used. Only the on-device demo resets.
+        if (mode !== 'supabase') refreshUsage(0, usage.isPro);
       },
       deleteRecording: async (id) => {
+        const linked = items.filter((item) => item.recordingId === id);
         const nextRecordings = recordings.filter((recording) => recording.id !== id);
-        const nextItems = items.map((item) => (item.recordingId === id ? { ...item, recordingId: null } : item));
+        const nextItems = items.filter((item) => item.recordingId !== id);
         setRecordings(nextRecordings);
         setItems(nextItems);
         const counts = countCompleted(nextRecordings, profile.timezone);
-        refreshUsage(counts.month, usage.isPro);
+        if (mode !== 'supabase') refreshUsage(counts.month, usage.isPro);
         if (mode === 'supabase' && user) {
           const { data } = await supabase.from('recordings').select('storage_path').eq('id', id).maybeSingle();
           const path = (data?.storage_path as string | null) || `${user.id}/${id}.m4a`;
-          await supabase.storage.from('recordings').remove([path]).catch(() => undefined);
+          // Items first: the foreign key would otherwise only unlink them.
+          const removedItems = await supabase.from('items').delete().eq('recording_id', id);
+          if (removedItems.error) {
+            setRecordings(recordings);
+            setItems(items);
+            throw removedItems.error;
+          }
+          await removeAudio(path).catch(() => undefined);
           const { error } = await supabase.from('recordings').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            setRecordings(recordings);
+            throw error;
+          }
         } else if (user) {
           await persistDemo({
             user,
@@ -531,18 +865,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
             isPro: usage.isPro,
           });
         }
+        await purgeFromDevice(linked);
       },
       deleteItems: async (ids) => {
         if (!ids.length) return;
         const idSet = new Set(ids);
         const nextItems = items.filter((item) => !idSet.has(item.id));
         setItems(nextItems);
+        await Promise.all(ids.map((itemId) => cancelRemindersForItem(itemId)));
         if (mode === 'supabase') {
           const { error } = await supabase.from('items').delete().in('id', ids);
-          if (error) throw error;
+          if (error) {
+            setItems(items);
+            throw error;
+          }
         } else if (user) {
           await snapshotDemo({ items: nextItems });
         }
+        await purgeFromDevice(items.filter((item) => idSet.has(item.id)));
       },
       processThought: async (input) => {
         if (mode !== 'supabase' || !user) {
@@ -577,6 +917,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             language: profile.locale,
             durationMs: input.durationMs,
             status: 'ready',
+            storagePath: null,
             createdAt: now,
           };
           const nextRecordings = [recording, ...recordings];
@@ -606,60 +947,129 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return 'review';
         }
 
-        const recordingId = createId();
+        let recordingId = input.recordingId || createId();
         let storagePath: string | null = null;
-        if (input.audioUri) {
+        let reused = false;
+        if (input.recordingId) {
+          const existing = await supabase
+            .from('recordings')
+            .select('id, storage_path')
+            .eq('id', input.recordingId)
+            .maybeSingle();
+          if (existing.data?.storage_path) {
+            storagePath = existing.data.storage_path;
+            reused = true;
+            await supabase
+              .from('recordings')
+              .update({ status: 'processing', duration_ms: input.durationMs })
+              .eq('id', recordingId);
+          } else {
+            recordingId = createId();
+          }
+        }
+        if (!reused && input.audioUri) {
           const response = await fetch(input.audioUri);
           const bytes = await response.arrayBuffer();
           storagePath = `${user.id}/${recordingId}.m4a`;
-          const upload = await supabase.storage.from('recordings').upload(storagePath, bytes, {
-            contentType: 'audio/mp4',
-            upsert: false,
-          });
-          if (upload.error) throw upload.error;
+          try {
+            await retryAsync(async () => {
+              const upload = await supabase.storage.from('recordings').upload(storagePath!, bytes, {
+                contentType: 'audio/mp4',
+                upsert: true,
+              });
+              if (upload.error) throw upload.error;
+            });
+          } catch {
+            throw new RecordingKeptError(translate(profile.locale, 'errors.transcription'), null);
+          }
         }
-        const inserted = await supabase.from('recordings').insert({
-          id: recordingId,
-          user_id: user.id,
-          storage_path: storagePath,
-          transcript: spoken || null,
-          duration_ms: input.durationMs,
-          status: 'processing',
-          language: profile.locale,
+        if (!reused) {
+          const inserted = await supabase.from('recordings').insert({
+            id: recordingId,
+            user_id: user.id,
+            storage_path: storagePath,
+            transcript: spoken || null,
+            duration_ms: input.durationMs,
+            status: 'processing',
+            language: profile.locale,
+          });
+          if (inserted.error) {
+            await removeAudio(storagePath).catch(() => undefined);
+            throw new RecordingKeptError(translate(profile.locale, 'errors.process'), input.audioUri ? null : recordingId);
+          }
+        }
+        const invoked = await invokeProcessRecording({
+          recordingId,
+          timezone: timeZoneForRequest(profile.timezone, phoneTimeZone()),
+          locale: profile.locale,
+          now: new Date().toISOString(),
+          useStoredTranscript: !input.audioUri && !storagePath,
+          openItems: items
+            .filter((item) => !item.completedAt)
+            .slice(0, 40)
+            .map((item) => ({ id: item.id, title: item.title, dueAt: item.dueAt })),
         });
-        if (inserted.error) throw inserted.error;
-        const { data, error } = await supabase.functions.invoke('process-recording', {
-          body: {
-            recordingId,
-            timezone: timeZoneForRequest(profile.timezone, phoneTimeZone()),
-            locale: profile.locale,
-            now: new Date().toISOString(),
-            useStoredTranscript: !input.audioUri,
-          },
-        });
-        if (error) {
-          const code = await readFunctionError(error);
-          if (code === 'QUOTA_EXCEEDED' || code === 'quota_exceeded') return 'quota';
-          throw new Error(translate(profile.locale, processErrorKey(code)));
+        if (invoked.code) {
+          if (invoked.code === 'QUOTA_EXCEEDED' || invoked.code === 'quota_exceeded') return 'quota';
+          throw new RecordingKeptError(translate(profile.locale, processErrorKey(invoked.code)), recordingId);
+        }
+        const data = invoked.data;
+        if (!data || typeof data !== 'object') {
+          throw new RecordingKeptError(translate(profile.locale, 'errors.process'), recordingId);
         }
         const payload = data as {
           transcript?: string;
           language?: string | null;
           items?: Omit<DraftItem, 'localId'>[];
+          actions?: VoiceAction[];
           usage?: { count: number; limit: number | null; isPro: boolean };
         };
         if (payload.usage) {
-          const nextLimit = payload.usage.isPro
-            ? recordingLimit(true)
-            : payload.usage.limit ?? Number.MAX_SAFE_INTEGER;
-          refreshUsage(payload.usage.count, payload.usage.isPro, usage.period, nextLimit);
+          const gifted = overrideIsActive(giftUntilRef.current);
+          if (payload.usage.isPro && !gifted) storePro.current = true;
+          const merged = mergeUsageState({
+            count: payload.usage.count,
+            serverIsPro: Boolean(payload.usage.isPro),
+            serverLimit: payload.usage.limit ?? null,
+            storeIsPro: storePro.current,
+            giftUntil: giftUntilRef.current,
+            proLimit: recordingLimit(true),
+          });
+          refreshUsage(merged.count, merged.isPro, usage.period, merged.limit);
+        }
+        const spokenText = payload.transcript || spoken;
+        const localActions = parseVoiceCommands(
+          spokenText,
+          items.filter((item) => !item.completedAt).slice(0, 40).map((item) => ({ id: item.id, title: item.title, dueAt: item.dueAt })),
+          { now: new Date(), timeZone: profile.timezone },
+        );
+        const voice = payload.actions?.length ? payload.actions : localActions;
+        if (voice.length) {
+          setVoiceActions(voice);
+          setRecordings((current) => [
+            {
+              id: recordingId,
+              transcript: spokenText,
+              language: payload.language ?? profile.locale,
+              durationMs: input.durationMs,
+              status: 'ready',
+              storagePath,
+              createdAt: now,
+            },
+            ...current.filter((recording) => recording.id !== recordingId),
+          ]);
+          return 'commands';
         }
         setDraft({
           recordingId,
-          transcript: payload.transcript || spoken,
+          transcript: spokenText,
           language: payload.language ?? profile.locale,
           durationMs: input.durationMs,
-          items: (payload.items ?? []).map((item) => ({ ...item, localId: createId() })),
+          items: (payload.items ?? []).map((item) => ({
+            ...item,
+            category: item.category ?? inferCategory(item),
+            localId: createId(),
+          })),
           mocked: false,
           audioUri: input.audioUri ?? null,
         });
@@ -670,15 +1080,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
             language: payload.language ?? profile.locale,
             durationMs: input.durationMs,
             status: 'ready',
+            storagePath,
             createdAt: now,
           },
-          ...current,
+          ...current.filter((recording) => recording.id !== recordingId),
         ]);
         return 'review';
       },
-      openSample: (locale) =>
-        actions.current?.processThought({ durationMs: 12000, transcript: sampleTranscript(locale) }) ??
-        Promise.resolve('quota'),
+      openSample: async (locale) => {
+        if (process.env.EXPO_PUBLIC_PREVIEW === '1') {
+          // Store screenshots: a fixed, natively written sample in the app's language.
+          const sample = buildPreviewDraft(new Date(), profile.timezone, profile.locale);
+          setDraft({
+            recordingId: null,
+            transcript: sample.transcript,
+            language: profile.locale,
+            durationMs: 14000,
+            items: sample.items,
+            mocked: false,
+            audioUri: null,
+          });
+          return 'review';
+        }
+        if (mode !== 'supabase') {
+          return (
+            actions.current?.processThought({ durationMs: 12000, transcript: sampleTranscript(locale) }) ??
+            'quota'
+          );
+        }
+        // Signed-in accounts try samples on the device. Nothing is sent and no recording is used.
+        const transcript = sampleTranscript(locale);
+        const parsed = extractItems(transcript, { now: new Date(), timeZone: profile.timezone, locale });
+        setDraft({
+          recordingId: null,
+          transcript,
+          language: locale,
+          durationMs: 0,
+          items: parsed.map((item) => ({ ...item, localId: createId() })),
+          mocked: false,
+          audioUri: null,
+        });
+        return 'review';
+      },
       updateDraftItem: (localId, patch) => {
         setDraft((current) =>
           current
@@ -698,7 +1141,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 ...current,
                 items: [
                   ...current.items,
-                  { localId: createId(), type: 'task', title: '', notes: null, dueAt: null, allDay: false, listName: null, reminderOffsets: null },
+                  { localId: createId(), type: 'task', title: '', notes: null, dueAt: null, allDay: false, listName: null, reminderOffsets: null, repeat: null },
                 ],
               }
             : current,
@@ -732,6 +1175,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             allDay: entry.allDay,
             listName: entry.listName,
             reminderOffsets: entry.reminderOffsets,
+            repeat: usage.isPro && entry.dueAt ? entry.repeat ?? null : null,
             completedAt: null,
             calendarEventId: null,
             notificationId: null,
@@ -749,23 +1193,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         if (mode === 'supabase') {
           if (saved.length) {
-            const { error } = await supabase.from('items').insert(
-              saved.map((item) => ({
-                id: item.id,
-                user_id: user.id,
-                recording_id: item.recordingId,
-                type: item.type,
-                title: item.title,
-                notes: item.notes,
-                due_at: item.dueAt,
-                all_day: item.allDay,
-                list_name: item.listName,
-                reminder_offsets: item.reminderOffsets,
-                notification_id: item.notificationId,
-                calendar_event_id: item.calendarEventId,
-              })),
-            );
-            if (error) throw error;
+            const rows = saved.map((item) => ({
+              id: item.id,
+              user_id: user.id,
+              recording_id: item.recordingId,
+              type: item.type,
+              title: item.title,
+              notes: item.notes,
+              due_at: item.dueAt,
+              all_day: item.allDay,
+              list_name: item.listName,
+              category: item.category ?? inferCategory(item),
+              reminder_offsets: item.reminderOffsets,
+              repeat: item.repeat ?? null,
+              notification_id: item.notificationId,
+              calendar_event_id: item.calendarEventId,
+            }));
+            let inserted = await supabase.from('items').insert(rows);
+            if (inserted.error && /category/i.test(inserted.error.message ?? '')) {
+              inserted = await supabase.from('items').insert(rows.map(({ category: _drop, ...rest }) => rest));
+            }
+            if (inserted.error) throw inserted.error;
           }
         } else {
           await persistDemo({
@@ -781,18 +1229,236 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setItems(nextItems);
         setDraft(null);
         setBanner(translate(profile.locale, 'review.saved'));
+        if (saved.length && draft.recordingId) {
+          void noteSavedRecording().then((ask) => {
+            if (ask) setAskRating(true);
+          });
+        }
+      },
+      captureLongText: async (input) => {
+        const spoken = input.transcript?.trim() ?? '';
+        if (mode !== 'supabase' || !user) {
+          const gate = evaluateQuota(usage.count, usage.isPro);
+          if (!gate.allowed && !spoken) return 'quota';
+          return { text: cleanLongText(spoken || sampleTranscript(profile.locale)).body, recordingId: null };
+        }
+        if (!usage.isPro) {
+          const limits = await loadFreeLimits().catch(() => null);
+          const counts = countCompleted(recordings, profile.timezone);
+          const decision = decideFreeRecording({
+            isPro: false,
+            completedEver: counts.ever,
+            completedToday: counts.today,
+            completedMonth: counts.month,
+            durationSeconds: Math.floor(input.durationMs / 1000),
+            itemCount: items.length,
+            limits,
+          });
+          if (!decision.allowed) return 'quota';
+        }
+        const recordingId = createId();
+        let storagePath: string | null = null;
+        if (input.audioUri) {
+          const response = await fetch(input.audioUri);
+          const bytes = await response.arrayBuffer();
+          storagePath = `${user.id}/${recordingId}.m4a`;
+          const upload = await supabase.storage.from('recordings').upload(storagePath, bytes, {
+            contentType: 'audio/mp4',
+            upsert: true,
+          });
+          if (upload.error) throw upload.error;
+        }
+        const inserted = await supabase.from('recordings').insert({
+          id: recordingId,
+          user_id: user.id,
+          storage_path: storagePath,
+          transcript: spoken || null,
+          duration_ms: input.durationMs,
+          status: 'processing',
+          language: profile.locale,
+        });
+        if (inserted.error) {
+          await removeAudio(storagePath).catch(() => undefined);
+          throw inserted.error;
+        }
+        const invoked = await invokeProcessRecording({
+          recordingId,
+          timezone: timeZoneForRequest(profile.timezone, phoneTimeZone()),
+          locale: profile.locale,
+          now: new Date().toISOString(),
+          useStoredTranscript: !input.audioUri,
+          mode: 'long',
+        });
+        if (invoked.code === 'QUOTA_EXCEEDED' || invoked.code === 'quota_exceeded') return 'quota';
+        if (invoked.code) throw new Error(translate(profile.locale, processErrorKey(invoked.code)));
+        const payload = (invoked.data ?? {}) as { transcript?: string };
+        const text = payload.transcript || spoken;
+        if (!text.trim()) throw new Error(translate(profile.locale, 'errors.transcription'));
+        const cleaned = cleanLongText(text);
+        setRecordings((current) => [
+          {
+            id: recordingId,
+            transcript: text,
+            language: profile.locale,
+            durationMs: input.durationMs,
+            status: 'ready',
+            storagePath,
+            createdAt: new Date().toISOString(),
+          },
+          ...current.filter((recording) => recording.id !== recordingId),
+        ]);
+        return { text: cleaned.body || text, recordingId };
+      },
+      saveLongDocument: async (input) => {
+        if (!user) return 'saved';
+        const title = input.title.trim();
+        const body = input.body.trim();
+        if (!title || !body) return 'saved';
+        let recordingId = input.recordingId ?? null;
+        if (mode === 'supabase' && !recordingId) {
+          const fresh = createId();
+          const inserted = await supabase.from('recordings').insert({
+            id: fresh,
+            user_id: user.id,
+            transcript: body,
+            duration_ms: 0,
+            status: 'processing',
+            language: profile.locale,
+          });
+          if (inserted.error) throw inserted.error;
+          const invoked = await invokeProcessRecording({
+            recordingId: fresh,
+            timezone: timeZoneForRequest(profile.timezone, phoneTimeZone()),
+            locale: profile.locale,
+            now: new Date().toISOString(),
+            useStoredTranscript: true,
+            mode: 'long',
+          });
+          if (invoked.code === 'QUOTA_EXCEEDED' || invoked.code === 'quota_exceeded') return 'quota';
+          if (invoked.code) throw new Error(translate(profile.locale, processErrorKey(invoked.code)));
+          recordingId = fresh;
+          setRecordings((current) => [
+            {
+              id: fresh,
+              transcript: body,
+              language: profile.locale,
+              durationMs: 0,
+              status: 'ready',
+              storagePath: null,
+              createdAt: new Date().toISOString(),
+            },
+            ...current,
+          ]);
+        }
+        const now = new Date().toISOString();
+        const item: InboxItem = {
+          id: createId(),
+          recordingId,
+          type: 'note',
+          title,
+          notes: body,
+          dueAt: null,
+          allDay: false,
+          listName: null,
+          reminderOffsets: null,
+          repeat: null,
+          completedAt: null,
+          calendarEventId: null,
+          notificationId: null,
+          createdAt: now,
+          updatedAt: now,
+        };
+        if (mode === 'supabase') {
+          const { error } = await supabase.from('items').insert({
+            id: item.id,
+            user_id: user.id,
+            recording_id: item.recordingId,
+            type: 'note',
+            title: item.title,
+            notes: item.notes,
+            due_at: null,
+            all_day: false,
+            list_name: null,
+            reminder_offsets: null,
+            repeat: null,
+          });
+          if (error) throw error;
+        } else {
+          await persistDemo({
+            user,
+            profile,
+            items: [item, ...items],
+            recordings,
+            usageCount: usage.count,
+            usagePeriod: usage.period,
+            isPro: usage.isPro,
+          });
+        }
+        setItems((current) => [item, ...current]);
+        void noteSavedRecording().then((ask) => {
+          if (ask) setAskRating(true);
+        });
+        return 'saved';
       },
       discardDraft: () => setDraft(null),
       toggleComplete: async (id) => {
         const current = items.find((item) => item.id === id);
         if (!current) return;
+        if (current.repeat && current.dueAt && !current.completedAt) {
+          const dueAt = nextOccurrence(current.dueAt, current.repeat, profile.timezone, new Date());
+          const completedAt = new Date().toISOString();
+          const done = { ...current, completedAt, updatedAt: completedAt };
+          const nextItem: InboxItem = {
+            ...current,
+            id: createId(),
+            completedAt: null,
+            dueAt,
+            calendarEventId: null,
+            notificationId: null,
+            createdAt: completedAt,
+            updatedAt: completedAt,
+          };
+          const nextItems = [nextItem, ...items.map((item) => (item.id === id ? done : item))];
+          setItems(nextItems);
+          if (mode === 'supabase' && user) {
+            const updated = await supabase.from('items').update({ completed_at: completedAt }).eq('id', id);
+            const inserted = await supabase.from('items').insert({
+              id: nextItem.id,
+              user_id: user.id,
+              recording_id: nextItem.recordingId,
+              type: nextItem.type,
+              title: nextItem.title,
+              notes: nextItem.notes,
+              due_at: nextItem.dueAt,
+              all_day: nextItem.allDay,
+              list_name: nextItem.listName,
+              category: nextItem.category ?? null,
+              reminder_offsets: nextItem.reminderOffsets,
+              repeat: nextItem.repeat,
+            });
+            if (updated.error || inserted.error) {
+              setItems(items);
+              setBanner(translate(profile.locale, 'errors.saveFailed'));
+            } else {
+              setBanner(translate(profile.locale, 'repeat.moved'));
+            }
+          } else if (user) {
+            await snapshotDemo({ items: nextItems });
+            setBanner(translate(profile.locale, 'repeat.moved'));
+          }
+          return;
+        }
         const completedAt = current.completedAt ? null : new Date().toISOString();
         const nextItems = items.map((item) =>
           item.id === id ? { ...item, completedAt, updatedAt: new Date().toISOString() } : item,
         );
         setItems(nextItems);
         if (mode === 'supabase') {
-          await supabase.from('items').update({ completed_at: completedAt }).eq('id', id);
+          const { error } = await supabase.from('items').update({ completed_at: completedAt }).eq('id', id);
+          if (error) {
+            setItems((list) => list.map((item) => (item.id === id ? { ...item, completedAt: current.completedAt } : item)));
+            setBanner(translate(profile.locale, 'errors.saveFailed'));
+          }
         } else if (user) {
           await persistDemo({
             user,
@@ -811,23 +1477,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         );
         setItems(nextItems);
         const updated = nextItems.find((item) => item.id === id);
-        if (updated && profile.notificationsEnabled && updated.dueAt && !updated.completedAt) {
+        if (updated && 'dueAt' in patch && profile.notificationsEnabled && updated.dueAt && !updated.completedAt) {
           await requestReminderPermission();
         }
         if (mode === 'supabase' && updated) {
-          await supabase
-            .from('items')
-            .update({
-              type: updated.type,
-              title: updated.title,
-              notes: updated.notes,
-              due_at: updated.dueAt,
-              all_day: updated.allDay,
-              list_name: updated.listName,
-              reminder_offsets: updated.reminderOffsets,
-              notification_id: updated.notificationId,
-            })
-            .eq('id', id);
+          pendingWrites.current.set(id, updated);
+          if (writeTimer.current) clearTimeout(writeTimer.current);
+          writeTimer.current = setTimeout(() => void flushWrites(), 700);
         } else if (user) {
           await snapshotDemo({ items: nextItems });
         }
@@ -835,8 +1491,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deleteItem: async (id) => {
         const nextItems = items.filter((item) => item.id !== id);
         setItems(nextItems);
-        if (mode === 'supabase') await supabase.from('items').delete().eq('id', id);
-        else if (user) await snapshotDemo({ items: nextItems });
+        await cancelRemindersForItem(id);
+        pendingWrites.current.delete(id);
+        if (mode === 'supabase') {
+          const { data, error } = await supabase.from('items').delete().eq('id', id).select('id');
+          if (error || !data?.length) {
+            setItems(items);
+            setBanner(translate(profile.locale, 'confirmDelete.failed'));
+            return;
+          }
+        } else if (user) {
+          await snapshotDemo({ items: nextItems });
+        }
+        await purgeFromDevice(items.filter((item) => item.id === id));
       },
       clearSamples: async () => {
         setItems([]);
@@ -870,21 +1537,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       purchase: async (plan) => {
         const result = await purchaseOffer(plan);
-        if (result.isPro) refreshUsage(usage.count, true);
-        if (result.unavailable) return 'unavailable';
-        if (result.cancelled) return 'cancelled';
-        return result.isPro ? 'pro' : 'unavailable';
+        if (result.isPro) {
+          storePro.current = true;
+          refreshUsage(usage.count, true);
+          if (mode === 'supabase') {
+            void supabase.rpc('report_store_premium', { p_plan: plan }).then(({ error }) => {
+              if (error && error.code !== 'PGRST202') console.warn('[admin-push] store report', error.code ?? '');
+            });
+          }
+        }
+        return result;
       },
       restore: async () => {
-        const isPro = await restorePurchases();
-        if (isPro) refreshUsage(usage.count, true);
-        return isPro;
+        const result = await restorePurchases();
+        if (result.isPro) {
+          storePro.current = true;
+          refreshUsage(usage.count, true);
+        }
+        return result;
       },
     };
   }, [
     applyProfile,
+    askRating,
+    voiceActions,
     banner,
     draft,
+    flushWrites,
     items,
     mode,
     loadRemote,
@@ -894,6 +1573,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ready,
     recordings,
     snapshotDemo,
+    giftUntil,
     usage,
     user,
   ]);
@@ -909,6 +1589,26 @@ export function useApp() {
   const value = useContext(AppContext);
   if (!value) throw new Error('useApp must be used within AppProvider');
   return value;
+}
+
+/** This month's used recordings from the credit ledger. Null when the ledger is not deployed yet. */
+async function countMonthCredits(timeZone: string): Promise<number | null> {
+  const start = zonedMonthStart(new Date(), timeZone).toISOString();
+  const { count, error } = await supabase
+    .from('recording_credits')
+    .select('recording_id', { count: 'exact', head: true })
+    .gte('created_at', start);
+  return error ? null : count ?? 0;
+}
+
+/** Removes an item's scheduled reminders and its phone calendar entry. Best effort, never throws. */
+async function purgeFromDevice(removed: InboxItem[]): Promise<void> {
+  await Promise.all(
+    removed.map(async (item) => {
+      await cancelRemindersForItem(item.id).catch(() => undefined);
+      await removeItemFromDevice(item.calendarEventId).catch(() => undefined);
+    }),
+  );
 }
 
 function freeMonthLimit(limits: FreeLimits | null): number {
@@ -938,7 +1638,9 @@ function mapItem(row: Record<string, unknown>): InboxItem {
     dueAt: (row.due_at as string | null) ?? null,
     allDay: Boolean(row.all_day),
     listName: (row.list_name as string | null) ?? null,
+    category: (row.category as InboxItem['category']) ?? null,
     reminderOffsets: Array.isArray(row.reminder_offsets) ? row.reminder_offsets.map((value) => Number(value)) : null,
+    repeat: asRepeat(row.repeat),
     completedAt: (row.completed_at as string | null) ?? null,
     calendarEventId: (row.calendar_event_id as string | null) ?? null,
     notificationId: (row.notification_id as string | null) ?? null,
@@ -964,8 +1666,29 @@ function mapRecording(row: Record<string, unknown>): Recording {
     language: (row.language as string | null) ?? null,
     durationMs: Number(row.duration_ms ?? 0),
     status: (row.status as Recording['status']) ?? 'ready',
+    storagePath: typeof row.storage_path === 'string' ? row.storage_path : null,
     createdAt: String(row.created_at),
   };
+}
+
+async function invokeProcessRecording(body: {
+  recordingId: string;
+  timezone: string;
+  locale: string;
+  now: string;
+  useStoredTranscript: boolean;
+  mode?: 'long';
+  openItems?: { id: string; title: string; dueAt: string | null }[];
+}): Promise<{ data: unknown; code: string | null }> {
+  let lastCode = '';
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data, error } = await supabase.functions.invoke('process-recording', { body });
+    if (!error) return { data, code: null };
+    lastCode = await readFunctionError(error);
+    if (!isRetryableProcessCode(lastCode) || attempt === 2) return { data: null, code: lastCode || 'UNKNOWN' };
+    await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)));
+  }
+  return { data: null, code: lastCode || 'UNKNOWN' };
 }
 
 async function readFunctionError(error: { context?: { json?: () => Promise<{ error?: string }> } }): Promise<string> {

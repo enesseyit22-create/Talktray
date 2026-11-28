@@ -8,6 +8,7 @@ export {
   MONTHLY_PRICE,
   PRO_FAIR_USE_RECORDINGS,
   YEARLY_PRICE,
+  PRO_MAX_SECONDS_PER_RECORDING,
   RECORDINGS_BEFORE_PAYWALL,
   decideFreeRecording,
   evaluateQuota,
@@ -20,3 +21,7 @@ export { mergeSpokenOffsets, parseReminderOffsets } from './reminders';
 export { deviceTimeZone, isSameZonedDay, localTimestamp, monthPeriod, safeTimeZone, zonedParts, zonedTimeToUtc } from './time';
 export type { ExtractContext, ItemType, ParsedItem, ResolvedWhen } from './types';
 export { ITEM_TYPES } from './types';
+export { buildSummaryMessages, normalizeSummary, shouldSummarize, summaryToNote } from './summary';
+export type { RecordingSummary } from './summary';
+export { REPEATS, asRepeat, nextOccurrence } from './repeat';
+export type { Repeat } from './repeat';
